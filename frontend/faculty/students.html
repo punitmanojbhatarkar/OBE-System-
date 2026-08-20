@@ -31,7 +31,7 @@
       min-width: 0;
     }
     .dist-bar-seg.slow     { background: var(--danger); }
-    .dist-bar-seg.average  { background: var(--grad-warn); }
+    .dist-bar-seg.average  { background: var(--warning); }
     .dist-bar-seg.advanced { background: var(--success); }
 
     .survey-score-bar {
@@ -92,6 +92,7 @@
       <a class="nav-item" href="marks.html">📝 Marks Entry</a>
       <a class="nav-item" href="attainment.html">📈 Attainment</a>
       <a class="nav-item" href="assignments.html">🤖 Assignments & AI</a>
+      <a class="nav-item" href="auto-grade.html">✅ Auto-Grading</a>
       <a class="nav-item" href="question-paper.html">📄 Question Paper</a>
       <a class="nav-item" href="reports.html">📄 Reports & Export</a>
     </nav>
@@ -119,8 +120,8 @@
         <select class="form-control" id="course-select" style="width:260px">
           <option value="">— Select Course —</option>
         </select>
-        <button class="btn btn-secondary btn-sm" onclick="openImportModal()">📥 Import Excel</button>
-        <button class="btn btn-primary btn-sm" onclick="openAddModal()">+ Add Student</button>
+        <button class="btn btn-secondary btn-sm" id="btn-import-students" onclick="openImportModal()">📥 Import Excel</button>
+        <button class="btn btn-primary btn-sm" id="btn-add-student" onclick="openAddModal()">+ Add Student</button>
       </div>
     </header>
 
@@ -224,14 +225,20 @@
 
 <!-- ── ADD/EDIT STUDENT MODAL (injected via JS) ── -->
 
-<script src="../scripts/data.js?v=2"></script>`r`n<script src="../scripts/api.js"></script>
-<script src="../scripts/auth.js?v=2"></script>
+<script src="../scripts/data.js?v=100"></script>
+<script src="../scripts/api.js?v=100"></script>
+<script src="../scripts/auth.js?v=100"></script>
 <script src="../scripts/utils.js"></script>
 <script>
   /* ── Auth ── */
   const user = Auth.requireAuth(['faculty', 'hod']);
   if (!user) throw new Error('Not authorized');
   Auth.populateSidebar(user);
+
+  if (user.role !== 'hod') {
+    document.getElementById('btn-import-students').style.display = 'none';
+    document.getElementById('btn-add-student').style.display = 'none';
+  }
 
   let currentCourseId = null;
   let studentsCache   = [];
@@ -240,7 +247,14 @@
   /* ── Populate courses ── */
   function populateCourses() {
     const sel = document.getElementById('course-select');
-    const courses = DB.courses.byFaculty(user.id);
+    let courses = [];
+    if (user.role === 'hod') {
+      const allC = DB.courses.all ? DB.courses.all() : JSON.parse(localStorage.getItem('obe_courses') || '[]');
+      courses = allC.filter(c => c.deptId === user.deptId);
+    } else {
+      courses = DB.courses.byFaculty(user.id);
+    }
+    
     courses.forEach(c => {
       const opt = document.createElement('option');
       opt.value = c.id;
@@ -306,9 +320,9 @@
     document.getElementById('seg-avg').style.flex    = avg;
     document.getElementById('seg-adv').style.flex    = adv;
 
-    document.getElementById('seg-slow').textContent  = slow > 0  ? `🔴 ${slow}`  : '';
-    document.getElementById('seg-avg').textContent   = avg  > 0  ? `🟡 ${avg}`   : '';
-    document.getElementById('seg-adv').textContent   = adv  > 0  ? `🟢 ${adv}`  : '';
+    document.getElementById('seg-slow').textContent  = slow > 0  ? `${slow}`  : '';
+    document.getElementById('seg-avg').textContent   = avg  > 0  ? `${avg}`   : '';
+    document.getElementById('seg-adv').textContent   = adv  > 0  ? `${adv}`   : '';
 
     const p = n => `${((n/total)*100).toFixed(1)}%`;
     document.getElementById('pct-slow').textContent  = `🔴 Slow: ${slow} (${p(slow)})`;
@@ -332,6 +346,18 @@
       const score = s.preSurveyScore ?? 0;
       const pct   = (score / 10) * 100;
       const tr    = document.createElement('tr');
+      let actions = '';
+      if (user.role === 'hod') {
+        actions = `
+          <div class="flex gap-sm">
+            <button class="btn btn-secondary btn-sm" onclick="openEditModal('${s.id}')">✏️ Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteStudent('${s.id}')">🗑</button>
+          </div>
+        `;
+      } else {
+        actions = `<span style="font-size:11px;color:var(--text-muted)">View Only</span>`;
+      }
+
       tr.innerHTML = `
         <td class="td-muted">${i + 1}</td>
         <td><code style="font-size:12px;color:var(--primary)">${s.prn}</code></td>
@@ -354,10 +380,7 @@
         </td>
         <td>${learnerBadge(s.learnerType)}</td>
         <td>
-          <div class="flex gap-sm">
-            <button class="btn btn-secondary btn-sm" onclick="openEditModal('${s.id}')">✏️ Edit</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteStudent('${s.id}')">🗑</button>
-          </div>
+          ${actions}
         </td>
       `;
       tbody.appendChild(tr);
@@ -586,5 +609,5 @@
   /* ── Init ── */
   populateCourses();
 </script>
-<script src="../scripts/ai-chat.js"></script>\n</body>
+</body>
 </html>

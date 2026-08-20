@@ -55,7 +55,7 @@ def seed_db():
             deptId="dept-cs", facultyId="usr-vw", semester="V", year="2025-26",
             division="A", batch="A1", klass="TY BTech",
             champion="Dr. V. C. Wangikar", champDate="2025-07-21",
-            lecturesPerWeek=3, totalStudents=41,
+            lecturesPerWeek=3, totalStudents=26,
             teachingPhilosophy="Blend theory with hands-on ML implementation.",
             status="active", ia=30, mse=20, ese=50, attLevel1=65, attLevel2=75, attLevel3=85, directWeight=80, indirectWeight=20
         ),
@@ -64,7 +64,7 @@ def seed_db():
             deptId="dept-ds", facultyId="usr-am", semester="V", year="2025-26",
             division="A", batch="A1", klass="TY BTech",
             champion="Dr. A. Mehta", champDate="2025-07-21",
-            lecturesPerWeek=3, totalStudents=38,
+            lecturesPerWeek=3, totalStudents=26,
             teachingPhilosophy="Practical data engineering skills.",
             status="active", ia=30, mse=20, ese=50, attLevel1=65, attLevel2=75, attLevel3=85, directWeight=80, indirectWeight=20
         ),
@@ -74,113 +74,155 @@ def seed_db():
     # ── Course Outcomes ──
     cos = [
         # EDA
-        models.CourseOutcome(id="co-1",    courseId="crs-eda", no=1, code="CO1", text="Select the efficient data warehouse architecture for the given case study.",                                                                                         bloomsLevel="L3", assessedThrough="ia,mse,ese"),
-        models.CourseOutcome(id="co-2",    courseId="crs-eda", no=2, code="CO2", text="Develop a data mart using different modeling techniques for given applications and present it in a group.",                                                            bloomsLevel="L3", assessedThrough="ia,ese"),
-        models.CourseOutcome(id="co-3",    courseId="crs-eda", no=3, code="CO3", text="Analyze the prediction by hypothesis testing using data analysis tools.",                                                                                             bloomsLevel="L4", assessedThrough="ia,mse,ese"),
+        models.CourseOutcome(id="co-1",    courseId="crs-eda", no=1, code="CO1", text="Select the efficient data warehouse architecture for the given case study.", bloomsLevel="L3", assessedThrough="ia,mse,ese"),
+        models.CourseOutcome(id="co-2",    courseId="crs-eda", no=2, code="CO2", text="Develop a data mart using different modeling techniques for given applications and present it in a group.", bloomsLevel="L3", assessedThrough="ia,ese"),
+        models.CourseOutcome(id="co-3",    courseId="crs-eda", no=3, code="CO3", text="Analyze the prediction by hypothesis testing using data analysis tools.", bloomsLevel="L4", assessedThrough="ia,mse,ese"),
         models.CourseOutcome(id="co-4",    courseId="crs-eda", no=4, code="CO4", text="Construct a model for providing predictions on given datasets by identifying trends and detecting outliers on real-time application using available tools and technology.", bloomsLevel="L4", assessedThrough="ia,mse,ese"),
-        models.CourseOutcome(id="co-5",    courseId="crs-eda", no=5, code="CO5", text="", bloomsLevel="", assessedThrough=""),
-        models.CourseOutcome(id="co-6",    courseId="crs-eda", no=6, code="CO6", text="", bloomsLevel="", assessedThrough=""),
         # ML
-        models.CourseOutcome(id="co-ml-1", courseId="crs-ml",  no=1, code="CO1", text="Apply supervised learning algorithms to solve classification and regression problems.",                 bloomsLevel="L3", assessedThrough="ia,mse,ese"),
-        models.CourseOutcome(id="co-ml-2", courseId="crs-ml",  no=2, code="CO2", text="Implement unsupervised learning techniques for clustering and dimensionality reduction.",              bloomsLevel="L3", assessedThrough="ia,ese"),
-        models.CourseOutcome(id="co-ml-3", courseId="crs-ml",  no=3, code="CO3", text="Evaluate model performance using appropriate metrics and cross-validation.",                          bloomsLevel="L4", assessedThrough="ia,mse,ese"),
-        models.CourseOutcome(id="co-ml-4", courseId="crs-ml",  no=4, code="CO4", text="Design and implement neural network architectures for real-world applications.",                      bloomsLevel="L5", assessedThrough="ia,ese"),
+        models.CourseOutcome(id="co-ml-1", courseId="crs-ml",  no=1, code="CO1", text="Apply supervised learning algorithms to solve classification and regression problems.", bloomsLevel="L3", assessedThrough="ia,mse,ese"),
+        models.CourseOutcome(id="co-ml-2", courseId="crs-ml",  no=2, code="CO2", text="Implement unsupervised learning techniques for clustering and dimensionality reduction.", bloomsLevel="L3", assessedThrough="ia,ese"),
+        models.CourseOutcome(id="co-ml-3", courseId="crs-ml",  no=3, code="CO3", text="Evaluate model performance using appropriate metrics and cross-validation.", bloomsLevel="L4", assessedThrough="ia,mse,ese"),
+        models.CourseOutcome(id="co-ml-4", courseId="crs-ml",  no=4, code="CO4", text="Design and implement neural network architectures for real-world applications.", bloomsLevel="L5", assessedThrough="ia,ese"),
+        # DWM
+        models.CourseOutcome(id="co-dw-1", courseId="crs-dw",  no=1, code="CO1", text="Understand data warehousing concepts and OLAP tools.", bloomsLevel="L2", assessedThrough="ia,mse,ese"),
+        models.CourseOutcome(id="co-dw-2", courseId="crs-dw",  no=2, code="CO2", text="Apply data mining techniques such as classification and association rule mining.", bloomsLevel="L3", assessedThrough="ia,ese"),
+        models.CourseOutcome(id="co-dw-3", courseId="crs-dw",  no=3, code="CO3", text="Analyze clustering algorithms on large volume data.", bloomsLevel="L4", assessedThrough="ia,mse,ese"),
+        models.CourseOutcome(id="co-dw-4", courseId="crs-dw",  no=4, code="CO4", text="Evaluate web mining and spatial mining applications.", bloomsLevel="L4", assessedThrough="ia,ese"),
     ]
     db.add_all(cos)
 
-    # ── PO Mapping (EDA) ──
-    po_data = [
-        # CO1
-        ("crs-eda",1,"PO1",2),("crs-eda",1,"PO2",3),("crs-eda",1,"PO3",3),("crs-eda",1,"PO4",1),
-        ("crs-eda",1,"PO5",1),("crs-eda",1,"PO11",1),("crs-eda",1,"PSO1",2),("crs-eda",1,"PSO3",1),
-        # CO2
-        ("crs-eda",2,"PO1",2),("crs-eda",2,"PO2",3),("crs-eda",2,"PO3",3),("crs-eda",2,"PO4",1),
-        ("crs-eda",2,"PO5",3),("crs-eda",2,"PO11",1),("crs-eda",2,"PSO1",3),("crs-eda",2,"PSO2",1),("crs-eda",2,"PSO3",2),
-        # CO3
-        ("crs-eda",3,"PO1",3),("crs-eda",3,"PO2",3),("crs-eda",3,"PO3",3),("crs-eda",3,"PO4",2),
-        ("crs-eda",3,"PO5",3),("crs-eda",3,"PO7",1),("crs-eda",3,"PO11",1),("crs-eda",3,"PSO1",3),("crs-eda",3,"PSO2",3),("crs-eda",3,"PSO3",3),
-        # CO4
-        ("crs-eda",4,"PO1",3),("crs-eda",4,"PO2",3),("crs-eda",4,"PO3",3),("crs-eda",4,"PO4",2),
-        ("crs-eda",4,"PO5",3),("crs-eda",4,"PO7",1),("crs-eda",4,"PO11",1),("crs-eda",4,"PSO1",3),("crs-eda",4,"PSO2",3),("crs-eda",4,"PSO3",3),
-    ]
+    # ── PO Mapping ──
+    po_data = []
+    for c_id in ["crs-eda", "crs-ml", "crs-dw"]:
+        po_data.extend([
+            (c_id, 1, "PO1", 2), (c_id, 1, "PO2", 3), (c_id, 1, "PO3", 3), (c_id, 1, "PO4", 1), (c_id, 1, "PO5", 1), (c_id, 1, "PO11", 1), (c_id, 1, "PSO1", 2), (c_id, 1, "PSO3", 1),
+            (c_id, 2, "PO1", 2), (c_id, 2, "PO2", 3), (c_id, 2, "PO3", 3), (c_id, 2, "PO4", 1), (c_id, 2, "PO5", 3), (c_id, 2, "PO11", 1), (c_id, 2, "PSO1", 3), (c_id, 2, "PSO2", 1), (c_id, 2, "PSO3", 2),
+            (c_id, 3, "PO1", 3), (c_id, 3, "PO2", 3), (c_id, 3, "PO3", 3), (c_id, 3, "PO4", 2), (c_id, 3, "PO5", 3), (c_id, 3, "PO7", 1), (c_id, 3, "PO11", 1), (c_id, 3, "PSO1", 3), (c_id, 3, "PSO2", 3), (c_id, 3, "PSO3", 3),
+            (c_id, 4, "PO1", 3), (c_id, 4, "PO2", 3), (c_id, 4, "PO3", 3), (c_id, 4, "PO4", 2), (c_id, 4, "PO5", 3), (c_id, 4, "PO7", 1), (c_id, 4, "PO11", 1), (c_id, 4, "PSO1", 3), (c_id, 4, "PSO2", 3), (c_id, 4, "PSO3", 3),
+        ])
     db.add_all([models.PoMapping(courseId=c, coNo=n, po=p, val=v) for c,n,p,v in po_data])
 
-    # ── Students (EDA) ──
-    students = [
-        models.Student(id="s01", courseId="crs-eda", prn="202201040001", name="Rakshe Veer Tushar",        preSurveyScore=3,  learnerType="slow"),
-        models.Student(id="s02", courseId="crs-eda", prn="202201040003", name="Narote Sanket Satish",      preSurveyScore=8,  learnerType="advanced"),
-        models.Student(id="s03", courseId="crs-eda", prn="202201040004", name="Bolaj Samarth Hanmant",     preSurveyScore=7,  learnerType="advanced"),
-        models.Student(id="s04", courseId="crs-eda", prn="202201040005", name="Sarode Lokesh Vasudev",     preSurveyScore=6,  learnerType="average"),
-        models.Student(id="s05", courseId="crs-eda", prn="202201040006", name="Thorat Harshada Subhash",   preSurveyScore=7,  learnerType="advanced"),
-        models.Student(id="s06", courseId="crs-eda", prn="202201040007", name="Kulkarni Parth Dipak",      preSurveyScore=5,  learnerType="average"),
-        models.Student(id="s07", courseId="crs-eda", prn="202201040008", name="Pawar Aniket Suraj",        preSurveyScore=6,  learnerType="average"),
-        models.Student(id="s08", courseId="crs-eda", prn="202201040009", name="Maske Prashik Ghansham",    preSurveyScore=4,  learnerType="average"),
-        models.Student(id="s09", courseId="crs-eda", prn="202201040010", name="Om Sutar",                  preSurveyScore=8,  learnerType="advanced"),
-        models.Student(id="s10", courseId="crs-eda", prn="202201040011", name="Vemula Ramani Bhumaiah",    preSurveyScore=7,  learnerType="advanced"),
-        models.Student(id="s11", courseId="crs-eda", prn="202201040012", name="Gite Abhijeet Shantilal",   preSurveyScore=5,  learnerType="average"),
-        models.Student(id="s12", courseId="crs-eda", prn="202201040013", name="Dasari Essak Mahesh",       preSurveyScore=6,  learnerType="average"),
-        models.Student(id="s13", courseId="crs-eda", prn="202201040014", name="Raut Krishna Bhimrao",      preSurveyScore=3,  learnerType="slow"),
-        models.Student(id="s14", courseId="crs-eda", prn="202201040015", name="Shinde Vaibhav Ajay",       preSurveyScore=7,  learnerType="advanced"),
-        models.Student(id="s15", courseId="crs-eda", prn="202201040016", name="Ghodake Vipul Vijaykumar",  preSurveyScore=5,  learnerType="average"),
-        models.Student(id="s16", courseId="crs-eda", prn="202201040017", name="Pendam Tejas Pradip",       preSurveyScore=8,  learnerType="advanced"),
-        models.Student(id="s17", courseId="crs-eda", prn="202201040019", name="Bingi Vidya Balganesh",     preSurveyScore=6,  learnerType="average"),
-        models.Student(id="s18", courseId="crs-eda", prn="202201040020", name="Divekar Swarup Arjun",      preSurveyScore=4,  learnerType="average"),
-        models.Student(id="s19", courseId="crs-eda", prn="202201040021", name="Amrik Bhadra",              preSurveyScore=7,  learnerType="advanced"),
-        models.Student(id="s20", courseId="crs-eda", prn="202201040022", name="Chavan Snehal Suraj",       preSurveyScore=5,  learnerType="average"),
-        models.Student(id="s21", courseId="crs-eda", prn="202201040023", name="Pande Aniruddha Pradip",    preSurveyScore=6,  learnerType="average"),
-        models.Student(id="s22", courseId="crs-eda", prn="202201040024", name="Popalghat Amol Santosh",    preSurveyScore=7,  learnerType="advanced"),
-        models.Student(id="s23", courseId="crs-eda", prn="202201040025", name="Lohkare Girish Gokul",      preSurveyScore=4,  learnerType="average"),
-        models.Student(id="s24", courseId="crs-eda", prn="202201040026", name="Darade Tejashri Krushna",   preSurveyScore=8,  learnerType="advanced"),
-        models.Student(id="s25", courseId="crs-eda", prn="202201040027", name="Jadhav Vaibhav Satish",     preSurveyScore=5,  learnerType="average"),
-        models.Student(id="s26", courseId="crs-eda", prn="202201040029", name="Sumit Kedar",               preSurveyScore=3,  learnerType="slow"),
+    # ── Students ──
+    student_templates = [
+        ("202201040001", "Rakshe Veer Tushar", 3, "slow"),
+        ("202201040003", "Narote Sanket Satish", 8, "advanced"),
+        ("202201040004", "Bolaj Samarth Hanmant", 7, "advanced"),
+        ("202201040005", "Sarode Lokesh Vasudev", 6, "average"),
+        ("202201040006", "Thorat Harshada Subhash", 7, "advanced"),
+        ("202201040007", "Kulkarni Parth Dipak", 5, "average"),
+        ("202201040008", "Pawar Aniket Suraj", 6, "average"),
+        ("202201040009", "Maske Prashik Ghansham", 4, "average"),
+        ("202201040010", "Om Sutar", 8, "advanced"),
+        ("202201040011", "Vemula Ramani Bhumaiah", 7, "advanced"),
+        ("202201040012", "Gite Abhijeet Shantilal", 5, "average"),
+        ("202201040013", "Dasari Essak Mahesh", 6, "average"),
+        ("202201040014", "Raut Krishna Bhimrao", 3, "slow"),
+        ("202201040015", "Shinde Vaibhav Ajay", 7, "advanced"),
+        ("202201040016", "Ghodake Vipul Vijaykumar", 5, "average"),
+        ("202201040017", "Pendam Tejas Pradip", 8, "advanced"),
+        ("202201040019", "Bingi Vidya Balganesh", 6, "average"),
+        ("202201040020", "Divekar Swarup Arjun", 4, "average"),
+        ("202201040021", "Amrik Bhadra", 7, "advanced"),
+        ("202201040022", "Chavan Snehal Suraj", 5, "average"),
+        ("202201040023", "Pande Aniruddha Pradip", 6, "average"),
+        ("202201040024", "Popalghat Amol Santosh", 7, "advanced"),
+        ("202201040025", "Lohkare Girish Gokul", 4, "average"),
+        ("202201040026", "Darade Tejashri Krushna", 8, "advanced"),
+        ("202201040027", "Jadhav Vaibhav Satish", 5, "average"),
+        ("202201040029", "Sumit Kedar", 3, "slow"),
     ]
+    students = []
+    for c_id in ["crs-eda", "crs-ml", "crs-dw"]:
+        for idx, (prn, name, score, ltype) in enumerate(student_templates):
+            students.append(models.Student(id=f"{c_id}-s{idx+1:02d}", courseId=c_id, prn=prn, name=name, preSurveyScore=score, learnerType=ltype))
     db.add_all(students)
 
     # ── IA Questions ──
-    ia_questions = [
-        models.IAQuestion(courseId="crs-eda", assessmentType="ia",  assessmentNo=1, qNo=1, desc="For CARGO shipper application, identify and justify appropriate Data Warehouse architecture.",    bloomsLevel="L5", coNo=1, maxMarks=3),
-        models.IAQuestion(courseId="crs-eda", assessmentType="ia",  assessmentNo=1, qNo=2, desc="For CARGO shipper application, apply dimensional modelling. Identify dimensions, measures, and draw the model.", bloomsLevel="L5", coNo=2, maxMarks=3),
-        models.IAQuestion(courseId="crs-eda", assessmentType="mse", assessmentNo=1, qNo=1, desc="Explain OLAP operations with suitable examples.",               bloomsLevel="L3", coNo=1, maxMarks=6),
-        models.IAQuestion(courseId="crs-eda", assessmentType="mse", assessmentNo=1, qNo=2, desc="Apply hypothesis testing on given dataset to derive conclusions.", bloomsLevel="L4", coNo=3, maxMarks=7),
-        models.IAQuestion(courseId="crs-eda", assessmentType="mse", assessmentNo=1, qNo=3, desc="Describe types of data preprocessing techniques.",               bloomsLevel="L2", coNo=3, maxMarks=7),
-    ]
+    ia_questions = []
+    for c_id in ["crs-eda", "crs-ml", "crs-dw"]:
+        ia_questions.extend([
+            models.IAQuestion(courseId=c_id, assessmentType="ia",  assessmentNo=1, qNo=1, desc="Identify and justify appropriate architecture.", bloomsLevel="L5", coNo=1, maxMarks=3),
+            models.IAQuestion(courseId=c_id, assessmentType="ia",  assessmentNo=1, qNo=2, desc="Apply dimensional modelling techniques.", bloomsLevel="L5", coNo=2, maxMarks=3),
+            models.IAQuestion(courseId=c_id, assessmentType="mse", assessmentNo=1, qNo=1, desc="Explain OLAP operations with suitable examples.", bloomsLevel="L3", coNo=1, maxMarks=6),
+            models.IAQuestion(courseId=c_id, assessmentType="mse", assessmentNo=1, qNo=2, desc="Apply hypothesis testing on given dataset.", bloomsLevel="L4", coNo=3, maxMarks=7),
+            models.IAQuestion(courseId=c_id, assessmentType="mse", assessmentNo=1, qNo=3, desc="Describe types of data preprocessing techniques.", bloomsLevel="L2", coNo=3, maxMarks=7),
+        ])
     db.add_all(ia_questions)
 
-    # ── Sample IA Marks ──
-    marks_raw = [
-        # aNo, qNo, prn, marks
-        (1,1,"202201040001",1),(1,2,"202201040001",2),
-        (1,1,"202201040003",3),(1,2,"202201040003",3),
-        (1,1,"202201040004",3),(1,2,"202201040004",2),
-        (1,1,"202201040005",2),(1,2,"202201040005",3),
-        (1,1,"202201040006",2),(1,2,"202201040006",1),
-        (1,1,"202201040007",3),(1,2,"202201040007",2),
-        (1,1,"202201040008",1),(1,2,"202201040008",2),
-        (1,1,"202201040009",2),(1,2,"202201040009",2),
-        (1,1,"202201040010",3),(1,2,"202201040010",3),
-        (1,1,"202201040011",2),(1,2,"202201040011",2),
-        (1,1,"202201040012",3),(1,2,"202201040012",1),
-        (1,1,"202201040013",1),(1,2,"202201040013",1),
-        (1,1,"202201040014",3),(1,2,"202201040014",2),
-        (1,1,"202201040015",2),(1,2,"202201040015",1),
-        (1,1,"202201040016",3),(1,2,"202201040016",3),
-        (1,1,"202201040017",2),(1,2,"202201040017",2),
-        (1,1,"202201040019",2),(1,2,"202201040019",1),
-        (1,1,"202201040020",3),(1,2,"202201040020",2),
-        (1,1,"202201040021",2),(1,2,"202201040021",2),
-        (1,1,"202201040022",3),(1,2,"202201040022",3),
-        (1,1,"202201040023",2),(1,2,"202201040023",2),
-        (1,1,"202201040024",3),(1,2,"202201040024",3),
-        (1,1,"202201040025",2),(1,2,"202201040025",1),
-        (1,1,"202201040026",3),(1,2,"202201040026",2),
-        (1,1,"202201040027",1),(1,2,"202201040027",1),
-        (1,1,"202201040029",1),(1,2,"202201040029",1),
+    # ── Marks ──
+    marks_objects = []
+    for c_id in ["crs-eda", "crs-ml", "crs-dw"]:
+        for s_idx, (prn, name, _, _) in enumerate(student_templates):
+            m1 = (s_idx % 3) + 1  # 1 to 3
+            m2 = (s_idx % 3) + 1
+            m3 = (s_idx % 4) + 4  # 4 to 7
+            m4 = (s_idx % 4) + 4
+            # IA (Q1: CO1, Q2: CO2)
+            marks_objects.append(models.MarksIA(courseId=c_id, assessmentNo=1, qNo=1, prn=prn, marks=m1))
+            marks_objects.append(models.MarksIA(courseId=c_id, assessmentNo=1, qNo=2, prn=prn, marks=m2))
+            # MSE (Q1: CO1, Q2: CO3, Q3: CO4)
+            marks_objects.append(models.MarksMSE(courseId=c_id, qNo=1, prn=prn, marks=m1*2))
+            marks_objects.append(models.MarksMSE(courseId=c_id, qNo=2, prn=prn, marks=m3))
+            marks_objects.append(models.MarksMSE(courseId=c_id, qNo=3, prn=prn, marks=m4))
+            # ESE (Q1: CO1, Q2: CO2, Q3: CO3, Q4: CO4)
+            marks_objects.append(models.MarksESE(courseId=c_id, qNo=1, prn=prn, marks=m1*3))
+            marks_objects.append(models.MarksESE(courseId=c_id, qNo=2, prn=prn, marks=m2*3))
+            marks_objects.append(models.MarksESE(courseId=c_id, qNo=3, prn=prn, marks=m3*2))
+            marks_objects.append(models.MarksESE(courseId=c_id, qNo=4, prn=prn, marks=m4*2))
+    db.add_all(marks_objects)
+
+    # ── Assignments ──
+    assignments = [
+        models.Assignment(
+            id="asgn-1", courseId="crs-eda", title="Data Warehouse Architecture & Dimensional Modelling",
+            topic="Data Warehouse & Dimensional Modelling", level="L3", coNo=1, maxMarks=10,
+            questions=json.dumps([
+                {"qNo": 1, "text": "For CARGO shipper application, identify and justify appropriate Data Warehouse architecture. [5 Marks]", "coNo": 1, "marks": 5},
+                {"qNo": 2, "text": "For CARGO shipper application, apply dimensional modelling: i) Identify 4 dimensions ii) Identify 2 Measures iii) Select type with justification iv) Draw the model [5 Marks]", "coNo": 2, "marks": 5}
+            ]),
+            createdAt="2025-08-01"
+        ),
+        models.Assignment(
+            id="asgn-2", courseId="crs-eda", title="Hypothesis Testing & Regression Methods",
+            topic="Hypothesis Testing & Regression", level="L4", coNo=3, maxMarks=10,
+            questions=json.dumps([
+                {"qNo": 1, "text": "Apply t-test to determine if there is a significant difference between two sample means. [5 Marks]", "coNo": 3, "marks": 5},
+                {"qNo": 2, "text": "Build a linear regression model to predict housing prices. Report R², MSE, and interpret coefficients. [5 Marks]", "coNo": 4, "marks": 5}
+            ]),
+            createdAt="2025-08-15"
+        ),
+        models.Assignment(
+            id="asgn-ml-1", courseId="crs-ml", title="Supervised Learning Algorithms Implementation",
+            topic="Classification & Regression", level="L3", coNo=1, maxMarks=10,
+            questions=json.dumps([
+                {"qNo": 1, "text": "Implement Decision Tree Classifier on Iris Dataset and calculate accuracy, precision, recall. [5 Marks]", "coNo": 1, "marks": 5},
+                {"qNo": 2, "text": "Implement K-Means clustering algorithm on customer segmentation data. [5 Marks]", "coNo": 2, "marks": 5}
+            ]),
+            createdAt="2025-08-10"
+        ),
+        models.Assignment(
+            id="asgn-dw-1", courseId="crs-dw", title="Data Warehousing Schema Design",
+            topic="OLAP & Schema Design", level="L2", coNo=1, maxMarks=10,
+            questions=json.dumps([
+                {"qNo": 1, "text": "Design Star Schema and Snowflake Schema for Retail E-commerce system. [5 Marks]", "coNo": 1, "marks": 5},
+                {"qNo": 2, "text": "Apply Apriori Algorithm for Market Basket Analysis on given transaction data. [5 Marks]", "coNo": 2, "marks": 5}
+            ]),
+            createdAt="2025-08-12"
+        ),
     ]
-    db.add_all([models.MarksIA(courseId="crs-eda", assessmentNo=a, qNo=q, prn=p, marks=m) for a,q,p,m in marks_raw])
+    db.add_all(assignments)
+
+    # ── Survey Scores ──
+    surveys = []
+    for c_id in ["crs-eda", "crs-ml", "crs-dw"]:
+        for prn, _, _, _ in student_templates:
+            for co_no in range(1, 5):
+                surveys.append(models.Survey(courseId=c_id, prn=prn, co=str(co_no), score=4))
+    db.add_all(surveys)
 
     db.commit()
     db.close()
-    print("Database fully seeded with ALL demo data!")
+    print("Database fully seeded with ALL demo data for ALL courses!")
 
 if __name__ == "__main__":
     seed_db()

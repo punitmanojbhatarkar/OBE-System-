@@ -320,7 +320,8 @@
   </main>
 </div>
 <div id="toast-container"></div>
-<script src="../scripts/data.js?v=2"></script>`r`n<script src="../scripts/api.js"></script>
+<script src="../scripts/data.js?v=99"></script>
+<script src="../scripts/api.js?v=99"></script>
 <script src="../scripts/auth.js?v=2"></script>
 <script src="../scripts/utils.js"></script>
 <script>
@@ -395,8 +396,12 @@ function resetAll() {
 }
 
 loadConfig();
+
+  // Auto-exposed: onclick handlers need to be on window
+  window.resetAll = resetAll;
+  window.saveConfig = saveConfig;
 })();
 </script>
-<script src="../scripts/ai-chat.js"></script>
+<script src="../scripts/ai-mock.js"></script>
 </body>
 </html>

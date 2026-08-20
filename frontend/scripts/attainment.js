@@ -5,7 +5,7 @@
 
 const Attainment = (() => {
 
-  const PO_LIST  = ['PO1','PO2','PO3','PO4','PO5','PO6','PO7','PO8','PO9','PO10','PO11'];
+  const PO_LIST  = ['PO1','PO2','PO3','PO4','PO5','PO6','PO7','PO8','PO9','PO10','PO11','PO12'];
   const PSO_LIST = ['PSO1','PSO2','PSO3'];
   const ALL_POS  = [...PO_LIST, ...PSO_LIST];
 
@@ -35,24 +35,22 @@ const Attainment = (() => {
      Returns: { [prn]: { co1: totalMarks, co2: totalMarks, ... } }
   ── */
   function getIAMarksByCO(courseId) {
-    const qStructs = DB.config.getIAQuestions(courseId, 'ia');
-    const allMarks = DB.marks.getIA(courseId);
+    const qStructs = DB.assessments.byCourse(courseId).filter(a=>a.type==='ia');
+    const allMarks = DB.marks.get(courseId);
     const students = DB.students.byCourse(courseId);
-    const cos      = DB.cos.byCourse(courseId).filter(c=>c.text);
 
-    // Map: { prn: { coNo: totalMarks } }
     const result = {};
     students.forEach(s => { result[s.prn] = {}; });
 
     qStructs.forEach(struct => {
-      struct.questions.forEach(q => {
+      (struct.questions||[]).forEach(q => {
         const coNo = q.coNo;
         students.forEach(s => {
-          const m = allMarks.find(x=>x.prn===s.prn&&x.assessmentNo===struct.assessmentNo&&x.qNo===q.qNo);
+          const m = allMarks.find(x=>x.prn===s.prn&&x.assessId===struct.id&&x.qNo===q.qNo);
           const v = m ? m.marks : 0;
           if (!result[s.prn][coNo]) result[s.prn][coNo] = { earned:0, max:0 };
-          result[s.prn][coNo].earned += v;
-          result[s.prn][coNo].max   += q.maxMarks;
+          result[s.prn][coNo].earned += (parseFloat(v)||0);
+          result[s.prn][coNo].max   += (parseFloat(q.marks)||0);
         });
       });
     });
@@ -61,22 +59,46 @@ const Attainment = (() => {
 
   /* ── Get MSE marks aggregated by CO ── */
   function getMSEMarksByCO(courseId) {
-    const qStructs = DB.config.getIAQuestions(courseId, 'mse');
-    const allMarks = DB.marks.getMSE(courseId);
+    const qStructs = DB.assessments.byCourse(courseId).filter(a=>a.type==='mse');
+    const allMarks = DB.marks.get(courseId);
     const students = DB.students.byCourse(courseId);
 
     const result = {};
     students.forEach(s => { result[s.prn] = {}; });
 
     qStructs.forEach(struct => {
-      struct.questions.forEach(q => {
+      (struct.questions||[]).forEach(q => {
         const coNo = q.coNo;
         students.forEach(s => {
-          const m = allMarks.find(x=>x.prn===s.prn&&x.qNo===q.qNo);
+          const m = allMarks.find(x=>x.prn===s.prn&&x.assessId===struct.id&&x.qNo===q.qNo);
           const v = m ? m.marks : 0;
           if (!result[s.prn][coNo]) result[s.prn][coNo] = { earned:0, max:0 };
-          result[s.prn][coNo].earned += v;
-          result[s.prn][coNo].max   += q.maxMarks;
+          result[s.prn][coNo].earned += (parseFloat(v)||0);
+          result[s.prn][coNo].max   += (parseFloat(q.marks)||0);
+        });
+      });
+    });
+    return result;
+  }
+
+  /* ── Get Assignment marks aggregated by CO ── */
+  function getAssignMarksByCO(courseId) {
+    const asgns = DB.assessments.byCourse(courseId).filter(a=>a.type==='assignment');
+    const allMarks = DB.marks.get(courseId);
+    const students = DB.students.byCourse(courseId);
+
+    const result = {};
+    students.forEach(s => { result[s.prn] = {}; });
+
+    asgns.forEach(asgn => {
+      (asgn.questions || []).forEach(q => {
+        const coNo = q.coNo;
+        students.forEach(s => {
+          const m = allMarks.find(x=>x.prn===s.prn&&x.assessId===asgn.id&&x.qNo===q.qNo);
+          const v = m ? m.marks : 0;
+          if (!result[s.prn][coNo]) result[s.prn][coNo] = { earned:0, max:0 };
+          result[s.prn][coNo].earned += (parseFloat(v)||0);
+          result[s.prn][coNo].max   += (parseFloat(q.marks) || 0);
         });
       });
     });
@@ -99,6 +121,7 @@ const Attainment = (() => {
 
     const iaByPRN  = getIAMarksByCO(courseId);
     const mseByPRN = getMSEMarksByCO(courseId);
+    const assignByPRN = getAssignMarksByCO(courseId);
 
     const result = cos.map(co => {
       const coNo = co.no;
@@ -138,6 +161,14 @@ const Attainment = (() => {
           const pct = (mse.earned / mse.max) * 100;
           if (pct >= coThreshold || retestPassed) mseStudents++;
         }
+        // Assignment contribution
+        const asgn = assignByPRN[s.prn]?.[coNo];
+        if (asgn && asgn.max > 0) {
+          cieEarned += asgn.earned;
+          cieMax += asgn.max;
+          // Note: We don't individually increment a 'students passing assignments' counter 
+          // because it strictly combines into the overall CIE (Continuous Internal Eval)
+        }
         
         // Combined CIE contribution
         if (cieMax > 0) {
@@ -156,20 +187,20 @@ const Attainment = (() => {
       const cieLevel = ciePct !== null ? getLevelFromPct(ciePct, coLevels) : null;
 
       // ESE
-      const eseMarks = DB.marks.getESE(courseId);
+      const eseMarks = DB.marks.get(courseId);
       const eseByPRN = {};
       students.forEach(s => { eseByPRN[s.prn] = null; });
       // Simple: collect all ESE marks for this CO (based on question mapping)
-      const eseQStructs = DB.config.getIAQuestions(courseId, 'ese');
+      const eseQStructs = DB.assessments.byCourse(courseId).filter(a=>a.type==='ese');
       let eseStu=0, eseTotal=0;
       eseQStructs.forEach(struct => {
-        struct.questions.filter(q=>q.coNo===coNo).forEach(q => {
+        (struct.questions||[]).filter(q=>q.coNo===coNo).forEach(q => {
           students.forEach(s => {
-            const m = eseMarks.find(x=>x.prn===s.prn&&x.qNo===q.qNo);
+            const m = eseMarks.find(x=>x.prn===s.prn&&x.assessId===struct.id&&x.qNo===q.qNo);
             const v = m ? m.marks : 0;
             if (!eseByPRN[s.prn]) eseByPRN[s.prn] = { earned:0, max:0 };
-            eseByPRN[s.prn].earned += v;
-            eseByPRN[s.prn].max   += q.maxMarks;
+            eseByPRN[s.prn].earned += (parseFloat(v)||0);
+            eseByPRN[s.prn].max   += (parseFloat(q.marks)||0);
           });
         });
       });
@@ -308,8 +339,8 @@ const Attainment = (() => {
   function calcStudentCOAttainment(courseId, prn) {
      const ia = getIAMarksByCO(courseId)[prn] || {};
      const mse = getMSEMarksByCO(courseId)[prn] || {};
-     const eseMarks = DB.marks.getESE(courseId).filter(m => m.prn === prn);
-     const eseQStructs = DB.config.getIAQuestions(courseId, 'ese');
+     const eseMarks = DB.marks.get(courseId).filter(m => m.prn === prn);
+     const eseQStructs = DB.assessments.byCourse(courseId).filter(a=>a.type==='ese');
      const cos = DB.cos.byCourse(courseId).filter(c=>c.text);
      
      return cos.map(co => {
@@ -354,13 +385,11 @@ const Attainment = (() => {
   /* ── Get student total marks per assessment ── */
   function getStudentTotals(courseId, type) {
     const students = DB.students.byCourse(courseId);
-    const qStructs = DB.config.getIAQuestions(courseId, type);
-    const allMarks = type === 'ia'  ? DB.marks.getIA(courseId)  :
-                     type === 'mse' ? DB.marks.getMSE(courseId) :
-                     DB.marks.getESE(courseId);
+    const qStructs = DB.assessments.byCourse(courseId).filter(a=>a.type===type);
+    const allMarks = DB.marks.get(courseId).filter(m => qStructs.some(a => a.id === m.assessId));
 
     const maxMarks = qStructs.reduce((sum, s) =>
-      sum + s.questions.reduce((s2, q) => s2 + q.maxMarks, 0), 0);
+      sum + (s.questions||[]).reduce((s2, q) => s2 + (parseFloat(q.marks)||0), 0), 0);
 
     return students.map(s => {
       const total = allMarks.filter(m => m.prn === s.prn)
@@ -400,8 +429,8 @@ const Attainment = (() => {
 
     const iaByPRN  = getIAMarksByCO(courseId);
     const mseByPRN = getMSEMarksByCO(courseId);
-    const eseMarks = DB.marks.getESE(courseId);
-    const eseQStructs = DB.config.getIAQuestions(courseId, 'ese');
+    const eseMarks = DB.marks.get(courseId);
+    const eseQStructs = DB.assessments.byCourse(courseId).filter(a=>a.type==='ese');
 
     const result = [];
 

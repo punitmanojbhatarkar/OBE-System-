@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>CO-PO Mapping | OBE System – MITAOE</title>
   <meta name="description" content="Interactive CO-PO Mapping Matrix for course outcomes and program outcomes.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -221,6 +224,7 @@
       <a class="nav-item" href="marks.html">📝 Marks Entry</a>
       <a class="nav-item" href="attainment.html">📈 Attainment</a>
       <a class="nav-item" href="assignments.html">🤖 Assignments & AI</a>
+      <a class="nav-item" href="auto-grade.html">✅ Auto-Grading</a>
       <a class="nav-item" href="question-paper.html">📄 Question Paper</a>
       <a class="nav-item" href="reports.html">📄 Reports & Export</a>
     </nav>
@@ -345,7 +349,8 @@
 
 <div id="toast-container"></div>
 
-<script src="../scripts/data.js?v=2"></script>`r`n<script src="../scripts/api.js"></script>
+<script src="../scripts/data.js?v=99"></script>
+<script src="../scripts/api.js?v=99"></script>
 <script src="../scripts/auth.js?v=2"></script>
 <script src="../scripts/ai-mock.js?v=2"></script>
 <script src="../scripts/utils.js"></script>
@@ -357,15 +362,15 @@
 
   /* ── PO/PSO column definitions ── */
   const PO_COLS = [
-    'PO1','PO2','PO3','PO4','PO5','PO6','PO7','PO8','PO9','PO10','PO11',
+    'PO1','PO2','PO3','PO4','PO5','PO6','PO7','PO8','PO9','PO10','PO11','PO12',
     'PSO1','PSO2','PSO3'
   ];
 
   const PO_FULL = {
     PO1:'Engineering Knowledge', PO2:'Problem Analysis', PO3:'Design/Development',
-    PO4:'Conduct Investigations', PO5:'Engineering Tool Usage', PO6:'The Engineer & World',
-    PO7:'Ethics', PO8:'Individual & Team Work', PO9:'Communication',
-    PO10:'Project Management', PO11:'Life-Long Learning',
+    PO4:'Conduct Investigations', PO5:'Modern Tool Usage', PO6:'The Engineer & Society',
+    PO7:'Environment & Sustainability', PO8:'Ethics', PO9:'Individual & Team Work', PO10:'Communication',
+    PO11:'Project Management & Finance', PO12:'Life-Long Learning',
     PSO1:'Domain Specific 1', PSO2:'Domain Specific 2', PSO3:'Domain Specific 3'
   };
 
@@ -401,10 +406,21 @@
   });
 
   /* ── Load course matrix ── */
-  function loadCourse(courseId) {
+  async function loadCourse(courseId) {
     currentCourseId = courseId;
     const course = DB.courses.byId(courseId);
     if (!course) return;
+
+    // Always fetch fresh PO mapping from backend API
+    try {
+      const freshPO = await fetch(`${window.API_BASE || 'http://127.0.0.1:8080'}/api/courses/${courseId}/pomapping`).then(r => r.json());
+      if (Array.isArray(freshPO) && freshPO.length > 0) {
+        DB.poMapping.saveMatrix(courseId, freshPO);
+        console.log(`[CO-PO] Loaded ${freshPO.length} fresh mapping rows from backend for ${courseId}`);
+      }
+    } catch (err) {
+      console.warn('[CO-PO] Could not fetch fresh mapping from backend, using cached data:', err.message);
+    }
 
     // Update info card
     document.getElementById('info-card').style.display = '';
@@ -434,14 +450,14 @@
     // Row 1: PO group labels
     let r1 = '<tr>';
     r1 += '<th class="co-header" rowspan="2">Course Outcome</th>';
-    r1 += `<th colspan="12" style="text-align:center;background:rgba(37,99,235,0.15)">Program Outcomes (PO)</th>`;
+    r1 += `<th colspan="11" style="text-align:center;background:rgba(37,99,235,0.15)">Program Outcomes (PO)</th>`;
     r1 += `<th colspan="3" class="pso-divider" style="text-align:center;background:rgba(139,92,246,0.15)">PSO</th>`;
     r1 += '</tr>';
     // Row 2: individual PO names
     let r2 = '<tr>';
     PO_COLS.forEach((po, i) => {
       const isPSO = po.startsWith('PSO');
-      const cls = isPSO && i === 12 ? 'pso-divider' : '';
+      const cls = isPSO && i === 11 ? 'pso-divider' : '';
       r2 += `<th class="${cls}" title="${PO_FULL[po]}">${po}</th>`;
     });
     r2 += '</tr>';
@@ -469,7 +485,7 @@
       PO_COLS.forEach((po, i) => {
         const val = DB.poMapping.getValue(currentCourseId, co.no, po);
         const td = document.createElement('td');
-        if (i === 12) td.classList.add('pso-divider');
+        if (i === 11) td.classList.add('pso-divider');
         const btn = document.createElement('button');
         btn.className = 'cell-btn';
         btn.dataset.coNo = co.no;
@@ -503,7 +519,7 @@
       const vals = activeCOs.map(co => DB.poMapping.getValue(currentCourseId, co.no, po)).filter(v => v > 0);
       const avg = vals.length > 0 ? (vals.reduce((a,b) => a+b, 0) / vals.length) : 0;
       const td = document.createElement('td');
-      if (i === 12) td.classList.add('pso-divider');
+      if (i === 11) td.classList.add('pso-divider');
       const dispVal = avg > 0 ? avg.toFixed(2) : '—';
       const colorCls = avg >= 2.5 ? 'val-3' : avg >= 1.5 ? 'val-2' : avg > 0 ? 'val-1' : 'val-0';
       td.innerHTML = `<div class="avg-cell ${colorCls}">${dispVal}</div>`;
@@ -626,35 +642,66 @@
     );
   }
 
-  /* ── Auto-Map with AI ── */
+  /* ──────────────────────────────────────────────────────────────
+     Auto-Map with AI — ALWAYS returns the same correct mapping.
+     • First click: calls AI, computes the mapping, saves to cache.
+     • Every subsequent click: loads from cache instantly — identical.
+     • Cache key is based on course ID + exact CO texts, so if COs
+       change the system automatically recomputes a fresh mapping.
+  ────────────────────────────────────────────────────────────── */
+  function _copoLocalKey(courseId, cos) {
+    const sig = cos.map(c => `${c.no}:${(c.text||'').trim().toLowerCase()}`).sort().join('|');
+    return `copo_v2_${courseId}_${btoa(unescape(encodeURIComponent(sig))).slice(0, 32)}`;
+  }
+
+  function _applyMappings(mappings) {
+    activeCOs.forEach(co => {
+      PO_COLS.forEach(po => {
+        const val = (mappings[co.no] || mappings['CO'+co.no] || mappings[String(co.no)] || {})[po] || 0;
+        DB.poMapping.setValue(currentCourseId, co.no, po, val);
+      });
+    });
+    buildMatrix();
+    buildSummaryCards();
+    showSaved();
+  }
+
   async function autoMapWithAI() {
     if (!currentCourseId) return Toast.warning('Select a course first.');
-    if (activeCOs.length === 0) return Toast.warning('No active Course Outcomes. Setup COs first.');
-    
+    if (activeCOs.length === 0) return Toast.warning('No Course Outcomes found. Set up COs first.');
+
+    const localKey = _copoLocalKey(currentCourseId, activeCOs);
+
+    // ── Always try cache first — same COs always give same correct mapping ──
+    const cached = localStorage.getItem(localKey);
+    if (cached) {
+      try {
+        _applyMappings(JSON.parse(cached));
+        Toast.success('✅ CO-PO mapping applied successfully.');
+        return;
+      } catch(_) {
+        localStorage.removeItem(localKey); // corrupt cache — fall through to AI
+      }
+    }
+
+    // ── First time for these COs: call AI once, then cache the result ──
     const btn = document.querySelector('button[onclick="autoMapWithAI()"]');
-    const ogText = btn.innerHTML;
-    btn.innerHTML = '⏳ Mapping...';
-    btn.disabled = true;
+    if (btn) { btn.innerHTML = '⏳ Computing...'; btn.disabled = true; }
 
     try {
-      const mappings = await AI.autoMapCOPO(activeCOs, PO_COLS);
-      // Apply mappings
-      activeCOs.forEach(co => {
-        PO_COLS.forEach(po => {
-          const val = mappings[co.no]?.[po] || 0;
-          DB.poMapping.setValue(currentCourseId, co.no, po, val);
-        });
-      });
-      // Refresh UI
-      buildMatrix();
-      buildSummaryCards();
-      Toast.success('AI successfully mapped COs to POs!');
-      showSaved();
+      const psoDefs = {
+        PSO1: 'Domain-Specific Knowledge in Data Science and Analytics.',
+        PSO2: 'Industry-Readiness through practical projects and tool proficiency.',
+        PSO3: 'Research Aptitude and ability to apply scientific reasoning to novel problems.'
+      };
+      const mappings = await AI.autoMapCOPO(activeCOs, PO_COLS, psoDefs);
+      localStorage.setItem(localKey, JSON.stringify(mappings)); // lock it in
+      _applyMappings(mappings);
+      Toast.success('✅ AI successfully computed the CO-PO mapping.');
     } catch(e) {
-      Toast.error(e.message || 'Auto-mapping failed.');
+      Toast.error(e.message || 'Auto-mapping failed. Is the backend running?');
     } finally {
-      btn.innerHTML = ogText;
-      btn.disabled = false;
+      if (btn) { btn.innerHTML = '✨ Auto-Map with AI'; btn.disabled = false; }
     }
   }
 
@@ -668,7 +715,15 @@
   }
 
   /* ── Init ── */
-  populateCourses();
+  (async () => {
+    // CRITICAL: Wait for api.js to finish syncing fresh data from backend
+    // before rendering the matrix. Without this, the page renders stale
+    // localStorage data while syncFromBackend() is still loading.
+    if (window._apiReady) {
+      try { await window._apiReady; } catch(e) { console.warn('[CO-PO] API sync had issues, using cached data:', e); }
+    }
+    populateCourses();
+  })();
 </script>
-<script src="../scripts/ai-chat.js"></script>\n</body>
+</body>
 </html>

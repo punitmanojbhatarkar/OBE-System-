@@ -127,6 +127,13 @@
     renderHistory();
   });
 
+  // ── Session Management (persistent per browser session) ──────────────────
+  let SESSION_ID = sessionStorage.getItem('obe_chat_session');
+  if (!SESSION_ID) {
+    SESSION_ID = 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    sessionStorage.setItem('obe_chat_session', SESSION_ID);
+  }
+
   function saveHistory() {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
   }
@@ -137,6 +144,31 @@
     scrollToBottom();
   }
 
+  function formatAIText(text) {
+    // Rich markdown-to-HTML conversion
+    let html = text
+      // Code blocks
+      .replace(/```[\w]*\n?([\s\S]*?)```/g, '<pre style="background:rgba(0,0,0,0.4);padding:8px;border-radius:6px;font-size:12px;overflow-x:auto;margin:4px 0;"><code>$1</code></pre>')
+      // Inline code
+      .replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,0.35);padding:1px 5px;border-radius:3px;font-size:12px;">$1</code>')
+      // Bold
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      // Italic
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      // Headers (## and ###)
+      .replace(/^### (.+)$/gm, '<p style="font-weight:700;color:#a5b4fc;margin:6px 0 2px;font-size:13px;">$1</p>')
+      .replace(/^## (.+)$/gm, '<p style="font-weight:700;color:#c4b5fd;margin:8px 0 2px;font-size:14px;">$1</p>')
+      .replace(/^# (.+)$/gm, '<p style="font-weight:700;color:#e2e8f0;margin:8px 0 2px;font-size:15px;">$1</p>')
+      // Numbered lists
+      .replace(/^\d+\. (.+)$/gm, '<p style="margin:2px 0;padding-left:12px;">• $1</p>')
+      // Bullet lists
+      .replace(/^[-*] (.+)$/gm, '<p style="margin:2px 0;padding-left:12px;">• $1</p>')
+      // Line breaks
+      .replace(/\n\n/g, '<br><br>')
+      .replace(/\n/g, '<br>');
+    return html;
+  }
+
   function appendMessage(role, text, save=true) {
     if (save) {
       history.push({ role, text });
@@ -144,7 +176,7 @@
     }
     const div = document.createElement('div');
     div.className = `chat-msg ${role}`;
-    div.innerHTML = text; // allow basic html links from AI
+    div.innerHTML = role === 'ai' ? formatAIText(text) : text;
     msgsContainer.appendChild(div);
     scrollToBottom();
   }
@@ -153,10 +185,10 @@
     msgsContainer.scrollTop = msgsContainer.scrollHeight;
   }
 
-  function showTyping() {
+  function showTyping(label) {
     const div = document.createElement('div');
     div.className = 'chat-msg ai ai-typing-indicator';
-    div.innerHTML = `<div class="ai-typing"><span></span><span></span><span></span></div>`;
+    div.innerHTML = `<div class="ai-typing"><span></span><span></span><span></span></div>${label ? `<span style="font-size:11px;opacity:0.6;margin-left:6px;">${label}</span>` : ''}`;
     msgsContainer.appendChild(div);
     scrollToBottom();
   }
@@ -166,42 +198,79 @@
     if (indicator) indicator.remove();
   }
 
+  async function callChatAPI(message, retries = 2) {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const response = await fetch('http://127.0.0.1:8080/api/chat-agent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message, session_id: SESSION_ID }),
+          signal: AbortSignal.timeout(60000) // 60s timeout
+        });
+
+        if (response.status === 429 || response.status === 503) {
+          // Rate limited — wait 20s and retry
+          if (attempt < retries) {
+            removeTyping();
+            showTyping(`⏳ AI busy, retrying in 20s... (attempt ${attempt + 2}/${retries + 1})`);
+            await new Promise(r => setTimeout(r, 20000));
+            continue;
+          }
+          return { error: 'rate_limit', reply: null };
+        }
+
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          return { error: 'server_error', detail: err.detail || response.statusText, reply: null };
+        }
+
+        return await response.json();
+      } catch (e) {
+        if (attempt < retries && e.name !== 'AbortError') {
+          await new Promise(r => setTimeout(r, 3000));
+          continue;
+        }
+        return { error: 'network', reply: null };
+      }
+    }
+    return { error: 'unknown', reply: null };
+  }
+
   async function handleSend() {
     const text = input.value.trim();
     if (!text) return;
     input.value = '';
-    
+
     appendMessage('user', text);
-    showTyping();
-    
-    try {
-      // Send real request to Python LangChain backend
-      const response = await fetch('http://127.0.0.1:8000/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: text,
-          context: "Current Page: " + document.title
-        })
-      });
-      
-      const data = await response.json();
-      removeTyping();
-      
-      if (data.reply) {
-        // Format basic markdown if the AI returns it
-        let formattedReply = data.reply.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        formattedReply = formattedReply.replace(/\n/g, '<br>');
-        appendMessage('ai', formattedReply);
-      } else {
-        appendMessage('ai', "I'm sorry, I received an invalid response from the server.");
-      }
-    } catch (error) {
-      removeTyping();
-      console.error("AI API Error:", error);
-      appendMessage('ai', "⚠️ Error connecting to the AI backend. Please make sure the Python FastAPI server is running.");
+    showTyping('🤖 Thinking...');
+
+    const data = await callChatAPI(text);
+    removeTyping();
+
+    if (data.reply) {
+      appendMessage('ai', data.reply);
+    } else if (data.error === 'rate_limit') {
+      appendMessage('ai', '⏳ **AI quota reached** for today (free tier limit). The system will be available again shortly. In the meantime, I can answer questions offline — please check the sidebar for what you need!');
+    } else if (data.error === 'network') {
+      appendMessage('ai', '⚠️ **Cannot reach the backend server.** Please make sure the Python server is running:\n```\ncd backend\n.\\venv\\Scripts\\python -m uvicorn main:app --port 8080\n```');
+    } else if (data.error === 'server_error') {
+      appendMessage('ai', `❌ **Server error:** ${data.detail || 'Unknown error'}. Please check the backend logs.`);
+    } else {
+      appendMessage('ai', "I received an unexpected response. Please try again.");
     }
   }
+
+  // ── Clear chat (also clears server memory) ────────────────────────────────
+  clearBtn.addEventListener('click', () => {
+    history = [{ role: 'ai', text: "Hello! I am your OBE Assistant 🤖. I can help you navigate the system, explain how to map COs, set up courses, or answer any doubts you have. How can I help you today?" }];
+    saveHistory();
+    renderHistory();
+    // Also clear server-side memory for this session
+    fetch(`http://127.0.0.1:8080/api/chat-agent/memory/${SESSION_ID}`, { method: 'DELETE' }).catch(() => {});
+    // Generate a new session ID
+    SESSION_ID = 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    sessionStorage.setItem('obe_chat_session', SESSION_ID);
+  });
 
   input.addEventListener('keypress', e => {
     if (e.key === 'Enter') handleSend();

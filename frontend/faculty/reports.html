@@ -79,6 +79,7 @@
       <a class="nav-item" href="marks.html">📝 Marks Entry</a>
       <a class="nav-item" href="attainment.html">📈 Attainment</a>
       <a class="nav-item" href="assignments.html">🤖 Assignments & AI</a>
+      <a class="nav-item" href="auto-grade.html">✅ Auto-Grading</a>
       <a class="nav-item" href="question-paper.html">📄 Question Paper</a>
       <a class="nav-item" href="reports.html">📄 Reports & Export</a>
     </nav>
@@ -152,7 +153,8 @@
 </div>
 
 <div id="toast-container"></div>
-<script src="../scripts/data.js?v=2"></script>`r`n<script src="../scripts/api.js"></script>
+<script src="../scripts/data.js?v=99"></script>
+<script src="../scripts/api.js?v=99"></script>
 <script src="../scripts/auth.js?v=2"></script>
 <script src="../scripts/attainment.js"></script>
 <script src="../scripts/utils.js"></script>
@@ -193,7 +195,7 @@ else if(fc.length) sel.value=fc[0].id;
 sel.addEventListener('change', onCourseChange);
 onCourseChange();
 
-const PO_COLS=['PO1','PO2','PO3','PO4','PO5','PO6','PO7','PO8','PO9','PO10','PO11','PSO1','PSO2','PSO3'];
+const PO_COLS=['PO1','PO2','PO3','PO4','PO5','PO6','PO7','PO8','PO9','PO10','PO11','PO12','PSO1','PSO2','PSO3'];
 function attClass(l){return l>=3?'rpt-att3':l>=2?'rpt-att2':l>=1?'rpt-att1':'rpt-att0'}
 function attLabel(l){return l!==null&&l!==undefined?'Level '+l:'—'}
 
@@ -498,41 +500,41 @@ function downloadOfficialExcel(returnBuffer = false) {
   }
 
   function writeMetadataHeader(ws, title, colsCount) {
-    ws.mergeCells(1, 1, 1, colsCount);
-    ws.getRow(1).height = 32;
-    const c1 = ws.getCell(1, 1);
-    c1.value = cfg.collegeFullName || 'MIT Academy of Engineering, Alandi (D), Pune - 412105';
-    styleCell(c1, fonts.title, colors.primaryHeaderBg, null, { vertical: 'middle', horizontal: 'center' });
-
-    ws.mergeCells(2, 1, 2, colsCount);
+    ws.getRow(1).height = 18;
+    // Row 2: Header info
     ws.getRow(2).height = 20;
-    const c2 = ws.getCell(2, 1);
-    c2.value = `UG - ${dept?.name || 'ENGINEERING'}`;
-    styleCell(c2, { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF1E293B' } }, 'FFF1F5F9', null, { vertical: 'middle', horizontal: 'center' });
+    ws.getCell(2, 1).value = 'Alandi (D), Pune - 412105';
+    ws.getCell(2, 4).value = 'PROGRAM:';
+    ws.getCell(2, 5).value = `UG - ${dept?.name || 'ENGINEERING'}`;
+    ws.getCell(2, 9).value = 'Teachers has to enter values for HIGHLIGHTED cells only.';
+    styleCell(ws.getCell(2, 1), fonts.bold, null, null, { vertical: 'middle', horizontal: 'left' });
+    styleCell(ws.getCell(2, 4), fonts.bold, null, null, { vertical: 'middle', horizontal: 'left' });
+    styleCell(ws.getCell(2, 5), fonts.regular, null, null, { vertical: 'middle', horizontal: 'left' });
+    styleCell(ws.getCell(2, 9), { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF991B1B' } }, null, null, { vertical: 'middle', horizontal: 'left' });
 
+    // Row 3
+    ws.getRow(3).height = 18;
+    ws.getCell(3, 1).value = 'ACADEMIC YEAR'; ws.getCell(3, 1).font = fonts.bold;
+    ws.getCell(3, 3).value = course.year || cfg.academicYear; ws.getCell(3, 3).font = fonts.regular;
+    ws.getCell(3, 4).value = 'COURSE CODE :'; ws.getCell(3, 4).font = fonts.bold;
+    ws.getCell(3, 5).value = course.code; ws.getCell(3, 5).font = fonts.regular;
+
+    // Row 4
     ws.getRow(4).height = 18;
-    ws.getCell(4, 1).value = 'ACADEMIC YEAR'; ws.getCell(4, 1).font = fonts.bold;
-    ws.getCell(4, 2).value = course.year || cfg.academicYear; ws.getCell(4, 2).font = fonts.regular;
-    ws.getCell(4, 4).value = 'COURSE CODE'; ws.getCell(4, 4).font = fonts.bold;
-    ws.getCell(4, 5).value = course.code; ws.getCell(4, 5).font = fonts.regular;
+    ws.getCell(4, 1).value = 'SEMESTER'; ws.getCell(4, 1).font = fonts.bold;
+    ws.getCell(4, 3).value = course.semester || 'V'; ws.getCell(4, 3).font = fonts.regular;
+    ws.getCell(4, 4).value = 'COURSE:'; ws.getCell(4, 4).font = fonts.bold;
+    ws.getCell(4, 5).value = course.name; ws.getCell(4, 5).font = fonts.regular;
 
+    // Row 5
     ws.getRow(5).height = 18;
-    ws.getCell(5, 1).value = 'SEMESTER'; ws.getCell(5, 1).font = fonts.bold;
-    ws.getCell(5, 2).value = course.semester || 'V'; ws.getCell(5, 2).font = fonts.regular;
-    ws.getCell(5, 4).value = 'COURSE'; ws.getCell(5, 4).font = fonts.bold;
-    ws.getCell(5, 5).value = course.name; ws.getCell(5, 5).font = fonts.regular;
+    ws.getCell(5, 1).value = 'CLASS'; ws.getCell(5, 1).font = fonts.bold;
+    ws.getCell(5, 3).value = course.class || ''; ws.getCell(5, 3).font = fonts.regular;
+    ws.getCell(5, 4).value = 'COURSE TEACHER:'; ws.getCell(5, 4).font = fonts.bold;
+    ws.getCell(5, 5).value = user.name; ws.getCell(5, 5).font = fonts.regular;
 
-    ws.getRow(6).height = 18;
-    ws.getCell(6, 1).value = 'COURSE TEACHER'; ws.getCell(6, 1).font = fonts.bold;
-    ws.getCell(6, 2).value = user.name; ws.getCell(6, 2).font = fonts.regular;
-    ws.getCell(6, 4).value = 'CLASS'; ws.getCell(6, 4).font = fonts.bold;
-    ws.getCell(6, 5).value = course.class || ''; ws.getCell(6, 5).font = fonts.regular;
-
-    ws.mergeCells(8, 1, 8, colsCount);
-    ws.getRow(8).height = 24;
-    const c8 = ws.getCell(8, 1);
-    c8.value = title;
-    styleCell(c8, fonts.section, colors.accentHeaderBg, null, { vertical: 'middle', horizontal: 'center' });
+    // Row 7 (Optional gap)
+    ws.getRow(7).height = 15;
   }
 
   // ----- SHEET 6A: Performance Indicator Mapping -----
@@ -550,9 +552,9 @@ function downloadOfficialExcel(returnBuffer = false) {
   const r9_6a = ws6a.getRow(9);
   r9_6a.height = 24;
   ws6a.getCell(9, 1).value = 'PO';
-  ws6a.getCell(9, 2).value = 'Comp ID';
-  ws6a.getCell(9, 3).value = 'Competency Description';
-  ws6a.getCell(9, 4).value = 'Performance Indicator';
+  ws6a.getCell(9, 2).value = 'Competancy';
+  ws6a.getCell(9, 3).value = '';
+  ws6a.getCell(9, 4).value = 'Indicator';
   cos.forEach((co, idx) => { ws6a.getCell(9, 5 + idx).value = co.code; });
   for (let c = 1; c <= 4 + cos.length; c++) {
     styleCell(ws6a.getCell(9, c), fonts.header, colors.tableHeaderBg, null, { vertical: 'middle', horizontal: 'center', wrapText: true }, borders.thin);
@@ -568,9 +570,10 @@ function downloadOfficialExcel(returnBuffer = false) {
   let currentRow = 10;
   sortedPOs.forEach(po => {
     const indicators = COMPETENCY_INDICATORS.filter(i => i.po === po);
+    let firstInPO = true;
     indicators.forEach((ind, index) => {
       ws6a.getRow(currentRow).height = 36;
-      ws6a.getCell(currentRow, 1).value = index === 0 ? po : '';
+      ws6a.getCell(currentRow, 1).value = firstInPO ? po : '';
       ws6a.getCell(currentRow, 2).value = ind.comp_id;
       ws6a.getCell(currentRow, 3).value = ind.comp_text;
       ws6a.getCell(currentRow, 4).value = ind.indicator;
@@ -595,13 +598,15 @@ function downloadOfficialExcel(returnBuffer = false) {
         }
       });
       currentRow++;
+      firstInPO = false;
     });
 
     // PO summary row
     ws6a.mergeCells(currentRow, 1, currentRow, 4);
-    ws6a.getCell(currentRow, 1).value = `PO to CO Mapping level for ${po}`;
-    styleCell(ws6a.getCell(currentRow, 1), fonts.bold, 'FFF1F5F9', null, { vertical: 'middle', horizontal: 'right' }, borders.thin);
+    ws6a.getCell(currentRow, 1).value = `PO to CO Mapping for ${po}`;
+    styleCell(ws6a.getCell(currentRow, 1), fonts.bold, 'FFF1F5F9', null, { vertical: 'middle', horizontal: 'left' }, borders.thin);
     for (let c = 2; c <= 4; c++) styleCell(ws6a.getCell(currentRow, c), null, 'FFF1F5F9', null, null, borders.thin);
+
 
     cos.forEach((co, idx) => {
       let yCount = 0;
@@ -1190,7 +1195,17 @@ function confirmAuditLock() {
   Toast.success(`Course ${course.code} has been successfully locked and audited.`);
   onCourseChange(); // Refresh UI
 }
+
+  // Auto-exposed: onclick handlers need to be on window
+  window.closeAuditModal = closeAuditModal;
+  window.confirmAuditLock = confirmAuditLock;
+  window.downloadAuditPack = downloadAuditPack;
+  window.downloadNAAC = downloadNAAC;
+  window.downloadOfficialExcel = downloadOfficialExcel;
+  window.exportCSV = exportCSV;
+  window.generateReport = generateReport;
+  window.openAuditModal = openAuditModal;
 })();
 </script>
-<script src="../scripts/ai-chat.js"></script>\n</body>
+</body>
 </html>

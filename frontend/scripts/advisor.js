@@ -230,3 +230,5 @@ const Advisor = (() => {
   return { runDiagnostics, getGlobalDiagnostics, getDepartmentDiagnostics, isFirstYearCourse };
 
 })();
+
+window.Advisor = Advisor;

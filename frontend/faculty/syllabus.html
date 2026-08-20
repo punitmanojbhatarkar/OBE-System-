@@ -72,6 +72,7 @@
       <a class="nav-item" href="marks.html">📝 Marks Entry</a>
       <a class="nav-item" href="attainment.html">📈 Attainment</a>
       <a class="nav-item" href="assignments.html">🤖 Assignments & AI</a>
+      <a class="nav-item" href="auto-grade.html">✅ Auto-Grading</a>
       <a class="nav-item" href="question-paper.html">📄 Question Paper</a>
       <a class="nav-item" href="reports.html">📄 Reports & Export</a>
     </nav>
@@ -156,7 +157,8 @@
 
 <div id="toast-container"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-<script src="../scripts/data.js?v=2"></script>`r`n<script src="../scripts/api.js"></script>
+<script src="../scripts/data.js?v=99"></script>
+<script src="../scripts/api.js?v=99"></script>
 <script src="../scripts/auth.js?v=2"></script>
 <script src="../scripts/ai-mock.js?v=2"></script>
 <script src="../scripts/utils.js"></script>
@@ -316,31 +318,39 @@
     const file = event.target.files[0];
     if (!file) return;
 
+    if (!currentCourse) {
+      Toast.error('Please select a course first.');
+      event.target.value = '';
+      return;
+    }
+
     const btn = document.getElementById('btn-autofill');
     const originalText = btn.innerHTML;
-    btn.innerHTML = '⏳ Extracting...';
+    btn.innerHTML = '⏳ Extracting with AI...';
     btn.disabled = true;
 
     try {
-      // 1. Read PDF
+      // Read PDF text via pdfjs
       const arrayBuffer = await file.arrayBuffer();
-      
-      // Initialize pdf.js
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-      
       const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
       let fullText = '';
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        const pageText = textContent.items.map(item => item.str).join(' ');
-        fullText += pageText + '\\n';
+        fullText += textContent.items.map(item => item.str).join(' ') + '\n';
       }
 
-      // 2. Pass to AI Mock
-      const extractedData = await AI.extractSyllabusFromText(fullText);
+      if (!fullText.trim()) throw new Error('Could not extract any text from this PDF. Make sure it is not a scanned image PDF.');
 
-      // 3. Append to existing syllabusData
+      // Call REAL backend Gemini API
+      const res = await apiFetch('/api/extract-syllabus', { method: 'POST', body: { text: fullText } });
+
+      if (!res || !res.data) throw new Error('No data returned from AI.');
+
+      const extractedData = res.data;
+
+      // Merge into existing syllabusData
       if (extractedData.modules && extractedData.modules.length > 0) {
         syllabusData.modules = syllabusData.modules.concat(extractedData.modules);
       }
@@ -350,16 +360,27 @@
 
       renderModules();
       renderBooks();
-      Toast.success('Successfully extracted syllabus from PDF!');
+      Toast.success(`✅ Extracted ${extractedData.modules?.length || 0} modules and ${extractedData.books?.length || 0} books from PDF!`);
     } catch (error) {
       console.error(error);
-      Toast.error('Failed to extract PDF: ' + error.message);
+      Toast.error('Auto-fill failed: ' + error.message);
     } finally {
       btn.innerHTML = originalText;
       btn.disabled = false;
-      event.target.value = ''; // Reset file input
+      event.target.value = '';
     }
   }
+
+  // Expose all functions used by inline onclick attributes
+  window.switchCourse  = switchCourse;
+  window.addModule     = addModule;
+  window.removeModule  = removeModule;
+  window.updateModule  = updateModule;
+  window.addBook       = addBook;
+  window.updateBook    = updateBook;
+  window.removeBook    = removeBook;
+  window.saveAll       = saveAll;
+  window.handlePdfUpload = handlePdfUpload;
 })();
 </script>
 </body>

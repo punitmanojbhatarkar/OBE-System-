@@ -1,0 +1,122 @@
+COURSE SYLLABUS
+DEPARTMENT OF COMPUTER
+W.E.FAY: 2025 - 2026
+SCIENCE AND ENGINEERING(DS) (Rev. 2023 (NEP))
+COURSE NAME Applied MathematicsSECOND YEAR BACHELOR OF
+TECHNOLOGY COURSE CODE 2301259T
+CSE(DS) COURSE CREDITS 3
+RELEASE DATE : 01/07/2025 REVISION NO. 0.0
+TEACHING SCHEME EXAMINATION SCHEME AND MARKS
+(HOURS/WEEK) THEORY LABORATORY
+TOTAL
+LECTURE PRACTICAL IA MSE ESE CA PRACT/DEMO/PRES.
+3 NIL 30 20 50 NIL NIL 100
+PREREQUISITE KNOWLEDGE: Basics of Mathematics
+COURSE OBJECTIVES :
+2301254T.CEO.1: To provide mathematical and statistical tools essential for data science and machine
+learning.
+2301254T.CEO.2: To build a solid foundation in linear algebra, probability, optimization, and data-
+driven inference.
+2301254T.CEO.3: To apply practical statistical techniques to real-world data problems using Python.
+COURSE OUTCOMES :
+After successful completion of the course, students will be able to,
+2301254T.CO.1: Apply concepts of linear algebra such as vectors,matrices, eigenvalues, and SVD in
+the context of data transformations and dimensionality reduction (e.g., PCA) [L3]
+2301254T.CO.2: Make use of probability theory and statistical distributions to model uncertainty in
+data-driven systems [L3].
+2301254T.CO.3: Select appropriate data summarization, sampling, and hypothesis testing to make
+inferences and support decisions based on data [L4].
+2301254T.CO.4: Construct and evaluate regression models and apply information-theoretic concepts
+like entropy and MLE in machine learning contexts [L4].
+2301254T.CO.5: Implement gradient-based optimization techniques to observe the convergence behav-
+ior [L4].
+2301254T.CO.6: Make a choice of appropriate statistical, mathematical, and visualization techniques
+using Python tools to explore and interpret real-world datasets [L4].
+Format No.: MITAOE/ACAD/002 Rev. No.: 2.0 Rev. Date: 01/07/2019
+COURSE ABSTRACT:
+This course introduces core concepts of data preprocessing, statistical analysis, regression, and time
+series forecasting for data-driven decision-making. It covers data wrangling techniques, descriptive and
+inferential statistics, hypothesis testing, regression models, correlation analysis, and time series methods
+like ARIMA and Prophet. Real-world case studies from retail, healthcare, real estate, and stock markets
+are used to build analytical and predictive modeling skills.
+THEORY COURSE CONTENTS
+UNIT 1 Linear Algebra and Matrix Computations 06 HOURS
+Applications/Case Study: Principal Component Analysis (PCA), Neural Network weight transfor-
+mations
+Contents: Vectors, vector spaces, Scalars, vectors, matrices, tensors, Matrix operations: addition,
+multiplication, inverse, Rank, null space, orthogonality, Eigenvalues and eigenvectors, Singular Value
+Decomposition (SVD).
+Self Study: Gaussian Elimination
+Further Readings: Matrix Decomposition
+UNIT 2 Probability and Random Variables 08 HOURS
+Applications/Case Study: Covid Data Analysis or similar
+Contents: Probability definitions: Classical, empirical, axiomatic, Conditional probability, Bayes’
+Theorem, Discrete and continuous random variables, Common distributions: Bernoulli, Binomial,
+Poisson, Normal, Exponential, Expectation, variance, standard deviation, Covariance and correlation
+Self Study: variance, standard deviation Common distributions: Bernoulli, Binomial, Poisson,
+Normal, Exponential
+Further Readings: multivariate Central Limit theorem
+UNIT 3 Statistics, Sampling, and Visualization 08 HOURS
+Applications/Case Study: Covid Data Analysis or similar
+Contents: Descriptive statistics: Measures of central tendency and dispersion, Skewness and kurtosis,
+Outlier detection, data transformation, Normalization and standardization, Sampling techniques:
+Simple random, stratified, cluster, systematic, Central Limit Theorem, Sample size calculation, margin
+of error, Sampling techniques and bias, Confidence intervals, point estimation, Hypothesis testing:
+Z-test, T-test, Chi-square, ANOVA, F test, Type I II errors, p-values, A/B testing and interpretation.
+Self Study: Data Visualization, F test, T-test
+Further Readings: A/B testing and interpretation
+Format No.: MITAOE/ACAD/002 Rev. No.: 2.0 Rev. Date: 01/07/2019
+UNIT 4 Regression and Information Theory 08 HOURS
+Applications/Case Study:
+Contents: Simple and multiple linear regression, Bias-variance tradeoff, Underfitting vs. Overfitting,
+Polynomial regression, Assumptions and diagnostics, Logistic regression (overview), Information Gain,
+Entropy, cross-entropy, KL divergence, Na¨ ıve Bayes classifier, Maximum Likelihood Estimation, Gaus-
+sian Mixture Models (GMMs), MAP estimation, Na¨ ıve Bayes and Gaussian classifier, Regularization
+techniques: L1, L2, Cross-validation methods, Evaluation metrics for ML/DL models: Classification:
+Accuracy, Precision, Recall, F1-score, ROC-AUC, Regression: RMSE, MAE, R ²
+Self Study: Accuracy, Precision,Recall,F1-Score, ROC-AUC, Regression: RMSE,MAE, R2,
+Further Readings: Evaluation metrics for ML/DL Model
+UNIT 5 Calculus and Its Role in Deep Learning 08 HOURS
+Applications/Case Study:
+Contents: unctions, limits, derivatives, . Dot product (projection, similarity), Cross product ( 3D
+Applications), Partial derivatives and gradients, Chain Rule (crucial for backpropagation), Jacobian
+and Hessian matrices, Vector Calculus – Gradient of Scalar Field, Directional Derivatives and normal
+vectors, Diversions of a vector field, curl of a vector, laplacian operator, Vector differentiation, Con-
+strained optimization using Lagrange multipliers. Introduction to backpropagation, Backpropagation
+in neural networks .
+Self Study: SVM Lagrange multiplier
+Further Readings: Chain rule in Backpropagation
+UNIT 6 Optimization and Gradient Descent 08 HOURS
+Applications/Case Study: Weather Forecasting
+Contents: STOCHASTIC PROCESSES AND MARKOV CHAINS, Introduction to Stochastic
+processes- Markov process. Transition Probability, Transition Probability Matrix, First order and
+Higher order Markov process, nstep transition probabilities, Markov chain, Steady state condition,
+Markov analysis. Optimization basics in ML, Cost functions: MSE, cross-entropy, Derivatives and
+partial derivatives, Gradient Descent: Batch, Stochastic, Mini-batch, Learning rate and convergence,
+Convexity and local minima, Gradient in Backpropagation through Time( BPTT)
+Self Study: examples of Stochastic process and morkov chains
+Further Readings: RNN and LSTM Gradient Descent
+Format No.: MITAOE/ACAD/002 Rev. No.: 2.0 Rev. Date: 01/07/2019
+TEXT BOOKS
+1. Jacqueline Kazil, Katharine Jarmul. (2016) Data Wrangling with Python . 1stEdition, O’Reilly
+Media, Inc. ISBN 9781491948774.
+2. David S. Moore, George P. McCabe , Bruce A. Craig (2017). Introduction to the Practice of
+Statistics . 9thEdition, W.H.Freeman & Co Ltd. ISBN 978-1319013387.
+3. Michael H. Kutner, Christopher J. Nachtsheim, John Neter (2019). APPLIED LINEAR STA-
+TISTICAL MODELS . 5thEdition, MCGRAWHILL EXCLUSIVE. ISBN 978-1259064746.
+4. Douglas C. Montgomery, Cheryl L. Jennings , Murat Kulahci. Introduction to Time Series
+Analysis and Forecasting . 3rdEdition, Wiley. ISBN 978-1394186693.
+REFERENCE BOOKS
+1. Roy Jafari (2022). Hands-On Data Preprocessing in Python: Learn how to effectively prepare
+data for successful data analytics . 12thEdition, Packt Publishing.ISBN 978-1801072137.
+2. Gareth James, Daniela Witten, Trevor Hastie, Robert Tibshirani (2021). An Introduction to
+Statistical Learning: with Applications in R . 1stEdition, 5th Printing (2017) Springer. ISBN
+978-1461471370.
+3. Tsay Ruey S. (2014). Analysis of Financial Time Series . 3rdEdition, Wiley India Pvt. Ltd.
+ISBN 9788126548934.
+4. Anil Maheshwari (2023). Data Analytics . 2ndEdition, McGraw Hill India. ISBN 9789355324559.
+E-RESOURCES
+1. Data Analytics with Python, IIT Roorkee (https://onlinecourses.nptel.ac.in/noc21 cs45/preview )
+2. Probability and Statistics, IIT Kharagpur (https://nptel.ac.in/courses/111105090)
+3. MIT OpenCourseWare (https://www.youtube.com/@mitocw/courses)
+Format No.: MITAOE/ACAD/002 Rev. No.: 2.0 Rev. Date: 01/07/2019

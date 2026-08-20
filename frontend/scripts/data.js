@@ -1,5 +1,5 @@
 /* ============================================================
-   OBE SYSTEM — Data Layer (localStorage CRUD + Demo Data)
+   OBE SYSTEM — Data Layer (localStorage CRUD + Institutional OBE Data)
    All data operations go through this module.
    ============================================================ */
 
@@ -15,30 +15,26 @@ const DB = (() => {
     cos         : 'obe_cos',
     poMapping   : 'obe_po_mapping',
     students    : 'obe_students',
-    marksIA     : 'obe_marks_ia',
-    marksMSE    : 'obe_marks_mse',
-    marksESE    : 'obe_marks_ese',
-    marksAssign : 'obe_marks_assign',
-    survey      : 'obe_survey',
-    indicatorMapping: 'obe_indicator_mapping',
-    assignments : 'obe_assignments',
+    assessments : 'obe_assessments',
+    marksUnified: 'obe_marks_unified',
     submissions : 'obe_submissions',
     config      : 'obe_config',
     remedial    : 'obe_remedial',
     gaps        : 'obe_gaps',
     courseAudit : 'obe_course_audit',
     syllabus    : 'obe_syllabus',
+    indicatorMapping: 'obe_indicator_mapping',
     initialized : 'obe_initialized_v2',
   };
 
   /* ── Generic CRUD ── */
-  function get(key)       { try { return JSON.parse(localStorage.getItem(key)) || []; } catch(e){ return []; } }
+  function get(key)       { try { const v = JSON.parse(localStorage.getItem(key)); return Array.isArray(v) ? v : []; } catch(e){ return []; } }
   function getObj(key)    { try { return JSON.parse(localStorage.getItem(key)) || {}; } catch(e){ return {}; } }
   function set(key, val)  { localStorage.setItem(key, JSON.stringify(val)); }
   function uid()          { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 
-  /* ── Demo Data ── */
-  const DEMO = {
+  /* ── Institutional NBA/OBE Data (MITAOE Pune — Academic Year 2025-26) ── */
+  const INSTITUTIONAL_DATA = {
     departments: [
       { id:'dept-ds',  name:'Data Science',           code:'DS',  hod:'Dr. A. Mehta', vision: 'To be a center of excellence in Data Science.', mission: 'To foster innovation and problem-solving through data-centric approaches.' },
       { id:'dept-cs',  name:'Computer Engineering',   code:'CS',  hod:'Dr. V. C. Wangikar', vision: 'To create globally competent computer professionals.', mission: 'To empower students with robust computational skills and ethical practices.' },
@@ -119,28 +115,28 @@ const DB = (() => {
 
     // CO-PO Mapping for EDA (from Sheet 6C)
     poMapping: [
-      // CO1: PO1=2, PO2=3, PO3=3, PO4=1, PO5=1, PO11=1, PSO1=2, PSO3=1
+      // CO1: PO1=2, PO2=3, PO3=3, PO4=1, PO5=1, PO12=1, PSO1=2, PSO3=1
       { courseId:'crs-eda', coNo:1, po:'PO1', val:2 }, { courseId:'crs-eda', coNo:1, po:'PO2', val:3 },
       { courseId:'crs-eda', coNo:1, po:'PO3', val:3 }, { courseId:'crs-eda', coNo:1, po:'PO4', val:1 },
-      { courseId:'crs-eda', coNo:1, po:'PO5', val:1 }, { courseId:'crs-eda', coNo:1, po:'PO11',val:1 },
+      { courseId:'crs-eda', coNo:1, po:'PO5', val:1 }, { courseId:'crs-eda', coNo:1, po:'PO12',val:1 },
       { courseId:'crs-eda', coNo:1, po:'PSO1',val:2 }, { courseId:'crs-eda', coNo:1, po:'PSO3',val:1 },
-      // CO2: PO1=2, PO2=3, PO3=3, PO4=1, PO5=3, PO11=1, PSO1=3, PSO2=1, PSO3=2
+      // CO2: PO1=2, PO2=3, PO3=3, PO4=1, PO5=3, PO12=1, PSO1=3, PSO2=1, PSO3=2
       { courseId:'crs-eda', coNo:2, po:'PO1', val:2 }, { courseId:'crs-eda', coNo:2, po:'PO2', val:3 },
       { courseId:'crs-eda', coNo:2, po:'PO3', val:3 }, { courseId:'crs-eda', coNo:2, po:'PO4', val:1 },
-      { courseId:'crs-eda', coNo:2, po:'PO5', val:3 }, { courseId:'crs-eda', coNo:2, po:'PO11',val:1 },
+      { courseId:'crs-eda', coNo:2, po:'PO5', val:3 }, { courseId:'crs-eda', coNo:2, po:'PO12',val:1 },
       { courseId:'crs-eda', coNo:2, po:'PSO1',val:3 }, { courseId:'crs-eda', coNo:2, po:'PSO2',val:1 },
       { courseId:'crs-eda', coNo:2, po:'PSO3',val:2 },
-      // CO3: PO1=3, PO2=3, PO3=3, PO4=2, PO5=3, PO7=1, PO11=1, PSO1=3, PSO2=3, PSO3=3
+      // CO3: PO1=3, PO2=3, PO3=3, PO4=2, PO5=3, PO7=1, PO12=1, PSO1=3, PSO2=3, PSO3=3
       { courseId:'crs-eda', coNo:3, po:'PO1', val:3 }, { courseId:'crs-eda', coNo:3, po:'PO2', val:3 },
       { courseId:'crs-eda', coNo:3, po:'PO3', val:3 }, { courseId:'crs-eda', coNo:3, po:'PO4', val:2 },
       { courseId:'crs-eda', coNo:3, po:'PO5', val:3 }, { courseId:'crs-eda', coNo:3, po:'PO7', val:1 },
-      { courseId:'crs-eda', coNo:3, po:'PO11',val:1 }, { courseId:'crs-eda', coNo:3, po:'PSO1',val:3 },
+      { courseId:'crs-eda', coNo:3, po:'PO12',val:1 }, { courseId:'crs-eda', coNo:3, po:'PSO1',val:3 },
       { courseId:'crs-eda', coNo:3, po:'PSO2',val:3 }, { courseId:'crs-eda', coNo:3, po:'PSO3',val:3 },
       // CO4: same as CO3
       { courseId:'crs-eda', coNo:4, po:'PO1', val:3 }, { courseId:'crs-eda', coNo:4, po:'PO2', val:3 },
       { courseId:'crs-eda', coNo:4, po:'PO3', val:3 }, { courseId:'crs-eda', coNo:4, po:'PO4', val:2 },
       { courseId:'crs-eda', coNo:4, po:'PO5', val:3 }, { courseId:'crs-eda', coNo:4, po:'PO7', val:1 },
-      { courseId:'crs-eda', coNo:4, po:'PO11',val:1 }, { courseId:'crs-eda', coNo:4, po:'PSO1',val:3 },
+      { courseId:'crs-eda', coNo:4, po:'PO12',val:1 }, { courseId:'crs-eda', coNo:4, po:'PSO1',val:3 },
       { courseId:'crs-eda', coNo:4, po:'PSO2',val:3 }, { courseId:'crs-eda', coNo:4, po:'PSO3',val:3 },
     ],
 
@@ -175,21 +171,7 @@ const DB = (() => {
     ],
 
     // IA Question structure for EDA
-    iaQuestions: [
-      { courseId:'crs-eda', assessmentType:'ia', assessmentNo:1,
-        questions:[
-          { qNo:1, desc:'For CARGO shipper application, identify and justify appropriate Data Warehouse architecture.', bloomsLevel:'L5', coNo:1, maxMarks:3 },
-          { qNo:2, desc:'For CARGO shipper application, apply dimensional modelling. Identify dimensions, measures, and draw the model.', bloomsLevel:'L5', coNo:2, maxMarks:3 },
-        ]
-      },
-      { courseId:'crs-eda', assessmentType:'mse', assessmentNo:1,
-        questions:[
-          { qNo:1, desc:'Explain OLAP operations with suitable examples.', bloomsLevel:'L3', coNo:1, maxMarks:6 },
-          { qNo:2, desc:'Apply hypothesis testing on given dataset to derive conclusions.', bloomsLevel:'L4', coNo:3, maxMarks:7 },
-          { qNo:3, desc:'Describe types of data preprocessing techniques.', bloomsLevel:'L2', coNo:3, maxMarks:7 },
-        ]
-      },
-    ],
+    iaQuestions: [],
 
     // Sample IA marks (per student per question)
     marksIA: [
@@ -236,40 +218,7 @@ const DB = (() => {
     ],
 
     // Assignments
-    assignments: [
-      {
-        id:'asgn-1', courseId:'crs-eda', no:1,
-        title:'Data Warehouse Architecture & Dimensional Modelling',
-        description:'Apply Data Warehouse Approach and Dimensional Modelling on a given case study.',
-        rbtLevel:3, coNos:[1,2], poNos:['PO1','PO2','PO3','PO4','PO5'],
-        maxMarks:10, dueDate:'2025-08-30', aiGenerated:false,
-        questions:[
-          { qNo:1, text:'For CARGO shipper application, which Data Warehouse will be applicable? Justify your answer w.r.t. Principle, Architecture, Advantage, Disadvantage, Application [5 Marks]', coNo:1, marks:5 },
-          { qNo:2, text:'For CARGO shipper application, apply dimensional modelling: i) Identify 4 dimensions [1M] ii) Identify 2 Measures [1M] iii) Select type with justification [1M] iv) Draw the model [2M]', coNo:2, marks:5 },
-        ],
-        rubrics:[
-          { criterion:'Implementation Accuracy', coNo:1, exceptional:'Correctly identifies and justifies all architecture components (5pts)', best:'Minor errors in justification (4pts)', average:'Partial justification (2pts)', low:'Incorrect or missing (1pt)' },
-          { criterion:'Dimensional Model Completeness', coNo:2, exceptional:'All 4 dimensions, 2 measures, correct model drawn (5pts)', best:'3 dimensions, minor errors (4pts)', average:'2 dimensions identified (2pts)', low:'Incomplete (<2 dimensions) (1pt)' },
-        ],
-        createdAt: '2025-08-01'
-      },
-      {
-        id:'asgn-2', courseId:'crs-eda', no:2,
-        title:'Hypothesis Testing & Regression Methods',
-        description:'Demonstrate Hypothesis Test and Regression methods after applying on a real life example.',
-        rbtLevel:3, coNos:[3,4], poNos:['PO1','PO2','PO3','PO4','PO5'],
-        maxMarks:10, dueDate:'2025-09-30', aiGenerated:true,
-        questions:[
-          { qNo:1, text:'Apply t-test to determine if there is a significant difference between two sample means. Use a real-world dataset. [5 Marks]', coNo:3, marks:5 },
-          { qNo:2, text:'Build a linear regression model to predict housing prices. Report R², MSE, and interpret coefficients. [5 Marks]', coNo:4, marks:5 },
-        ],
-        rubrics:[
-          { criterion:'Hypothesis Test Accuracy', coNo:3, exceptional:'Correct test selection, computation, and interpretation (5pts)', best:'Correct test, minor computation error (4pts)', average:'Test selected correctly, wrong conclusion (2pts)', low:'Wrong test applied (1pt)' },
-          { criterion:'Regression Model Quality', coNo:4, exceptional:'Correct model, high R², proper interpretation (5pts)', best:'Correct model, minor interpretation error (4pts)', average:'Model built, interpretation incomplete (2pts)', low:'Model incorrect (1pt)' },
-        ],
-        createdAt: '2025-09-01'
-      },
-    ],
+    assignments: [],
 
     config: {
       aiEnabled: false,   // will be true in Phase 2
@@ -289,27 +238,49 @@ const DB = (() => {
     }
   };
 
-  /* ── Initialize DB with demo data ── */
+  /* ── Initialize DB with Institutional NBA/OBE Data ── */
   function init() {
     if (localStorage.getItem(KEYS.initialized)) return;
-    set(KEYS.departments, DEMO.departments);
-    set(KEYS.users,       DEMO.users);
-    set(KEYS.courses,     DEMO.courses);
-    set(KEYS.cos,         DEMO.cos);
-    set(KEYS.poMapping,   DEMO.poMapping);
-    set(KEYS.students,    DEMO.students);
-    set(KEYS.marksIA,     DEMO.marksIA);
+    set(KEYS.departments, INSTITUTIONAL_DATA.departments);
+    set(KEYS.users,       INSTITUTIONAL_DATA.users);
+    set(KEYS.courses,     INSTITUTIONAL_DATA.courses);
+    set(KEYS.cos,         INSTITUTIONAL_DATA.cos);
+    set(KEYS.poMapping,   INSTITUTIONAL_DATA.poMapping);
+    set(KEYS.students,    INSTITUTIONAL_DATA.students);
+    set(KEYS.marksIA,     INSTITUTIONAL_DATA.marksIA);
     set(KEYS.marksMSE,    []);
     set(KEYS.marksESE,    []);
     set(KEYS.marksAssign, []);
-    set(KEYS.survey,      DEMO.survey);
-    set(KEYS.assignments, DEMO.assignments);
+    set(KEYS.survey,      INSTITUTIONAL_DATA.survey);
+    set(KEYS.assignments, INSTITUTIONAL_DATA.assignments);
     set(KEYS.submissions, []);
-    set(KEYS.config,      DEMO.config);
+    set(KEYS.config,      INSTITUTIONAL_DATA.config);
     set(KEYS.syllabus,    []);
+
+    const initialAssessments = (INSTITUTIONAL_DATA.assignments || []).map(a => ({
+      id: a.id,
+      courseId: a.courseId,
+      type: 'assignment',
+      no: a.no || 1,
+      title: a.title,
+      description: a.description || '',
+      maxMarks: a.maxMarks || 10,
+      questions: a.questions || [],
+      rubrics: a.rubrics || [],
+      createdAt: a.createdAt || new Date().toISOString()
+    }));
+    const initialMarksUnified = (INSTITUTIONAL_DATA.marksIA || []).map(m => ({
+      courseId: m.courseId,
+      prn: m.prn,
+      assessId: `iaq-${m.courseId}-ia-${m.assessmentNo || 1}`,
+      qNo: m.qNo,
+      marks: m.marks
+    }));
+    set(KEYS.assessments, initialAssessments);
+    set(KEYS.marksUnified, initialMarksUnified);
     // Store IA question structures in config
     const cfg = getObj(KEYS.config);
-    cfg.iaQuestions = DEMO.iaQuestions;
+
     set(KEYS.config, cfg);
     localStorage.setItem(KEYS.initialized, '1');
   }
@@ -344,9 +315,11 @@ const DB = (() => {
     byFaculty(fid)   { 
       const u = users.byId(fid);
       if (u && u.role === 'hod') return courses.byDept(u.deptId);
-      return courses.all().filter(c=>c.facultyId===fid); 
+      return courses.all().filter(c=>c.facultyId===fid || (c.facultyIds && c.facultyIds.includes(fid))); 
     },
-    byDept(did)      { return courses.all().filter(c=>c.deptId===did); },
+    byDept(did)      { 
+      return courses.all().filter(c=>c.deptId===did); 
+    },
     add(c)           { const all=courses.all(); c.id=uid(); all.push(c); set(KEYS.courses,all); return c; },
     update(c)        { const all=courses.all().map(x=>x.id===c.id?c:x); set(KEYS.courses,all); return c; },
     delete(id)       { set(KEYS.courses, courses.all().filter(c=>c.id!==id)); },
@@ -367,13 +340,13 @@ const DB = (() => {
   const poMapping = {
     byCourse(cid)      { return get(KEYS.poMapping).filter(m=>m.courseId===cid); },
     getValue(cid,coNo,po) {
-      const m=get(KEYS.poMapping).find(x=>x.courseId===cid&&x.coNo===coNo&&x.po===po);
+      const m=get(KEYS.poMapping).find(x=>x.courseId===cid&&String(x.coNo)===String(coNo)&&x.po===po);
       return m ? m.val : 0;
     },
     setValue(cid,coNo,po,val) {
       let all=get(KEYS.poMapping);
-      const idx=all.findIndex(x=>x.courseId===cid&&x.coNo===coNo&&x.po===po);
-      if(idx>=0) all[idx].val=val; else all.push({courseId:cid,coNo,po,val});
+      const idx=all.findIndex(x=>x.courseId===cid&&String(x.coNo)===String(coNo)&&x.po===po);
+      if(idx>=0) all[idx].val=val; else all.push({courseId:cid,coNo:Number(coNo),po,val});
       set(KEYS.poMapping,all);
     },
     saveMatrix(cid, matrix) {
@@ -393,73 +366,55 @@ const DB = (() => {
     delete(id)         { set(KEYS.students, students.all().filter(s=>s.id!==id)); },
   };
 
-  /* ── Marks ── */
+  /* ── Marks (Unified) ── */
   const marks = {
-    // IA
-    getIA(cid)            { return get(KEYS.marksIA).filter(m=>m.courseId===cid); },
-    getIAMark(cid,prn,aNo,qNo){ return get(KEYS.marksIA).find(m=>m.courseId===cid&&m.prn===prn&&m.assessmentNo===aNo&&m.qNo===qNo); },
-    setIA(cid,prn,aNo,qNo,v)  {
-      let all=get(KEYS.marksIA);
-      const idx=all.findIndex(m=>m.courseId===cid&&m.prn===prn&&m.assessmentNo===aNo&&m.qNo===qNo);
-      if(idx>=0)all[idx].marks=v; else all.push({courseId:cid,prn,assessmentNo:aNo,qNo,marks:v});
-      set(KEYS.marksIA,all);
+    get(cid) { return get(KEYS.marksUnified).filter(m=>m.courseId===cid); },
+    set(cid, prn, assessId, qNo, v) {
+      let all = get(KEYS.marksUnified);
+      const idx = all.findIndex(m=>m.courseId===cid && m.prn===prn && m.assessId===assessId && m.qNo===qNo);
+      if(idx>=0) all[idx].marks = v;
+      else all.push({courseId:cid, prn, assessId, qNo, marks:v});
+      set(KEYS.marksUnified, all);
     },
-    saveIA(cid,list)      { const others=get(KEYS.marksIA).filter(m=>m.courseId!==cid); set(KEYS.marksIA,[...others,...list]); },
-    // MSE
-    getMSE(cid)           { return get(KEYS.marksMSE).filter(m=>m.courseId===cid); },
-    setMSE(cid,prn,qNo,v) {
-      let all=get(KEYS.marksMSE);
-      const idx=all.findIndex(m=>m.courseId===cid&&m.prn===prn&&m.qNo===qNo);
-      if(idx>=0)all[idx].marks=v; else all.push({courseId:cid,prn,qNo,marks:v});
-      set(KEYS.marksMSE,all);
-    },
-    saveMSE(cid,list)     { const others=get(KEYS.marksMSE).filter(m=>m.courseId!==cid); set(KEYS.marksMSE,[...others,...list]); },
-    // ESE
-    getESE(cid)           { return get(KEYS.marksESE).filter(m=>m.courseId===cid); },
-    setESE(cid,prn,qNo,v) {
-      let all=get(KEYS.marksESE);
-      const idx=all.findIndex(m=>m.courseId===cid&&m.prn===prn&&m.qNo===qNo);
-      if(idx>=0)all[idx].marks=v; else all.push({courseId:cid,prn,qNo,marks:v});
-      set(KEYS.marksESE,all);
-    },
-    saveESE(cid,list)     { const others=get(KEYS.marksESE).filter(m=>m.courseId!==cid); set(KEYS.marksESE,[...others,...list]); },
-    // Assignment
-    getAssign(cid)           { return get(KEYS.marksAssign).filter(m=>m.courseId===cid); },
-    setAssign(cid,prn,asgnId,marks){ 
-      let all=get(KEYS.marksAssign);
-      const idx=all.findIndex(m=>m.courseId===cid&&m.prn===prn&&m.assignmentId===asgnId);
-      if(idx>=0)all[idx].marks=marks; else all.push({courseId:cid,prn,assignmentId:asgnId,marks});
-      set(KEYS.marksAssign,all);
-    },
+    saveAll(cid, list) { 
+      const others = get(KEYS.marksUnified).filter(m=>m.courseId!==cid); 
+      set(KEYS.marksUnified, [...others, ...list]); 
+    }
   };
 
   /* ── Survey ── */
   const survey = {
     byCourse(cid)         { return get(KEYS.survey).filter(s=>s.courseId===cid); },
-    getScore(cid,prn,co)  { const s=get(KEYS.survey).find(x=>x.courseId===cid&&x.prn===prn&&x.co===co); return s?s.score:null; },
+    getScore(cid,prn,co)  { const s=get(KEYS.survey).find(x=>x.courseId===cid&&x.prn===prn&&String(x.co)===String(co)); return s?s.score:null; },
     setScore(cid,prn,co,score) {
       let all=get(KEYS.survey);
-      const idx=all.findIndex(x=>x.courseId===cid&&x.prn===prn&&x.co===co);
+      const idx=all.findIndex(x=>x.courseId===cid&&x.prn===prn&&String(x.co)===String(co));
       if(idx>=0)all[idx].score=score; else all.push({courseId:cid,prn,co,score});
       set(KEYS.survey,all);
     },
     saveAll(cid,list)     { const others=get(KEYS.survey).filter(s=>s.courseId!==cid); set(KEYS.survey,[...others,...list]); },
   };
 
-  /* ── Assignments ── */
-  const assignments = {
-    all()              { return get(KEYS.assignments); },
-    byCourse(cid)      { return assignments.all().filter(a=>a.courseId===cid); },
-    byId(id)           { return assignments.all().find(a=>a.id===id); },
-    add(a)             { const all=assignments.all(); a.id=uid(); a.createdAt=new Date().toISOString(); all.push(a); set(KEYS.assignments,all); return a; },
-    update(a)          { const all=assignments.all().map(x=>x.id===a.id?a:x); set(KEYS.assignments,all); return a; },
-    delete(id)         { set(KEYS.assignments, assignments.all().filter(a=>a.id!==id)); },
+  /* ── Assessments (Unified) ── */
+  const assessments = {
+    all()              { return get(KEYS.assessments); },
+    byCourse(cid) {
+      let found = assessments.all().filter(a=>a.courseId===cid);
+      return found.sort((a,b) => {
+        const order = { 'IA 1': 1, 'IA 2': 2, 'MSE': 3, 'ESE': 4, 'Assignment 1': 5 };
+        return (order[a.title] || 99) - (order[b.title] || 99);
+      });
+    },
+    byId(id)           { return assessments.all().find(a=>a.id===id); },
+    add(a)             { const all=assessments.all(); a.id=uid(); a.createdAt=new Date().toISOString(); all.push(a); set(KEYS.assessments,all); return a; },
+    update(a)          { const all=assessments.all().map(x=>x.id===a.id?a:x); set(KEYS.assessments,all); return a; },
+    delete(id)         { set(KEYS.assessments, assessments.all().filter(a=>a.id!==id)); },
   };
 
   /* ── Submissions ── */
   const submissions = {
     all()              { return get(KEYS.submissions); },
-    byAssignment(aid)  { return submissions.all().filter(s=>s.assignmentId===aid); },
+    byAssessId(aid)    { return submissions.all().filter(s=>s.assessId===aid); },
     byStudent(prn)     { return submissions.all().filter(s=>s.prn===prn); },
     add(s)             { const all=submissions.all(); s.id=uid(); s.submittedAt=new Date().toISOString(); all.push(s); set(KEYS.submissions,all); return s; },
     update(s)          { const all=submissions.all().map(x=>x.id===s.id?s:x); set(KEYS.submissions,all); return s; },
@@ -470,19 +425,17 @@ const DB = (() => {
     set(cfg)        { set(KEYS.config, cfg); },
     update(patch)   { const cfg={...config.get(),...patch}; set(KEYS.config,cfg); return cfg; },
     getIAQuestions(cid, type) {
-      const cfg=config.get();
-      return (cfg.iaQuestions||[]).filter(q=>q.courseId===cid&&q.assessmentType===type);
+      const all = config.get().iaQuestions || [];
+      return all.filter(q => q.courseId === cid && q.assessmentType === type);
     },
     saveIAQuestions(cid, type, list) {
-      const cfg = config.get();
-      // Remove existing entries for this course+type (all assessmentNos in the list)
-      const listAssessNos = list.map(l => l.assessmentNo);
-      const others = (cfg.iaQuestions || []).filter(q =>
-        !(q.courseId === cid && q.assessmentType === type && listAssessNos.includes(q.assessmentNo))
-      );
-      cfg.iaQuestions = [...others, ...list];
-      set(KEYS.config, cfg);
-    },
+      let cfg = config.get();
+      let all = cfg.iaQuestions || [];
+      all = all.filter(q => !(q.courseId === cid && q.assessmentType === type));
+      all.push(...list);
+      cfg.iaQuestions = all;
+      config.set(cfg);
+    }
   };
 
   /* ── Reset (for dev) ── */
@@ -493,11 +446,15 @@ const DB = (() => {
 
   const indicatorMapping = {
     get: (courseId) => {
-      const data = get(KEYS.indicatorMapping) || {};
+      const data = getObj(KEYS.indicatorMapping) || {};
+      return data[courseId] || {};
+    },
+    byCourse: (courseId) => {
+      const data = getObj(KEYS.indicatorMapping) || {};
       return data[courseId] || {};
     },
     save: (courseId, mappingObj) => {
-      const data = get(KEYS.indicatorMapping) || {};
+      const data = getObj(KEYS.indicatorMapping) || {};
       data[courseId] = mappingObj;
       set(KEYS.indicatorMapping, data);
     }
@@ -551,7 +508,7 @@ const DB = (() => {
   };
 
   /* ── Public API ── */
-  return { init, reset, uid, departments, users, courses, cos, poMapping, indicatorMapping, remedial, students, marks, survey, assignments, submissions, config, gaps, courseAudit, syllabus, KEYS };
+  return { init, reset, uid, departments, users, courses, cos, poMapping, indicatorMapping, remedial, students, marks, survey, assessments, assignments: assessments, submissions, config, gaps, courseAudit, syllabus, KEYS };
 
 })();
 

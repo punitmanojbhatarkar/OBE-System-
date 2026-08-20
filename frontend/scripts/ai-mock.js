@@ -7,13 +7,14 @@
 const AI = (() => {
 
   async function callBackend(endpoint, payload) {
-    const res = await fetch(`http://127.0.0.1:8000/api/${endpoint}`, {
+    const res = await fetch(`http://127.0.0.1:8080/api/${endpoint}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
     if (!res.ok) throw new Error(`Backend Error: ${res.statusText}`);
     const data = await res.json();
+    if (data.success === false) throw new Error(`Backend Error: ${data.error}`);
     return data.data;
   }
 
@@ -46,19 +47,25 @@ const AI = (() => {
     return await callBackend('analyze-blooms', { cos });
   }
 
-  async function autoMapCOPO(cos, pos) {
-    return await callBackend('auto-map-copo', { cos, pos });
+  async function autoMapCOPO(cos, pos, psoDefs) {
+    return await callBackend('auto-map-copo', { cos, pos, pso_defs: psoDefs });
   }
 
   async function generateRemedialPlan(studentName, weakCOs) {
     return await callBackend('remedial', { student: studentName, weakCOs });
   }
 
+
   async function extractSyllabusFromText(text) {
     return await callBackend('extract-syllabus', { text });
   }
 
+  async function generateCOsFromSyllabus(syllabusText) {
+    return await callBackend('generate-cos', { syllabus: syllabusText });
+  }
+
   function getUsageStats() {
+
     return { used: 0, max: 9999, pct: 0, enabled: true };
   }
 
@@ -66,5 +73,5 @@ const AI = (() => {
     return await callBackend('chat', { message: prompt, context: '' });
   }
 
-  return { generateAssignment, gradeSubmission, generateTeachingPhilosophy, analyzeBlooms, autoMapCOPO, generateRemedialPlan, extractSyllabusFromText, getUsageStats, callRealAPI };
+  return { generateAssignment, gradeSubmission, generateTeachingPhilosophy, analyzeBlooms, autoMapCOPO, generateRemedialPlan, extractSyllabusFromText, generateCOsFromSyllabus, getUsageStats, callRealAPI };
 })();

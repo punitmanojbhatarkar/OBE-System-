@@ -108,7 +108,8 @@
   </main>
 </div>
 <div id="toast-container"></div>
-<script src="../scripts/data.js?v=2"></script>`r`n<script src="../scripts/api.js"></script>
+<script src="../scripts/data.js?v=99"></script>
+<script src="../scripts/api.js?v=99"></script>
 <script src="../scripts/auth.js?v=2"></script>
 <script src="../scripts/attainment.js"></script>
 <script src="../scripts/advisor.js"></script>
@@ -313,7 +314,12 @@ renderGapAndPO();
 
 // Course bar chart
 new Chart(document.getElementById('courseChart'),{type:'bar',data:{labels:courseData.map(cd=>cd.c.shortName||cd.c.code),datasets:[{label:'Avg CO Level',data:courseData.map(cd=>cd.avgCO),backgroundColor:courseData.map(cd=>cd.avgCO>=2?'rgba(5,150,105,0.75)':'rgba(217,119,6,0.75)'),borderRadius:8}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:3,ticks:{color:'#64748B'},grid:{color:'rgba(0,0,0,0.05)'}},x:{ticks:{color:'#64748B'},grid:{display:false}}}}});
+
+  // Auto-exposed: onclick handlers need to be on window
+  window.deleteGap = deleteGap;
+  window.saveDeptVM = saveDeptVM;
+  window.saveGap = saveGap;
 })();
 </script>
-<script src="../scripts/ai-chat.js"></script>\n</body>
+</body>
 </html>

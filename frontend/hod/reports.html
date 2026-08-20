@@ -60,7 +60,8 @@
   </main>
 </div>
 <div id="toast-container"></div>
-<script src="../scripts/data.js?v=2"></script>`r`n<script src="../scripts/api.js"></script>
+<script src="../scripts/data.js?v=99"></script>
+<script src="../scripts/api.js?v=99"></script>
 <script src="../scripts/auth.js?v=2"></script>
 <script src="../scripts/attainment.js"></script>
 <script src="../scripts/utils.js"></script>
@@ -117,7 +118,10 @@ function exportCSV(){
   exportTableCSV('heatmap-table','dept_co_heatmap.csv');
   Toast.success('CSV downloaded!');
 }
+
+  // Auto-exposed: onclick handlers need to be on window
+  window.exportCSV = exportCSV;
 })();
 </script>
-<script src="../scripts/ai-chat.js"></script>\n</body>
+</body>
 </html>

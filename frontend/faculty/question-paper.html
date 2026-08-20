@@ -75,6 +75,7 @@
       <a class="nav-item" href="marks.html">📝 Marks Entry</a>
       <a class="nav-item" href="attainment.html">📈 Attainment</a>
       <a class="nav-item" href="assignments.html">🤖 Assignments & AI</a>
+      <a class="nav-item" href="auto-grade.html">✅ Auto-Grading</a>
       <a class="nav-item" href="question-paper.html">📄 Question Paper</a>
       <a class="nav-item" href="reports.html">📄 Reports & Export</a>
     </nav>
@@ -142,7 +143,8 @@
 <div id="toast-container"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="../scripts/data.js?v=2"></script>`r`n<script src="../scripts/api.js"></script>
+<script src="../scripts/data.js?v=99"></script>
+<script src="../scripts/api.js?v=99"></script>
 <script src="../scripts/auth.js?v=2"></script>
 <script src="../scripts/ai-mock.js?v=2"></script>
 <script src="../scripts/utils.js"></script>
@@ -538,7 +540,14 @@ async function exportPDF() {
 
 // Set default date
 document.getElementById('cfg-date').value = new Date().toISOString().split('T')[0];
+
+  // Auto-exposed: onclick handlers need to be on window
+  window.addSection = addSection;
+  window.exportPDF = exportPDF;
+  window.generatePaper = generatePaper;
+  window.refreshPreview = refreshPreview;
+  window.removeSection = removeSection;
 })();
 </script>
-<script src="../scripts/ai-chat.js"></script>\n</body>
+</body>
 </html>

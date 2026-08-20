@@ -56,7 +56,10 @@
       <div class="card mb-lg">
         <div class="card-header">
           <div><div class="card-title">📋 Course Outcomes (COs)</div><div class="card-subtitle">Define up to 6 Course Outcomes with Bloom's Taxonomy level</div></div>
-          <button class="btn btn-sm" style="background:var(--primary);color:white;border:none" onclick="checkBloomsWithAI()">✨ Check Bloom's with AI</button>
+          <div style="display:flex; gap:8px">
+            <button class="btn btn-sm" style="background:var(--success);color:white;border:none" onclick="completeAutoAI()">✨ Complete Auto AI</button>
+            <button class="btn btn-sm" style="background:var(--primary);color:white;border:none" onclick="checkBloomsWithAI()">✨ Auto Bloom with AI</button>
+          </div>
         </div>
         <div class="table-wrapper">
           <table id="co-table">
@@ -64,7 +67,7 @@
               <tr>
                 <th style="width:60px">CO</th>
                 <th>Outcome Description</th>
-                <th style="width:130px">Bloom's Level</th>
+                <th style="width:160px">Bloom's Level</th>
                 <th style="width:90px" title="Minimum % of marks a student must score to count as attained">Target Student (%)</th>
                 <th style="width:70px" title="Cohort % of students required for Level 1 attainment">L1 (%)</th>
                 <th style="width:70px" title="Cohort % of students required for Level 2 attainment">L2 (%)</th>
@@ -144,7 +147,7 @@
   </main>
 </div>
 <div id="toast-container"></div>
-<script src="../scripts/data.js?v=2"></script>`r`n<script src="../scripts/api.js"></script>
+<script src="../scripts/data.js?v=99"></script>`r`n<script src="../scripts/api.js"></script>
 <script src="../scripts/auth.js?v=2"></script>
 <script src="../scripts/ai-mock.js?v=2"></script>
 <script src="../scripts/utils.js"></script>
@@ -156,17 +159,18 @@ if(!user) throw 0;
 Auth.populateSidebar(user);
 
 const PO_DEFS = {
-  PO1:'Engineering Knowledge: Apply the knowledge of mathematics, science, engineering fundamentals.',
-  PO2:'Problem Analysis: Identify, formulate, review research literature, and analyze complex engineering problems.',
-  PO3:'Design/Development of Solutions: Design solutions for complex engineering problems and design system components.',
-  PO4:'Conduct Investigations: Use research-based knowledge and research methods including design of experiments.',
-  PO5:'Engineering Tool Usage: Create, select, and apply appropriate techniques, resources, and modern engineering & IT tools.',
-  PO6:'The Engineer and The World: Analyze and evaluate societal and environmental aspects while solving complex engineering problems.',
-  PO7:'Ethics: Apply ethical principles and commit to professional ethics, human values, diversity and inclusion.',
-  PO8:'Individual and Collaborative Team work: Function effectively as an individual, and as a member or leader in diverse teams.',
-  PO9:'Communication: Communicate effectively and inclusively within the engineering community and society at large.',
-  PO10:'Project Management and Finance: Apply knowledge and understanding of engineering management principles and economic decision-making.',
-  PO11:'Life-Long Learning: Recognize the need for, and have the preparation and ability for independent and life-long learning.',
+  PO1:'Engineering Knowledge: Apply the knowledge of mathematics, science, engineering fundamentals, and an engineering specialization to the solution of complex engineering problems.',
+  PO2:'Problem Analysis: Identify, formulate, review research literature, and analyze complex engineering problems reaching substantiated conclusions using first principles of mathematics, natural sciences, and engineering sciences.',
+  PO3:'Design/Development of Solutions: Design solutions for complex engineering problems and design system components or processes that meet the specified needs with appropriate consideration for the public health and safety, and the cultural, societal, and environmental considerations.',
+  PO4:'Conduct Investigations of Complex Problems: Use research-based knowledge and research methods including design of experiments, analysis and interpretation of data, and synthesis of the information to provide valid conclusions.',
+  PO5:'Modern Tool Usage: Create, select, and apply appropriate techniques, resources, and modern engineering and IT tools including prediction and modeling to complex engineering activities with an understanding of the limitations.',
+  PO6:'The Engineer and Society: Apply reasoning informed by the contextual knowledge to assess societal, health, safety, legal and cultural issues and the consequent responsibilities relevant to the professional engineering practice.',
+  PO7:'Environment and Sustainability: Understand the impact of the professional engineering solutions in societal and environmental contexts, and demonstrate the knowledge of, and need for sustainable development.',
+  PO8:'Ethics: Apply ethical principles and commit to professional ethics and responsibilities and norms of the engineering practice.',
+  PO9:'Individual and Team Work: Function effectively as an individual, and as a member or leader in diverse teams, and in multidisciplinary settings.',
+  PO10:'Communication: Communicate effectively on complex engineering activities with the engineering community and with society at large, such as, being able to comprehend and write effective reports and design documentation, make effective presentations, and give and receive clear instructions.',
+  PO11:'Project Management and Finance: Demonstrate knowledge and understanding of the engineering and management principles and apply these to one’s own work, as a member and leader in a team, to manage projects and in multidisciplinary environments.',
+  PO12:'Life-Long Learning: Recognize the need for, and have the preparation and ability to engage in independent and life-long learning in the broadest context of technological change.',
 };
 const PSO_DEFAULTS = {
   PSO1:'Domain-Specific Knowledge in Data Science and Analytics.',
@@ -190,6 +194,13 @@ else { showEmptyState(); }
 sel.addEventListener('change', e => { if(e.target.value) { sessionStorage.setItem('selected_course_id',e.target.value); loadCourse(e.target.value); }});
 
 function loadCourse(cid) {
+  const pageContent = document.querySelector('.page-content');
+  Array.from(pageContent.children).forEach(child => {
+    if(child.classList.contains('card')) child.style.display = 'block';
+  });
+  const emptyMsg = document.getElementById('empty-state-msg');
+  if (emptyMsg) emptyMsg.style.display = 'none';
+
   currentCourseId = cid;
   const course = DB.courses.byId(cid);
   if(!course) return;
@@ -224,8 +235,23 @@ function loadCourse(cid) {
 }
 
 function showEmptyState() {
-  document.getElementById('co-body').innerHTML = `<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--text-secondary)">No course selected. Please add a course in the "My Courses" tab first.</td></tr>`;
-  document.getElementById('po-body').innerHTML = `<tr><td colspan="3" style="text-align:center;padding:30px;color:var(--text-secondary)">No course selected.</td></tr>`;
+  const pageContent = document.querySelector('.page-content');
+  Array.from(pageContent.children).forEach(child => {
+    if(child.classList.contains('card')) child.style.display = 'none';
+  });
+  let emptyMsg = document.getElementById('empty-state-msg');
+  if (!emptyMsg) {
+    emptyMsg = document.createElement('div');
+    emptyMsg.id = 'empty-state-msg';
+    emptyMsg.style = 'text-align:center; padding:60px 20px; color:var(--text-secondary); background:var(--surface); border-radius:12px; border:1px solid var(--border);';
+    emptyMsg.innerHTML = `
+      <div style="font-size:48px; margin-bottom:16px;">📚</div>
+      <h3 style="color:var(--text); margin-bottom:8px;">No Course Selected</h3>
+      <p>It looks like you don't have any courses assigned yet. Please go to the <strong>My Courses</strong> tab to add one.</p>
+    `;
+    pageContent.appendChild(emptyMsg);
+  }
+  emptyMsg.style.display = 'block';
 }
 
 function renderCOs() {
@@ -247,9 +273,9 @@ function renderCOs() {
     const isESE = (co.assessedThrough||[]).includes('ese');
     
     const studThresh = co.studentThreshold !== undefined && co.studentThreshold !== null ? co.studentThreshold : '';
-    const l1Val = co.levels?.[1] !== undefined && co.levels?.[1] !== null ? co.levels[1] : '';
-    const l2Val = co.levels?.[2] !== undefined && co.levels?.[2] !== null ? co.levels[2] : '';
-    const l3Val = co.levels?.[3] !== undefined && co.levels?.[3] !== null ? co.levels[3] : '';
+    const l1Val = (co.levels && co.levels[1] !== undefined && co.levels[1] !== null) ? co.levels[1] : (co.level1 !== undefined ? co.level1 : '');
+    const l2Val = (co.levels && co.levels[2] !== undefined && co.levels[2] !== null) ? co.levels[2] : (co.level2 !== undefined ? co.level2 : '');
+    const l3Val = (co.levels && co.levels[3] !== undefined && co.levels[3] !== null) ? co.levels[3] : (co.level3 !== undefined ? co.level3 : '');
 
     tr.innerHTML = `
       <td><span class="badge badge-primary">${co.code}</span></td>
@@ -384,41 +410,130 @@ function applyThresholdPreset(type) {
 }
 
 async function checkBloomsWithAI() {
-  if(!currentCourseId) return Toast.warning('Select a course first.');
-  const btn = document.querySelector('button[onclick="checkBloomsWithAI()"]');
-  const ogText = btn.innerHTML;
-  btn.innerHTML = '⏳ Analyzing...';
-  btn.disabled = true;
+    if(!currentCourseId) return Toast.warning('Select a course first.');
+    const btn = document.querySelector('button[onclick="checkBloomsWithAI()"]');
+    const ogText = btn.innerHTML;
+    btn.innerHTML = '⏳ Analyzing...';
+    btn.disabled = true;
 
-  // Sync inputs to memory before checking
-  const textareas = document.querySelectorAll('textarea[data-field="text"]');
-  const selects   = document.querySelectorAll('select[data-field="blooms"]');
-  textareas.forEach(t => { currentCOs[t.dataset.idx].text = t.value.trim(); });
-  selects.forEach(s => { currentCOs[s.dataset.idx].bloomsLevel = s.value; });
+    // Sync inputs to memory before checking
+    const textareas = document.querySelectorAll('textarea[data-field="text"]');
+    const selects   = document.querySelectorAll('select[data-field="blooms"]');
+    textareas.forEach(t => { currentCOs[t.dataset.idx].text = t.value.trim(); });
+    selects.forEach(s => { currentCOs[s.dataset.idx].bloomsLevel = s.value; });
 
-  try {
-    const results = await AI.analyzeBlooms(currentCOs);
-    results.forEach((res, idx) => {
-      if(res.status === 'empty') return;
-      const fb = document.getElementById(`ai-feedback-${idx}`);
-      fb.style.display = 'block';
-      fb.textContent = res.suggestion;
-      if(res.status === 'perfect') {
-        fb.style.background = 'rgba(16,185,129,0.1)'; fb.style.color = 'var(--success)';
-      } else if(res.status === 'upgrade') {
-        fb.style.background = 'rgba(37,99,235,0.15)'; fb.style.color = 'var(--primary)';
-      } else {
-        fb.style.background = 'rgba(245,158,11,0.1)'; fb.style.color = 'var(--warning)';
-      }
-    });
-    Toast.success("AI Bloom's analysis complete.");
-  } catch(e) {
-    Toast.error(e.message || 'Analysis failed.');
-  } finally {
-    btn.innerHTML = ogText;
-    btn.disabled = false;
+    try {
+      const results = await AI.analyzeBlooms(currentCOs);
+      results.forEach((res) => {
+        const idx = (res.no || 1) - 1;
+        if (idx < 0 || idx >= currentCOs.length) return;
+        if(res.status === 'empty') return;
+        
+        // Auto-fill form fields
+        if (res.level) {
+          const selectEl = document.querySelector(`select[data-idx="${idx}"][data-field="blooms"]`);
+          if (selectEl) {
+             const optionToSelect = Array.from(selectEl.options).find(opt => opt.value.startsWith(res.level));
+             if (optionToSelect) selectEl.value = optionToSelect.value;
+          }
+        }
+        
+        if (res.target) {
+          const targetEl = document.querySelector(`input[data-idx="${idx}"][data-field="studentThreshold"]`);
+          if (targetEl) targetEl.value = res.target;
+        }
+        
+        if (res.l1) {
+          const l1El = document.querySelector(`input[data-idx="${idx}"][data-field="level1"]`);
+          if (l1El) l1El.value = res.l1;
+        }
+        
+        if (res.l2) {
+          const l2El = document.querySelector(`input[data-idx="${idx}"][data-field="level2"]`);
+          if (l2El) l2El.value = res.l2;
+        }
+        
+        if (res.l3) {
+          const l3El = document.querySelector(`input[data-idx="${idx}"][data-field="level3"]`);
+          if (l3El) l3El.value = res.l3;
+        }
+        
+        const fb = document.getElementById(`ai-feedback-${idx}`);
+        fb.style.display = 'block';
+        fb.textContent = res.suggestion;
+        if(res.status === 'perfect') {
+          fb.style.background = 'rgba(16,185,129,0.1)'; fb.style.color = 'var(--success)';
+        } else if(res.status === 'upgrade') {
+          fb.style.background = 'rgba(37,99,235,0.15)'; fb.style.color = 'var(--primary)';
+        } else {
+          fb.style.background = 'rgba(245,158,11,0.1)'; fb.style.color = 'var(--warning)';
+        }
+      });
+      Toast.success('Bloom\'s Levels and Thresholds Auto-Assigned!');
+    } catch(e) {
+      Toast.error(e.message);
+    } finally {
+      btn.innerHTML = ogText;
+      btn.disabled = false;
+    }
   }
-}
+
+  async function completeAutoAI() {
+    if(!currentCourseId) return Toast.warning('Select a course first.');
+    const syllabusData = DB.syllabus.byCourse(currentCourseId);
+    if (!syllabusData || !syllabusData.modules || syllabusData.modules.length === 0) {
+      return Toast.warning('No syllabus found! Please go to Syllabus Setup and add modules first.');
+    }
+    
+    const btn = document.querySelector('button[onclick="completeAutoAI()"]');
+    const ogText = btn.innerHTML;
+    btn.innerHTML = '✨ Generating COs...';
+    btn.disabled = true;
+    
+    try {
+      const syllabusText = syllabusData.modules.map(m => m.title + "\n" + m.description).join("\n\n");
+      const generatedCOs = await AI.generateCOsFromSyllabus(syllabusText);
+      
+      // Overwrite current COs with generated ones, ensuring exactly 6 slots
+      let newCOs = generatedCOs.slice(0, 6).map((g, idx) => ({
+        id: `CO${idx+1}`, no: idx + 1, code: `CO${idx+1}`,
+        text: g.text,
+        bloomsLevel: g.level,
+        targetStudent: g.target || 60,
+        level1: g.l1 || 60,
+        level2: g.l2 || 70,
+        level3: g.l3 || 80,
+        surveyQ: g.surveyQ || '',
+        assessedThrough: ['ia', 'mse', 'ese']
+      }));
+      
+      // Pad to 6 if AI returned fewer
+      while(newCOs.length < 6) {
+        const idx = newCOs.length;
+        newCOs.push({
+          id: `CO${idx+1}`, no: idx + 1, code: `CO${idx+1}`,
+          text: '', bloomsLevel: '', targetStudent: 60, level1: 65, level2: 75, level3: 85, surveyQ: g.surveyQ || '', assessedThrough: []
+        });
+      }
+      currentCOs = newCOs;
+      
+      // Update UI
+      renderCOs();
+      Toast.success('Successfully generated 6 COs from Syllabus!');
+      
+    } catch (e) {
+      Toast.error('Failed to generate COs: ' + e.message);
+    } finally {
+      btn.innerHTML = ogText;
+      btn.disabled = false;
+    }
+  }
+
+  // Expose functions to global scope so HTML onclick handlers work
+  window.checkBloomsWithAI = checkBloomsWithAI;
+  window.completeAutoAI = completeAutoAI;
+  window.saveAll = saveAll;
+  window.applyThresholdPreset = applyThresholdPreset;
 })();
 </script>
 <script src="../scripts/ai-chat.js"></script>\n</body>

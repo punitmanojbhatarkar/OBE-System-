@@ -81,6 +81,7 @@
       <a class="nav-item" href="marks.html">📝 Marks Entry</a>
       <a class="nav-item" href="attainment.html">📈 Attainment</a>
       <a class="nav-item" href="assignments.html">🤖 Assignments & AI</a>
+      <a class="nav-item" href="auto-grade.html">✅ Auto-Grading</a>
       <a class="nav-item" href="question-paper.html">📄 Question Paper</a>
       <a class="nav-item" href="reports.html">📄 Reports & Export</a>
     </nav>
@@ -106,7 +107,7 @@
           <span class="search-icon">🔍</span>
           <input type="text" id="course-search" placeholder="Search courses…">
         </div>
-        <button class="btn btn-primary" onclick="openAddModal()">➕ Add Course</button>
+        <button class="btn btn-primary" id="btn-add-course-top" onclick="openAddModal()">➕ Add Course</button>
       </div>
     </header>
 
@@ -130,23 +131,29 @@
         <div class="empty-icon">📚</div>
         <h3>No Courses Found</h3>
         <p>You haven't been assigned any courses yet, or none match your search.</p>
-        <button class="btn btn-primary" onclick="openAddModal()">➕ Add Your First Course</button>
+        <button class="btn btn-primary" id="btn-add-course-empty" onclick="openAddModal()">➕ Add Your First Course</button>
       </div>
     </div>
   </main>
 </div>
 
 <div id="toast-container"></div>
-<script src="../scripts/data.js?v=2"></script>`r`n<script src="../scripts/api.js"></script>
-<script src="../scripts/auth.js?v=2"></script>
-<script src="../scripts/attainment.js"></script>
-<script src="../scripts/utils.js"></script>
+<script src="../scripts/data.js?v=99"></script>
+<script src="../scripts/api.js?v=99"></script>
+<script src="../scripts/auth.js?v=13"></script>
+<script src="../scripts/attainment.js?v=13"></script>
+<script src="../scripts/utils.js?v=13"></script>
 <script>
 (async () => {
   await (window._apiReady || Promise.resolve());
   const user = Auth.requireAuth(['faculty', 'hod']);
   if (!user) throw new Error('Not authorized');
   Auth.populateSidebar(user);
+
+  if (user.role !== 'hod') {
+    document.getElementById('btn-add-course-top').style.display = 'none';
+    document.getElementById('btn-add-course-empty').style.display = 'none';
+  }
 
   let allCourses = [];
   let editingId  = null;
@@ -157,7 +164,13 @@
     setupSearch();
 
   function loadCourses() {
-    allCourses = DB.courses.byFaculty(user.id);
+    // HOD sees all courses in their dept; faculty sees only their own
+    if (user.role === 'hod') {
+      const allC = DB.courses.all ? DB.courses.all() : JSON.parse(localStorage.getItem('obe_courses') || '[]');
+      allCourses = allC.filter(c => c.deptId === user.deptId);
+    } else {
+      allCourses = DB.courses.byFaculty(user.id);
+    }
     renderCourses(allCourses);
   }
 
@@ -181,6 +194,15 @@
     const cos      = DB.cos.byCourse(c.id).filter(x => x.text).length;
     const dept     = DB.departments.byId(c.deptId);
     const statusColor = (c.status||'active') === 'active' ? 'badge-success' : 'badge-muted';
+    
+    let adminActions = '';
+    if (user.role === 'hod') {
+      adminActions = `
+          <button class="btn btn-ghost btn-sm" onclick="openEditModal('${c.id}')">✏️</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="deleteCourse('${c.id}','${c.name.replace(/'/g, "\\'")}')">🗑️</button>
+      `;
+    }
+
     return `
       <div class="course-card" id="card-${c.id}">
         <div class="course-card-header">
@@ -214,8 +236,7 @@
           <button class="btn btn-primary btn-sm" style="flex:1" onclick="selectAndGo('${c.id}','course-setup.html')">⚙️ Setup</button>
           <button class="btn btn-secondary btn-sm" onclick="selectAndGo('${c.id}','outcomes.html')">🎯 COs</button>
           <button class="btn btn-secondary btn-sm" onclick="selectAndGo('${c.id}','students.html')">👥 Students</button>
-          <button class="btn btn-ghost btn-sm" onclick="openEditModal('${c.id}')">✏️</button>
-          <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="deleteCourse('${c.id}','${c.name.replace(/'/g, "\\'")}')">🗑️</button>
+          ${adminActions}
         </div>
       </div>`;
   }
@@ -294,7 +315,7 @@
         <div class="form-group">
           <label class="form-label">Department</label>
           <select class="form-control" id="f-dept">
-            ${depts.map(d => `<option value="${d.id}" ${v.deptId===d.id?'selected':''}>${d.name}</option>`).join('')}
+            ${depts.map(d => `<option value="${d.id}" ${(v.deptId||user.deptId)===d.id?'selected':''}>${d.name}</option>`).join('')}
           </select>
         </div>
         <div class="form-group">
@@ -345,6 +366,13 @@
           </select>
         </div>
         <div class="form-group">
+          <label class="form-label">Assigned Faculty</label>
+          <select class="form-control" id="f-faculty">
+            <option value="${user.id}">Self (${user.name})</option>
+            ${DB.users.byDept(user.deptId).filter(u => u.role === 'faculty').map(f => `<option value="${f.id}" ${(v.facultyId === f.id) ? 'selected' : ''}>${f.name}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
           <label class="form-label">Status</label>
           <select class="form-control" id="f-status">
             <option value="active" ${(v.status||'active')==='active'?'selected':''}>Active</option>
@@ -382,7 +410,7 @@
       batch      : document.getElementById('f-batch').value.trim(),
       champion   : document.getElementById('f-champ').value.trim(),
       status     : document.getElementById('f-status').value,
-      facultyId  : user.id,
+      facultyId  : document.getElementById('f-faculty') ? document.getElementById('f-faculty').value : (editingId ? (DB.courses.byId(editingId)?.facultyId || user.id) : user.id),
       examScheme : { ia, mse, ese },
       attainmentLevels: { 1:65, 2:75, 3:85 },
       directWeight: 80, indirectWeight: 20,
@@ -397,8 +425,16 @@
     }
     Modal.close();
     loadCourses();
-  }
+  }  // end saveCourse
+
+  // Expose functions called by inline onclick HTML attributes
+  window.openAddModal  = openAddModal;
+  window.openEditModal = openEditModal;
+  window.saveCourse    = saveCourse;
+  window.deleteCourse  = deleteCourse;
+  window.selectAndGo   = selectAndGo;
 })();
 </script>
-<script src="../scripts/ai-chat.js"></script>\n</body>
+<script src="../scripts/ai-mock.js"></script>
+</body>
 </html>

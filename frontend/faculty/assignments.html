@@ -15,12 +15,19 @@
     .asgn-card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: var(--sp-md); }
     .asgn-no { width:36px;height:36px;background:var(--primary);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;flex-shrink:0; }
     .ai-meter { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); padding: var(--sp-md); }
-    .qrow { display:grid; grid-template-columns: 40px 1fr 80px 80px 80px 44px; gap: var(--sp-sm); align-items:center; margin-bottom:var(--sp-sm); }
+    .qrow { display:grid; grid-template-columns: 40px 1fr 80px 80px 80px 44px; gap: var(--sp-sm); align-items:start; margin-bottom:var(--sp-sm); }
     .rubric-row { display:grid; grid-template-columns: 1fr 80px 1fr 1fr 1fr; gap: var(--sp-sm); margin-bottom:var(--sp-sm); }
     .sub-row { display:flex; justify-content:space-between; align-items:center; padding:10px var(--sp-md); border-radius:var(--r-md); background:var(--surface); margin-bottom:6px; }
     .ai-result-box { background:rgba(99,102,241,.07);border:1px solid rgba(99,102,241,.2);border-radius:var(--r-md);padding:var(--sp-md);margin-top:var(--sp-md); }
     .wide-modal .modal { max-width: 880px !important; }
-  </style>
+  
+.markdown-body table { border-collapse: collapse; width: 100%; margin-bottom: 8px; font-size: 11px; }
+.markdown-body th, .markdown-body td { border: 1px solid var(--border); padding: 4px 8px; text-align: left; }
+.markdown-body th { background: rgba(0,0,0,0.05); font-weight: 600; }
+.markdown-body p { margin-bottom: 6px; }
+.markdown-body ul, .markdown-body ol { margin: 0 0 8px 20px; padding: 0; }
+
+</style>
 </head>
 <body>
 <div class="app-shell">
@@ -44,6 +51,7 @@
       <a class="nav-item" href="marks.html">📝 Marks Entry</a>
       <a class="nav-item" href="attainment.html">📈 Attainment</a>
       <a class="nav-item active" href="assignments.html">🤖 Assignments & AI</a>
+      <a class="nav-item" href="auto-grade.html">✅ Auto-Grading</a>
       <a class="nav-item" href="question-paper.html">📄 Question Paper</a>
       <a class="nav-item" href="reports.html">📄 Reports & Export</a>
     </nav>
@@ -60,16 +68,14 @@
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
-        <h1 class="topbar-title">Assignments & AI</h1>
-        <div class="topbar-breadcrumb">Assessment <span>&rsaquo;</span> Assignments</div>
-      
+        <h1 class="topbar-title">Assessments & AI</h1>
+        <div class="topbar-breadcrumb">Assessment <span>&rsaquo;</span> Assessments</div>
       </div>
       <div class="topbar-right">
-        <select id="courseSelect" class="form-control" style="width:210px">
-          <option value="">Select Course…</option>
-        </select>
-        <button class="btn btn-secondary" id="moodleBtn" onclick="openMoodleModal()">📥 Grade Moodle Export</button>
-        <button class="btn btn-primary" id="createBtn">➕ Create Assignment</button>
+        <div style="display:flex;gap:12px">
+          <select class="form-control" id="courseSelect" onchange="currentCourseId=this.value;renderAssignments()" style="width:250px"></select>
+          <button class="btn btn-primary" id="createBtn" onclick="openCreateModal()">✨ Create Assessment</button>
+        </div>
       </div>
     </header>
 
@@ -95,7 +101,7 @@
           <div class="flex gap-lg">
             <div style="text-align:center;flex:1">
               <div style="font-size:28px;font-weight:800;color:var(--primary)" id="statTotal">0</div>
-              <div style="font-size:12px;color:var(--text-secondary)">Total Assignments</div>
+              <div style="font-size:12px;color:var(--text-secondary)">Total Assessments</div>
             </div>
             <div style="text-align:center;flex:1">
               <div style="font-size:28px;font-weight:800;color:var(--success)" id="statAI">0</div>
@@ -127,7 +133,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.5.1/mammoth.browser.min.js"></script>
-<script src="../scripts/data.js?v=2"></script>`r`n<script src="../scripts/api.js"></script>
+<script src="../scripts/data.js?v=99"></script>
+<script src="../scripts/api.js?v=99"></script>
 <script src="../scripts/auth.js?v=2"></script>
 <script src="../scripts/attainment.js"></script>
 <script src="../scripts/utils.js"></script>
@@ -181,7 +188,7 @@
       document.getElementById('createBtn').style.display = 'inline-flex';
     }
 
-    currentAssignments = DB.assignments.byCourse(currentCourseId);
+    currentAssignments = DB.assessments.byCourse(currentCourseId);
     const grid = document.getElementById('assignGrid');
     const empty = document.getElementById('emptyState');
 
@@ -211,7 +218,7 @@
               ${isOverdue ? '<span class="badge badge-danger">Overdue</span>' : '<span class="badge badge-success">Active</span>'}
             </div>
           </div>
-          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--sp-md);line-height:1.5">${a.description}</p>
+          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--sp-md);line-height:1.5">${a.description || ""}</p>
           <div class="flex gap-sm flex-wrap" style="margin-bottom:var(--sp-md)">
             ${(a.coNos||[]).map(c=>`<span class="badge badge-info">CO${c}</span>`).join('')}
             <span class="badge badge-muted">RBT L${a.rbtLevel||'?'}</span>
@@ -224,17 +231,17 @@
   }
 
   function deleteAssignment(id) {
-    const a = DB.assignments.byId(id);
+    const a = DB.assessments.byId(id);
     confirmDelete(a.title, () => {
-      DB.assignments.delete(id);
+      DB.assessments.delete(id);
       renderAssignments();
-      Toast.success('Assignment deleted.');
+      Toast.success('Assessment deleted.');
     });
   }
 
   function viewSubmissions(assignId) {
-    const a = DB.assignments.byId(assignId);
-    const subs = DB.submissions.byAssignment(assignId);
+    const a = DB.assessments.byId(assignId);
+    const subs = DB.submissions.byAssessId(assignId);
     const students = DB.students.byCourse(currentCourseId);
     let rows = subs.length ? subs.map(s => {
       const stu = students.find(x=>x.prn===s.prn);
@@ -264,7 +271,7 @@
 
   function gradeSubmission(subId, assignId) {
     const sub = DB.submissions.all().find(s=>s.id===subId);
-    const a = DB.assignments.byId(assignId);
+    const a = DB.assessments.byId(assignId);
     if (!sub) return;
     Modal.open(`
       <div class="modal-header">
@@ -298,9 +305,9 @@
     renderAssignments();
   }
 
-  // Edit assignment
+  // Edit assessment
   function editAssignment(id) {
-    const a = DB.assignments.byId(id);
+    const a = DB.assessments.byId(id);
     openCreateModal(a);
   }
 
@@ -311,20 +318,29 @@
 
     const modalHtml = `
       <div class="modal-header">
-        <h3 class="modal-title">${isEdit ? '✏️ Edit Assignment' : '➕ Create Assignment'}</h3>
+                <h3 class="modal-title">${isEdit ? '✏️ Edit Assessment' : '✨ Create Assessment'}</h3>
         <button class="modal-close" onclick="Modal.close()">✕</button>
       </div>
-
       <div class="tabs" id="createTabs" style="margin-bottom:var(--sp-lg)">
         <button class="tab-btn" data-tab="manualTab">📝 Manual</button>
         <button class="tab-btn" data-tab="aiTab">🤖 AI Generate</button>
+        <button class="tab-btn" data-tab="pdfImportTab">📂 Import from PDF/DOCX</button>
       </div>
 
       <!-- MANUAL TAB -->
       <div class="tab-content" id="manualTab">
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Assignment No.</label>
+            <label class="form-label">Type</label>
+            <select class="form-control" id="aType">
+              <option value="assignment" ${existing?.type==='assignment'?'selected':''}>Assignment</option>
+              <option value="ia" ${existing?.type==='ia'?'selected':''}>Internal Assessment (IA)</option>
+              <option value="mse" ${existing?.type==='mse'?'selected':''}>Mid-Sem Exam (MSE)</option>
+              <option value="ese" ${existing?.type==='ese'?'selected':''}>End-Sem Exam (ESE)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">No. / Identifier</label>
             <input type="number" class="form-control" id="aNo" value="${existing?.no||''}" min="1">
           </div>
           <div class="form-group">
@@ -334,7 +350,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">Title *</label>
-          <input type="text" class="form-control" id="aTitle" value="${existing?.title||''}" placeholder="Assignment title">
+          <input type="text" class="form-control" id="aTitle" value="${existing?.title||''}" placeholder="e.g. IA 1, Mid-Sem, Assignment 2">
         </div>
         <div class="form-group">
           <label class="form-label">Description</label>
@@ -348,7 +364,7 @@
           <div class="form-group">
             <label class="form-label">RBT Level</label>
             <select class="form-control" id="aRbt">
-              ${['L1','L2','L3','L4','L5','L6'].map(l=>`<option value="${l.replace('L','')}" ${existing?.rbtLevel==l.replace('L','') ? 'selected':''}>RBT ${l}</option>`).join('')}
+              ${['L1','L2','L3','L4','L5','L6'].map(l=>`<option value="${l.replace('L','')}" ${existing?.rbtLevel==l.replace('L','') ? 'selected':''}>${l}</option>`).join('')}
             </select>
           </div>
           <div class="form-group">
@@ -392,7 +408,7 @@
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">CO Text / Topic</label>
-            <input type="text" class="form-control" id="aiCoText" placeholder="e.g., Hypothesis Testing using data analysis tools">
+            <input type="text" class="form-control" id="aiCoText" placeholder="e.g., CO1, or 'Understand hypothesis testing...'">
           </div>
           <div class="form-group">
             <label class="form-label">Topic / Keyword</label>
@@ -419,6 +435,34 @@
         <div id="aiResultArea"></div>
       </div>
 
+      <!-- PDF IMPORT TAB -->
+      <div class="tab-content" id="pdfImportTab">
+        <div class="alert alert-info" style="margin-bottom:var(--sp-md);display:flex;gap:10px;align-items:flex-start">
+          <span style="font-size:20px">📂</span>
+          <span><strong>Import Moodle / Existing Assignment</strong><br>Upload your assignment question paper (PDF or DOCX). AI will extract all questions, suggest CO mappings, marks, RBT levels, and rubrics automatically.</span>
+        </div>
+
+        <div id="pdf-drop-zone" style="border:2px dashed rgba(99,102,241,.4);border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(99,102,241,.03);margin-bottom:var(--sp-md)" onclick="document.getElementById('pdf-q-file').click()">
+          <div style="font-size:36px;margin-bottom:8px">📄</div>
+          <div style="font-weight:600;color:var(--text-primary)">Click to upload or drag &amp; drop</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">Supported: PDF, DOCX (Max 10MB)</div>
+          <div id="pdf-q-filename" style="display:none;margin-top:8px;font-size:13px;color:var(--primary);font-weight:600"></div>
+        </div>
+        <input type="file" id="pdf-q-file" accept=".pdf,.docx" style="display:none">
+
+        <button class="btn btn-primary w-full" id="btn-extract-q" onclick="extractQuestionsFromFile()" style="margin-bottom:var(--sp-md)">
+          🤖 Extract Questions with AI
+        </button>
+
+        <div id="pdf-extract-result" style="display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--sp-md)">
+            <strong>📋 Extracted Questions Preview</strong>
+            <button class="btn btn-success btn-sm" onclick="applyExtractedQuestions()">✅ Apply to Assignment Form</button>
+          </div>
+          <div id="pdf-extract-preview" style="max-height:360px;overflow-y:auto;display:flex;flex-direction:column;gap:10px"></div>
+        </div>
+      </div>
+
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
         <button class="btn btn-success" id="saveAsgnBtn" onclick="saveAssignment('${existing?.id||''}')">💾 Save Assignment</button>
@@ -432,7 +476,7 @@
   function qRowHtml(i, q) {
     return `<div class="qrow" id="qrow-${i}">
       <span style="font-weight:700;color:var(--text-secondary)">${i+1}</span>
-      <input type="text" class="form-control" style="font-size:12px" placeholder="Question text…" value="${(q.text||'').replace(/"/g,'&quot;')}" data-q="text" data-idx="${i}">
+      <textarea class="form-control" style="font-size:12px; resize:vertical; min-height:36px; line-height:1.4" placeholder="Question text…" data-q="text" data-idx="${i}" rows="3">${(q.text||"").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</textarea>
       <input type="number" class="form-control" style="font-size:12px" min="1" value="${q.marks||5}" data-q="marks" data-idx="${i}">
       <input type="number" class="form-control" style="font-size:12px" min="1" max="6" placeholder="CO#" value="${q.coNo||''}" data-q="coNo" data-idx="${i}">
       <select class="form-control" style="font-size:12px" data-q="rbt" data-idx="${i}">
@@ -465,12 +509,30 @@
   }
 
   async function generateWithAI() {
-    const coText = document.getElementById('aiCoText').value.trim();
+    let coText = document.getElementById('aiCoText').value.trim();
     const topic = document.getElementById('aiTopic').value.trim();
     const rbt = document.getElementById('aiRbt').value;
     const numQ = parseInt(document.getElementById('aiNumQ').value) || 2;
     const maxMarks = parseInt(document.getElementById('aiMaxMarks').value) || 10;
     if (!coText || !topic) { Toast.warning('Please fill in CO text and topic.'); return; }
+
+    // Automatically resolve "CO1", "CO2", etc. to actual text, supporting multiple like "CO1 + CO2"
+    const courseCOs = DB.cos.byCourse(currentCourseId);
+    let missingCOs = [];
+    coText = coText.replace(/CO\s*([1-6])/gi, (match, numStr) => {
+      const coNo = parseInt(numStr);
+      const found = courseCOs.find(c => c.no === coNo);
+      if (found && found.text) {
+        return `CO${coNo} (${found.text})`;
+      } else {
+        missingCOs.push(`CO${coNo}`);
+        return match;
+      }
+    });
+
+    if (missingCOs.length > 0) {
+      Toast.warning(`Could not find description for ${missingCOs.join(', ')} in the database. Using raw text.`);
+    }
 
     const btn = document.getElementById('aiGenBtn');
     btnLoading(btn, true);
@@ -554,6 +616,7 @@
 
     const data = {
       courseId: currentCourseId,
+      type: document.getElementById('aType').value,
       no: parseInt(document.getElementById('aNo').value)||1,
       title,
       description: document.getElementById('aDesc')?.value||'',
@@ -567,11 +630,11 @@
     };
 
     if (existingId) {
-      DB.assignments.update({...DB.assignments.byId(existingId), ...data});
-      Toast.success('Assignment updated!');
+      DB.assessments.update({...DB.assessments.byId(existingId), ...data});
+      Toast.success('Assessment updated!');
     } else {
-      DB.assignments.add(data);
-      Toast.success('Assignment created!');
+      DB.assessments.add(data);
+      Toast.success('Assessment created!');
     }
     aiResult = null;
     Modal.close();
@@ -664,7 +727,7 @@
       return;
     }
 
-    const assignment = DB.assignments.byId(aId);
+    const assignment = DB.assessments.byId(aId);
     if (!assignment.rubrics || assignment.rubrics.length === 0) {
       Toast.error('Selected assignment has no rubrics! AI cannot grade it.');
       return;
@@ -802,7 +865,192 @@
 
   updateAIMeter();
     loadCourses();
+
+
+  // ─────────────────────────────────────────────────────────────
+  // PDF / DOCX QUESTION EXTRACTOR
+  // ─────────────────────────────────────────────────────────────
+  let _extractedData = null;
+
+  // Drag-and-drop and file-change using event delegation (modal is dynamic)
+  document.addEventListener('change', function(e) {
+    if (e.target && e.target.id === 'pdf-q-file') {
+      const fn = e.target.files[0] && e.target.files[0].name;
+      if (fn) {
+        const label = document.getElementById('pdf-q-filename');
+        if (label) { label.textContent = '\uD83D\uDCC4 ' + fn; label.style.display = 'block'; }
+      }
+    }
+  });
+  document.addEventListener('dragover', function(e) {
+    if (e.target && e.target.closest && e.target.closest('#pdf-drop-zone')) e.preventDefault();
+  });
+  document.addEventListener('drop', function(e) {
+    const zone = e.target.closest && e.target.closest('#pdf-drop-zone');
+    if (!zone) return;
+    e.preventDefault();
+    if (e.dataTransfer.files.length) {
+      const fileInput = document.getElementById('pdf-q-file');
+      if (!fileInput) return;
+      try {
+        const dt = new DataTransfer();
+        dt.items.add(e.dataTransfer.files[0]);
+        fileInput.files = dt.files;
+      } catch(ex) {}
+      const label = document.getElementById('pdf-q-filename');
+      if (label) { label.textContent = '\uD83D\uDCC4 ' + e.dataTransfer.files[0].name; label.style.display = 'block'; }
+    }
+  });
+
+  async function extractQuestionsFromFile() {
+    const fileInput = document.getElementById('pdf-q-file');
+    if (!fileInput || !fileInput.files.length) {
+      Toast.warning('Please select a PDF or DOCX file first.');
+      return;
+    }
+
+    const btn = document.getElementById('btn-extract-q');
+    const origText = btn.innerHTML;
+    btn.innerHTML = '\u23F3 AI is reading your file...';
+    btn.disabled = true;
+
+    try {
+      const cos = DB.cos.byCourse(currentCourseId).filter(function(c) { return c.text; });
+      const cosContext = cos.map(function(c) { return 'CO' + c.no + ': ' + c.text; }).join('\n');
+
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+      formData.append('cos_context', cosContext);
+
+      const res = await fetch((window.API_BASE || 'http://127.0.0.1:8080') + '/api/extract-assignment-questions', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!res.ok) {
+        let errMsg = res.statusText;
+        try { const e = await res.json(); errMsg = e.detail || errMsg; } catch(ex) {}
+        throw new Error(errMsg);
+      }
+
+      const json = await res.json();
+      if (!json.success || !json.data) throw new Error('No data returned from AI');
+
+      _extractedData = json.data;
+      renderExtractedPreview(_extractedData);
+      Toast.success('\u2705 Extracted ' + (_extractedData.questions && _extractedData.questions.length || 0) + ' questions!');
+    } catch (err) {
+      console.error(err);
+      Toast.error('Extraction failed: ' + err.message);
+    } finally {
+      btn.innerHTML = origText;
+      btn.disabled = false;
+    }
+  }
+
+  function renderExtractedPreview(data) {
+    const resultDiv = document.getElementById('pdf-extract-result');
+    const preview   = document.getElementById('pdf-extract-preview');
+    if (!resultDiv || !preview) return;
+
+    const rbtColors = { L1:'#64748b', L2:'#0ea5e9', L3:'#10b981', L4:'#f59e0b', L5:'#f97316', L6:'#8b5cf6' };
+    preview.innerHTML = (data.questions || []).map(function(q, i) {
+      const rbt = q.rbt || 'L3';
+      const color = rbtColors[rbt] || '#64748b';
+      return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+          '<span style="font-weight:700;color:var(--primary)">Q' + (q.q_no || (i+1)) + '</span>' +
+          '<div style="display:flex;gap:6px">' +
+            '<span class="badge badge-info">CO' + (q.co_no || '?') + '</span>' +
+            '<span style="padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;background:' + color + '22;color:' + color + '">RBT ' + rbt + '</span>' +
+            '<span style="padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(245,158,11,.15);color:#d97706">' + (q.marks || 10) + ' marks</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="markdown-body" style="font-size:13px;color:var(--text-primary);margin:0 0 8px;line-height:1.5">' + (typeof marked !== "undefined" ? marked.parse(q.text || "") : escHtml(q.text || "")) + '</div>' +
+        (q.rubric ? '<div style="font-size:11px;color:var(--text-secondary);border-top:1px solid var(--border);padding-top:6px;margin-top:6px"><strong>Rubric:</strong> ' + escHtml(q.rubric) + '</div>' : '') +
+      '</div>';
+    }).join('');
+
+    resultDiv.style.display = 'block';
+
+    const titleEl = document.getElementById('aTitle');
+    const marksEl = document.getElementById('aMaxMarks');
+    if (titleEl && !titleEl.value && data.title) titleEl.value = data.title;
+    if (marksEl && data.total_marks) marksEl.value = data.total_marks;
+  }
+
+  function applyExtractedQuestions() {
+    if (!_extractedData || !(_extractedData.questions && _extractedData.questions.length)) {
+      Toast.warning('No questions to apply. Please extract first.');
+      return;
+    }
+
+    // Switch to Manual tab
+    const manualBtn = document.querySelector('[data-tab="manualTab"]');
+    if (manualBtn) manualBtn.click();
+
+    const titleEl = document.getElementById('aTitle');
+    const marksEl = document.getElementById('aMaxMarks');
+    if (titleEl && _extractedData.title) titleEl.value = _extractedData.title;
+    if (marksEl && _extractedData.total_marks) marksEl.value = _extractedData.total_marks;
+
+    const area = document.getElementById('questionsArea');
+    if (area) {
+      area.querySelectorAll('.qrow[id]').forEach(function(r) { r.remove(); });
+      _extractedData.questions.forEach(function(q, i) {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = qRowHtml(i, { text: q.text || '', marks: q.marks || 10, coNo: q.co_no || '', rbt: q.rbt || 'L3' });
+        area.appendChild(tmp.firstElementChild);
+      });
+    }
+
+    const rubricArea = document.getElementById('rubricsArea');
+    if (rubricArea) {
+      rubricArea.querySelectorAll('.rubric-row[id]').forEach(function(r) { r.remove(); });
+      _extractedData.questions.forEach(function(q, i) {
+        if (!q.rubric) return;
+        const tmp = document.createElement('div');
+        tmp.innerHTML = rubricRowHtml(i, {
+          criterion: q.rubric || '',
+          coNo: q.co_no || '',
+          exceptional: q.rubric_exceptional || '',
+          best: q.rubric_good || '',
+          average: q.rubric_avg || ''
+        });
+        rubricArea.appendChild(tmp.firstElementChild);
+      });
+    }
+
+    const uniqueCos = [];
+    _extractedData.questions.forEach(function(q) { if (q.co_no && uniqueCos.indexOf(q.co_no) < 0) uniqueCos.push(q.co_no); });
+    const coNosEl = document.getElementById('aCoNos');
+    if (coNosEl && uniqueCos.length) coNosEl.value = uniqueCos.join(',');
+
+    Toast.success('Questions and rubrics applied! Review and save.');
+  }
+
+  function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Auto-exposed: onclick handlers need to be on window
+  window.addQRow = addQRow;
+  window.addRubricRow = addRubricRow;
+  window.applyAIResult = applyAIResult;
+  window.deleteAssignment = deleteAssignment;
+  window.editAssignment = editAssignment;
+  window.generateWithAI = generateWithAI;
+  window.gradeSubmission = gradeSubmission;
+  window.openMoodleModal = openMoodleModal;
+  window.processMoodleExport = processMoodleExport;
+  window.saveAssignment = saveAssignment;
+  window.saveGrade = saveGrade;
+  window.viewSubmissions = viewSubmissions;
+  window.extractQuestionsFromFile = extractQuestionsFromFile;
+  window.applyExtractedQuestions  = applyExtractedQuestions;
 })();
 </script>
-<script src="../scripts/ai-chat.js"></script>\n</body>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="../scripts/ai-mock.js"></script>
+</body>
 </html>

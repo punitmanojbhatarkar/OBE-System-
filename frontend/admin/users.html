@@ -206,7 +206,8 @@
   </div>
 </div>
 
-<script src="../scripts/data.js?v=42"></script>`r`n<script src="../scripts/api.js"></script>
+<script src="../scripts/data.js?v=99"></script>
+<script src="../scripts/api.js?v=99"></script>
 <script src="../scripts/auth.js?v=2"></script>
 <script src="../scripts/utils.js"></script>
 <script>
@@ -461,10 +462,17 @@ document.getElementById('user-form').addEventListener('submit', e => {
   };
   if (role === 'student') obj.prn = prn;
 
+  let oldRole = null;
+  let oldDeptId = null;
+
   if (id) {
     obj.id = id;
     const existing = DB.users.byId(id);
-    obj.password = pw ? pw : existing.password;
+    if (existing) {
+      oldRole = existing.role;
+      oldDeptId = existing.deptId;
+      obj.password = pw ? pw : existing.password;
+    }
     DB.users.update(obj);
     Toast.success('User updated successfully.');
   } else {
@@ -473,7 +481,16 @@ document.getElementById('user-form').addEventListener('submit', e => {
     Toast.success('User added successfully.');
   }
 
-  // HOD sync: demote existing HODs in same dept, then set dept.hod
+  // Clear HOD from old department if user was moved to a new dept or demoted from HOD
+  if (oldRole === 'hod' && oldDeptId && (oldDeptId !== deptId || role !== 'hod')) {
+    const oldDept = DB.departments.byId(oldDeptId);
+    if (oldDept && oldDept.hod === name) {
+      oldDept.hod = '';
+      DB.departments.update(oldDept);
+    }
+  }
+
+  // HOD sync: demote existing HODs in new dept, then set dept.hod
   if (role === 'hod' && deptId) {
     allUsers.forEach(u => {
       if (u.role === 'hod' && u.deptId === deptId && u.id !== (id || obj.id)) {
@@ -482,13 +499,6 @@ document.getElementById('user-form').addEventListener('submit', e => {
     });
     const dept = DB.departments.byId(deptId);
     if (dept) { dept.hod = name; DB.departments.update(dept); }
-  } else if (role !== 'hod' && deptId) {
-    // If user was HOD before, clear dept.hod
-    const existing = DB.users.byId(id);
-    if (existing && existing.role === 'hod') {
-      const dept = DB.departments.byId(deptId);
-      if (dept && dept.hod === existing.name) { dept.hod = ''; DB.departments.update(dept); }
-    }
   }
 
   closeModal();
@@ -497,6 +507,6 @@ document.getElementById('user-form').addEventListener('submit', e => {
 
 render();
 </script>
-<script src="../scripts/ai-chat.js"></script>
+<script src="../scripts/ai-mock.js"></script>
 </body>
 </html>

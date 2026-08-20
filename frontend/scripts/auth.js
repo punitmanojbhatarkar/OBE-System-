@@ -36,7 +36,8 @@ const Auth = (() => {
   /* ── Login ── */
   async function login(email, password) {
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/auth/login', {
+      const apiBase = typeof window !== 'undefined' && window.API_BASE !== undefined ? window.API_BASE : 'http://127.0.0.1:8080';
+      const res = await fetch(apiBase + '/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim(), password })
@@ -192,11 +193,13 @@ const Auth = (() => {
           <a class="nav-item" href="../faculty/syllabus.html">📖 Syllabus Setup</a>
           <a class="nav-item" href="../faculty/outcomes.html">🎯 CO & PO Setup</a>
           <a class="nav-item" href="../faculty/co-po-map.html">🗺️ CO-PO Mapping</a>
+          <a class="nav-item" href="../faculty/6a-matrix.html">📋 6A Indicator Mapping</a>
           <a class="nav-item" href="../faculty/students.html">👥 Students</a>
           <p class="nav-section-label">Assessment</p>
           <a class="nav-item" href="../faculty/marks.html">📝 Marks Entry</a>
           <a class="nav-item" href="../faculty/attainment.html">📈 Attainment</a>
           <a class="nav-item" href="../faculty/assignments.html">🤖 Assignments & AI</a>
+          <a class="nav-item" href="../faculty/auto-grade.html">✅ Auto-Grading</a>
           <a class="nav-item" href="../faculty/question-paper.html">📄 Question Paper</a>
           <a class="nav-item" href="../faculty/reports.html">📄 Course Reports</a>
         `;

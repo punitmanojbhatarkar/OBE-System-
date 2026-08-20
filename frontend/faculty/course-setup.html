@@ -95,6 +95,7 @@
       <a class="nav-item" href="marks.html">📝 Marks Entry</a>
       <a class="nav-item" href="attainment.html">📈 Attainment</a>
       <a class="nav-item" href="assignments.html">🤖 Assignments & AI</a>
+      <a class="nav-item" href="auto-grade.html">✅ Auto-Grading</a>
       <a class="nav-item" href="question-paper.html">📄 Question Paper</a>
       <a class="nav-item" href="reports.html">📄 Reports & Export</a>
     </nav>
@@ -352,7 +353,8 @@
 </div>
 
 <div id="toast-container"></div>
-<script src="../scripts/data.js?v=2"></script>`r`n<script src="../scripts/api.js"></script>
+<script src="../scripts/data.js?v=99"></script>
+<script src="../scripts/api.js?v=99"></script>
 <script src="../scripts/auth.js?v=2"></script>
 <script src="../scripts/ai-mock.js?v=2"></script>
 <script src="../scripts/attainment.js"></script>
@@ -652,7 +654,14 @@
       btn.disabled = false;
     }
   }
+
+  // Auto-exposed: onclick handlers need to be on window
+  window.addIARow = addIARow;
+  window.addMSERow = addMSERow;
+  window.autoDraftPhilosophy = autoDraftPhilosophy;
+  window.removeQRow = removeQRow;
+  window.saveAll = saveAll;
 })();
 </script>
-<script src="../scripts/ai-chat.js"></script>\n</body>
+</body>
 </html>

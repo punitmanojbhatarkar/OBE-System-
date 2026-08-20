@@ -90,6 +90,7 @@
       <a class="nav-item" href="marks.html">📝 Marks Entry</a>
       <a class="nav-item" href="attainment.html">📈 Attainment</a>
       <a class="nav-item" href="assignments.html">🤖 Assignments & AI</a>
+      <a class="nav-item" href="auto-grade.html">✅ Auto-Grading</a>
       <a class="nav-item" href="question-paper.html">📄 Question Paper</a>
       <a class="nav-item" href="reports.html">📄 Reports & Export</a>
     </nav>
@@ -264,7 +265,8 @@
 <div id="toast-container"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="../scripts/data.js?v=2"></script>`r`n<script src="../scripts/api.js"></script>
+<script src="../scripts/data.js?v=99"></script>
+<script src="../scripts/api.js?v=99"></script>
 <script src="../scripts/auth.js?v=2"></script>
 <script src="../scripts/attainment.js"></script>
 <script src="../scripts/advisor.js"></script>
@@ -311,7 +313,7 @@
     document.getElementById('co-trend').innerHTML = stats.avgCO >= 2
       ? `<span style="color:var(--success)">▲</span> <span style="color:var(--success)">Good Attainment</span>`
       : `<span style="color:var(--warning)">◆</span> <span style="color:var(--warning)">Needs Improvement</span>`;
-    document.getElementById('po-trend').innerHTML = `<span style="color:var(--info)">▶</span> <span style="color:var(--text-secondary)">Across PO1-PO11</span>`;
+    document.getElementById('po-trend').innerHTML = `<span style="color:var(--info)">▶</span> <span style="color:var(--text-secondary)">Across PO1-PO12</span>`;
     document.getElementById('att-trend').innerHTML = stats.attained > 0
       ? `<span style="color:var(--success)">✓</span> <span style="color:var(--success)">${stats.attained} COs meeting target</span>`
       : `<span style="color:var(--warning)">⚠</span> <span style="color:var(--warning)">Enter marks to track</span>`;
@@ -433,7 +435,7 @@
   }
 
   function buildPORadar(courses) {
-    const poList = ['PO1','PO2','PO3','PO4','PO5','PO6','PO7','PO8','PO9','PO10','PO11'];
+    const poList = ['PO1','PO2','PO3','PO4','PO5','PO6','PO7','PO8','PO9','PO10','PO11','PO12'];
     const avgPO  = {};
     poList.forEach(po => avgPO[po] = []);
 
@@ -575,7 +577,10 @@
     });
   }
 
+
+  // Auto-exposed: onclick handlers need to be on window
+  window.selectCourse = selectCourse;
 })();
 </script>
-<script src="../scripts/ai-chat.js"></script>\n</body>
+</body>
 </html>

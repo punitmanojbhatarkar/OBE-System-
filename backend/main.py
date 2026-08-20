@@ -1,19 +1,22 @@
 import json
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import Optional, List
 import os
+import uuid
 from dotenv import load_dotenv
 
 from database import engine, get_db
 import models
 
 from agents.ai_logic import (
-    chat_with_advisor, extract_syllabus, generate_teaching_philosophy,
+    chat_with_advisor, chat_with_advisor_agent, clear_memory,
+    extract_syllabus, generate_teaching_philosophy, generate_cos_from_syllabus,
     analyze_blooms, auto_map_copo, generate_assignment,
-    grade_submission, generate_remedial_plan
+    calculate_co_attainment_python, interpret_attainment, generate_nba_report, analyze_6a_matrix,
+    generate_curriculum_gap_plan, grade_submission, extract_assignment_questions
 )
 
 load_dotenv()
@@ -21,9 +24,34 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="AI OBE System", version="2.0.0")
 
+from fastapi import Request
+from fastapi.responses import JSONResponse
+import traceback
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={"message": str(exc), "traceback": traceback.format_exc()}
+    )
+
+@app.middleware("http")
+async def add_pna_and_cors(request: Request, call_next):
+    if request.method == "OPTIONS":
+        response = JSONResponse(content="OK")
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        response.headers["Access-Control-Allow-Private-Network"] = "true"
+        return response
+    response = await call_next(request)
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Private-Network"] = "true"
+    return response
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*", "null"],
+    allow_origins=["*"],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -32,6 +60,9 @@ app.add_middleware(
 # ─────────────────────────────────────────────
 # HELPERS
 # ─────────────────────────────────────────────
+def uid():
+    return str(uuid.uuid4())[:12]
+
 def course_to_dict(c: models.Course) -> dict:
     return {
         "id": c.id, "code": c.code, "name": c.name, "shortName": c.shortName,
@@ -68,12 +99,6 @@ def uid():
     import time, random, string
     return str(int(time.time() * 1000)) + "".join(random.choices(string.ascii_lowercase, k=5))
 
-# ─────────────────────────────────────────────
-# ROOT
-# ─────────────────────────────────────────────
-@app.get("/")
-def root():
-    return {"status": "ok", "message": "AI OBE System v2 — fully backed by SQLite!"}
 
 # ─────────────────────────────────────────────
 # AUTH
@@ -82,11 +107,74 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
+@app.post("/api/migrate")
+async def migrate_db(request: Request, db: Session = Depends(get_db)):
+    # Receives the entire localStorage blob and overwrites db.
+    data = await request.json()
+    
+    # Very simple migration: we can just drop all tables and recreate them,
+    # then insert the data.
+    models.Base.metadata.drop_all(bind=engine)
+    models.Base.metadata.create_all(bind=engine)
+    
+    # For a robust migration, we should insert the provided data.
+    # But since SQLite has many relations, we need to do it carefully.
+    
+    if 'obe_users' in data:
+        for u in data['obe_users']:
+            db.merge(models.User(id=u.get('id'), name=u.get('name'), email=u.get('email'), password=u.get('password', '1234'), role=u.get('role'), deptId=u.get('deptId'), avatar=u.get('avatar')))
+            
+    if 'obe_departments' in data:
+        for d in data['obe_departments']:
+            db.merge(models.Department(id=d.get('id'), name=d.get('name'), code=d.get('code'), hod=d.get('hod'), vision=d.get('vision'), mission=d.get('mission')))
+            
+    if 'obe_courses' in data:
+        for c in data['obe_courses']:
+            exam = c.get('examScheme') or {}
+            att = c.get('attainmentLevels') or {}
+            db.merge(models.Course(
+                id=c.get('id'), code=c.get('code'), name=c.get('name'), shortName=c.get('shortName'), 
+                deptId=c.get('deptId'), facultyId=c.get('facultyId'), semester=c.get('semester'), 
+                year=c.get('year'), division=c.get('division'), batch=c.get('batch'), klass=c.get('class'), 
+                champion=c.get('champion'), champDate=c.get('champDate'), 
+                lecturesPerWeek=c.get('lecturesPerWeek', 3), totalStudents=c.get('totalStudents', 0), 
+                teachingPhilosophy=c.get('teachingPhilosophy'), status=c.get('status', 'active'),
+                ia=exam.get('ia', 30), mse=exam.get('mse', 20), ese=exam.get('ese', 50),
+                attLevel1=att.get('l1', 65), attLevel2=att.get('l2', 75), attLevel3=att.get('l3', 85),
+                directWeight=c.get('directWeight', 80), indirectWeight=c.get('indirectWeight', 20)
+            ))
+            
+    db.commit()
+    return {"success": True, "message": "Migrated successfully"}
+
+
 @app.post("/api/auth/login")
 def login(req: LoginRequest, db: Session = Depends(get_db)):
+    email_clean = req.email.strip().lower()
     user = db.query(models.User).filter(models.User.email == req.email).first()
-    if not user or user.password != req.password:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+    if not user:
+        # Check by lowercase email
+        user = db.query(models.User).filter(models.User.email.ilike(email_clean)).first()
+    if not user:
+        # Auto-provision new/trial user so login never fails for test accounts
+        role = "hod" if "hod" in email_clean else ("student" if "student" in email_clean else ("admin" if "admin" in email_clean else "faculty"))
+        name = email_clean.split("@")[0].replace(".", " ").title()
+        user = models.User(
+            id=f"usr-{uid()}",
+            name=name if len(name) > 1 else "Trial User",
+            email=req.email.strip(),
+            password=req.password,
+            role=role,
+            deptId="dept-cs" if role in ["faculty", "hod", "student"] else None,
+            avatar=name[0].upper() if name else "U"
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    elif user.password != req.password:
+        # Accept password update for trial convenience
+        user.password = req.password
+        db.commit()
     return {"success": True, "user": user_to_dict(user)}
 
 # ─────────────────────────────────────────────
@@ -102,17 +190,27 @@ def get_config(db: Session = Depends(get_db)):
                   "questions":[{"qNo":q.qNo,"desc":q.desc,"bloomsLevel":q.bloomsLevel,"coNo":q.coNo,"maxMarks":q.maxMarks}]}
                  for q in ia_questions]
     return {"academicYear": cfg.academicYear, "aiEnabled": cfg.aiEnabled,
+            "aiModel": cfg.aiModel, "aiApiKey": cfg.aiApiKey,
             "aiCallsUsed": cfg.aiCallsUsed, "maxAICalls": cfg.maxAICalls,
             "instituteVision": cfg.instituteVision, "instituteMission": cfg.instituteMission,
+            "attainmentDefaultLevels": cfg.attainmentDefaultLevels,
+            "directWeight": cfg.directWeight, "indirectWeight": cfg.indirectWeight,
+            "collegeFullName": cfg.collegeFullName,
             "iaQuestions": ia_q_list}
 
 class ConfigPatch(BaseModel):
     academicYear: Optional[str] = None
     aiEnabled: Optional[bool] = None
+    aiModel: Optional[str] = None
+    aiApiKey: Optional[str] = None
     aiCallsUsed: Optional[int] = None
     maxAICalls: Optional[int] = None
     instituteVision: Optional[str] = None
     instituteMission: Optional[str] = None
+    attainmentDefaultLevels: Optional[dict] = None
+    directWeight: Optional[int] = None
+    indirectWeight: Optional[int] = None
+    collegeFullName: Optional[str] = None
 
 @app.put("/api/config")
 def update_config(patch: ConfigPatch, db: Session = Depends(get_db)):
@@ -188,7 +286,7 @@ class UserBody(BaseModel):
     id: Optional[str] = None
     name: str
     email: str
-    password: str
+    password: Optional[str] = None
     role: str
     deptId: Optional[str] = None
     avatar: Optional[str] = None
@@ -406,6 +504,18 @@ def add_student(body: StudentBody, db: Session = Depends(get_db)):
     db.add(s); db.commit(); db.refresh(s)
     return student_to_dict(s)
 
+@app.put("/api/students/{student_id}")
+def update_student(student_id: str, body: StudentBody, db: Session = Depends(get_db)):
+    s = db.query(models.Student).filter(models.Student.id == student_id).first()
+    if s:
+        s.prn = body.prn
+        s.name = body.name
+        s.preSurveyScore = body.preSurveyScore
+        s.learnerType = body.learnerType
+        db.commit(); db.refresh(s)
+        return student_to_dict(s)
+    raise HTTPException(status_code=404, detail="Student not found")
+
 @app.delete("/api/students/{student_id}")
 def delete_student(student_id: str, db: Session = Depends(get_db)):
     s = db.query(models.Student).filter(models.Student.id == student_id).first()
@@ -510,6 +620,16 @@ def save_ia_questions(body: IAQSaveAll, db: Session = Depends(get_db)):
     db.commit()
     return {"success": True}
 
+@app.delete("/api/ia-questions/{course_id}/{assessment_type}/{assessment_no}")
+def delete_ia_questions(course_id: str, assessment_type: str, assessment_no: int, db: Session = Depends(get_db)):
+    db.query(models.IAQuestion).filter(
+        models.IAQuestion.courseId == course_id,
+        models.IAQuestion.assessmentType == assessment_type,
+        models.IAQuestion.assessmentNo == assessment_no
+    ).delete()
+    db.commit()
+    return {"success": True}
+
 # ─────────────────────────────────────────────
 # SURVEY
 # ─────────────────────────────────────────────
@@ -520,13 +640,15 @@ def get_survey(course_id: str, db: Session = Depends(get_db)):
 
 class SurveySaveAll(BaseModel):
     courseId: str
-    data: list  # [{prn, co, score}]
+    data: Optional[List] = None
+    survey: Optional[List] = None
 
 @app.post("/api/survey/save")
 def save_survey(body: SurveySaveAll, db: Session = Depends(get_db)):
     db.query(models.Survey).filter(models.Survey.courseId == body.courseId).delete()
-    for s in body.data:
-        db.add(models.Survey(courseId=body.courseId, prn=s["prn"], co=s["co"], score=s.get("score",0)))
+    items = body.survey if body.survey is not None else (body.data or [])
+    for s in items:
+        db.add(models.Survey(courseId=body.courseId, prn=s["prn"], co=str(s["co"]), score=int(s.get("score", 0))))
     db.commit()
     return {"success": True}
 
@@ -588,6 +710,37 @@ def save_syllabus(body: SyllabusBody, db: Session = Depends(get_db)):
     return {"success": True}
 
 # ─────────────────────────────────────────────
+# 6A INDICATOR MAPPING
+# ─────────────────────────────────────────────
+@app.get("/api/courses/{course_id}/indicatormapping")
+def get_indicator_mapping(course_id: str, db: Session = Depends(get_db)):
+    m = db.query(models.IndicatorMapping).filter(models.IndicatorMapping.courseId == course_id).first()
+    if not m: return {"courseId": course_id, "mappingData": {}}
+    data = m.mappingData
+    if isinstance(data, str):
+        try:
+            data = json.loads(data)
+        except:
+            data = {}
+    return {"courseId": m.courseId, "mappingData": data or {}}
+
+class IndicatorMappingBody(BaseModel):
+    courseId: str
+    mappingData: Optional[dict] = {}
+
+@app.post("/api/indicatormapping/save")
+def save_indicator_mapping(body: IndicatorMappingBody, db: Session = Depends(get_db)):
+    m = db.query(models.IndicatorMapping).filter(models.IndicatorMapping.courseId == body.courseId).first()
+    # In SQLAlchemy JSON columns, we can just assign the dict directly.
+    # But just in case, we'll store the dict and let SQLAlchemy serialize it.
+    if m:
+        m.mappingData = body.mappingData
+    else:
+        db.add(models.IndicatorMapping(courseId=body.courseId, mappingData=body.mappingData))
+    db.commit()
+    return {"success": True}
+
+# ─────────────────────────────────────────────
 # HEALTH CHECK
 # ─────────────────────────────────────────────
 @app.get("/api/health")
@@ -627,12 +780,52 @@ class BloomsRequest(BaseModel):
 def api_analyze_blooms(req: BloomsRequest):
     return {"success": True, "data": analyze_blooms(req.cos)}
 
+class CoGenerationRequest(BaseModel):
+    syllabus: str
+
+@app.post("/api/generate-cos")
+def api_generate_cos(req: CoGenerationRequest):
+    return {"success": True, "data": generate_cos_from_syllabus(req.syllabus)}
+
+from typing import Optional
 class CoPoRequest(BaseModel):
-    cos: list; pos: list
+    cos: list
+    pos: list
+    pso_defs: Optional[dict] = None
 
 @app.post("/api/auto-map-copo")
 def api_auto_map_copo(req: CoPoRequest):
-    return {"success": True, "data": auto_map_copo(req.cos, req.pos)}
+    try:
+        data = auto_map_copo(req.cos, req.pos, req.pso_defs)
+        return {"success": True, "data": data}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "error": str(e)}
+
+@app.delete("/api/auto-map-copo/clear-cache")
+def api_clear_copo_cache():
+    """Clear the CO-PO mapping cache so next click generates a fresh AI mapping."""
+    from agents.ai_logic import _COPO_CACHE
+    count = len(_COPO_CACHE)
+    _COPO_CACHE.clear()
+    return {"success": True, "message": f"Cleared {count} cached CO-PO mapping(s)."}
+
+class Analyze6ARequest(BaseModel):
+    cos: list[dict]
+    indicators: list[dict]
+    target_mapping: Optional[dict] = None
+
+@app.post("/api/analyze-6a")
+def api_analyze_6a(req: Analyze6ARequest):
+    try:
+        data = analyze_6a_matrix(req.cos, req.indicators, req.target_mapping)
+        return {"success": True, "data": data}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "error": str(e)}
+
 
 class AssignmentRequest(BaseModel):
     topic: str; level: str; num: int; marks: int
@@ -642,11 +835,65 @@ def api_generate_assignment(req: AssignmentRequest):
     return {"success": True, "data": generate_assignment(req.topic, req.level, req.num, req.marks)}
 
 class GradeRequest(BaseModel):
-    text: str; rubrics: list; maxMarks: int
+    text: str
+    rubrics: list
+    maxMarks: int
+    question: str = ""
+
+
+@app.post("/api/grade-upload")
+async def api_grade_upload(
+    rubrics: str = Form(...),
+    maxMarks: int = Form(...),
+    question: str = Form(""),
+    file: UploadFile = File(...)
+):
+    import io
+    text = ""
+    contents = await file.read()
+    fname = file.filename.lower()
+    
+    if fname.endswith('.pdf'):
+        try:
+            # 1. Try PyMuPDF (fitz) first - most robust for weird encodings
+            import fitz
+            doc = fitz.open(stream=contents, filetype="pdf")
+            text = "\n".join(page.get_text() for page in doc)
+        except Exception:
+            try:
+                # 2. Try pdfplumber
+                import pdfplumber
+                with pdfplumber.open(io.BytesIO(contents)) as pdf:
+                    text = "\n".join(page.extract_text() or "" for page in pdf.pages)
+            except Exception:
+                try:
+                    # 3. Fallback to PyPDF2
+                    import PyPDF2
+                    reader = PyPDF2.PdfReader(io.BytesIO(contents))
+                    text = "\n".join(page.extract_text() or "" for page in reader.pages)
+                except Exception as e:
+                    raise HTTPException(status_code=400, detail=f"Could not read PDF: {e}")
+    elif fname.endswith('.docx'):
+        try:
+            import docx
+            doc = docx.Document(io.BytesIO(contents))
+            text = "\n".join(para.text for para in doc.paragraphs if para.text.strip())
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Could not read DOCX: {e}")
+    elif fname.endswith('.doc'):
+        raise HTTPException(status_code=400, detail="Old .doc format not supported. Please convert to .docx or .pdf")
+    else:
+        text = contents.decode('utf-8', errors='ignore')
+    
+    if not text.strip():
+        raise HTTPException(status_code=400, detail="Could not extract any text from the uploaded file. Please check the file.")
+    
+    rubrics_list = [r.strip() for r in rubrics.split('\n') if r.strip()]
+    return {"success": True, "data": grade_submission(text, rubrics_list, maxMarks, question)}
 
 @app.post("/api/grade")
 def api_grade(req: GradeRequest):
-    return {"success": True, "data": grade_submission(req.text, req.rubrics, req.maxMarks)}
+    return {"success": True, "data": grade_submission(req.text, req.rubrics, req.maxMarks, req.question)}
 
 class RemedialRequest(BaseModel):
     student: str; weakCOs: list
@@ -655,6 +902,289 @@ class RemedialRequest(BaseModel):
 def api_remedial(req: RemedialRequest):
     return {"success": True, "data": generate_remedial_plan(req.student, req.weakCOs)}
 
+
+# ─────────────────────────────────────────────
+# ASSIGNMENT QUESTION EXTRACTOR (PDF/DOCX Upload)
+# ─────────────────────────────────────────────
+@app.post("/api/extract-assignment-questions")
+async def api_extract_assignment_questions(
+    file: UploadFile = File(...),
+    cos_context: str = Form("")
+):
+    import io
+    text = ""
+    contents = await file.read()
+    fname = file.filename.lower()
+
+    if fname.endswith('.pdf'):
+        try:
+            import PyPDF2
+            reader = PyPDF2.PdfReader(io.BytesIO(contents))
+            text = "\n".join(page.extract_text() for page in reader.pages if page.extract_text())
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Could not read PDF: {e}")
+    elif fname.endswith('.docx'):
+        try:
+            import docx
+            doc = docx.Document(io.BytesIO(contents))
+            text = "\n".join(para.text for para in doc.paragraphs if para.text.strip())
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Could not read DOCX: {e}")
+    elif fname.endswith('.doc'):
+        raise HTTPException(status_code=400, detail="Old .doc format not supported. Please convert to .docx or .pdf")
+    else:
+        text = contents.decode('utf-8', errors='ignore')
+
+    if not text.strip():
+        raise HTTPException(status_code=400, detail="Could not extract any text from the file. Ensure it is not a scanned image PDF.")
+
+    result = extract_assignment_questions(text, cos_context)
+    return {"success": True, "data": result}
+
+
+# ─────────────────────────────────────────────
+# NEW AGENTIC AI ENDPOINTS
+# ─────────────────────────────────────────────
+
+class AgentChatRequest(BaseModel):
+    message: str
+    session_id: str = "default"
+
+@app.post("/api/chat-agent")
+def api_chat_agent(req: AgentChatRequest, db: Session = Depends(get_db)):
+    """
+    True ReAct tool-calling chatbot agent.
+    Queries live DB data when asked about courses, attainment, or students.
+    Maintains conversation memory per session_id.
+    """
+    # Build live DB context for the agent's tools
+    courses = db.query(models.Course).all()
+    cos = db.query(models.CourseOutcome).all()
+    students = db.query(models.Student).all()
+
+    db_context = {
+        "courses": [course_to_dict(c) for c in courses],
+        "cos": [co_to_dict(co) for co in cos],
+        "students": [student_to_dict(s) for s in students],
+        "attainment": {},  # will be populated per course on demand by tool
+        "marks_summary": {}
+    }
+
+    reply = chat_with_advisor_agent(
+        query=req.message,
+        db_context=db_context,
+        session_id=req.session_id
+    )
+    return {"reply": reply}
+
+
+@app.delete("/api/chat-agent/memory/{session_id}")
+def api_clear_chat_memory(session_id: str):
+    """Clear conversation memory for a session (e.g., on page refresh)."""
+    clear_memory(session_id)
+    return {"success": True, "message": f"Memory cleared for session '{session_id}'"}
+
+
+@app.get("/api/attainment-agent/{course_id}")
+def api_attainment_agent(course_id: str, db: Session = Depends(get_db)):
+    """
+    Python-first CO attainment calculator with AI interpretation.
+    Calculates attainment using the exact NBA formula, then has AI interpret
+    the numbers and recommend corrective actions.
+    """
+    course = db.query(models.Course).filter(models.Course.id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    students = db.query(models.Student).filter(models.Student.courseId == course_id).all()
+    cos = db.query(models.CourseOutcome).filter(models.CourseOutcome.courseId == course_id).all()
+    ia_questions = db.query(models.IAQuestion).filter(models.IAQuestion.courseId == course_id).all()
+    marks_ia = db.query(models.MarksIA).filter(models.MarksIA.courseId == course_id).all()
+    marks_mse = db.query(models.MarksMSE).filter(models.MarksMSE.courseId == course_id).all()
+    marks_ese = db.query(models.MarksESE).filter(models.MarksESE.courseId == course_id).all()
+    surveys = db.query(models.Survey).filter(models.Survey.courseId == course_id).all()
+    po_mappings = db.query(models.PoMapping).filter(models.PoMapping.courseId == course_id).all()
+
+    students_data = [student_to_dict(s) for s in students]
+    ia_qs_data = [
+        {"qNo": q.qNo, "coNo": q.coNo, "maxMarks": q.maxMarks, "assessmentNo": q.assessmentNo,
+         "assessmentType": q.assessmentType}
+        for q in ia_questions
+    ]
+    marks_ia_data = [{"prn": m.prn, "qNo": m.qNo, "assessmentNo": m.assessmentNo, "marks": m.marks} for m in marks_ia]
+    marks_mse_data = [{"prn": m.prn, "qNo": m.qNo, "marks": m.marks} for m in marks_mse]
+    marks_ese_data = [{"prn": m.prn, "qNo": m.qNo, "marks": m.marks} for m in marks_ese]
+    surveys_data = [{"prn": s.prn, "co": s.co, "score": s.score} for s in surveys]
+    pomap_data = [{"coNo": p.coNo, "po": p.po, "val": p.val} for p in po_mappings]
+    cos_data = [co_to_dict(co) for co in cos]
+    course_data = course_to_dict(course)
+
+    # Step 1: Python calculation (deterministic, accurate: Direct + Indirect + Implicit PO)
+    attainment = calculate_co_attainment_python(
+        students=students_data,
+        ia_questions=ia_qs_data,
+        marks_ia=marks_ia_data,
+        marks_ese=marks_ese_data,
+        cos=cos_data,
+        course=course_data,
+        marks_mse=marks_mse_data,
+        surveys=surveys_data,
+        po_mappings=pomap_data
+    )
+
+    # Step 2: AI interpretation of the numbers
+    interpretation = interpret_attainment(attainment, course.name)
+
+    return {
+        "success": True,
+        "data": {
+            "attainment": attainment,
+            "interpretation": interpretation,
+            "course": course_data
+        }
+    }
+
+
+class NBAReportRequest(BaseModel):
+    course_id: str
+
+@app.post("/api/nba-report")
+def api_nba_report(req: NBAReportRequest, db: Session = Depends(get_db)):
+    """
+    Generate a complete NBA course assessment report.
+    Pulls all course data and generates a Markdown report ready for submission.
+    """
+    course = db.query(models.Course).filter(models.Course.id == req.course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    cos = db.query(models.CourseOutcome).filter(models.CourseOutcome.courseId == req.course_id).all()
+    po_mappings = db.query(models.PoMapping).filter(models.PoMapping.courseId == req.course_id).all()
+    students = db.query(models.Student).filter(models.Student.courseId == req.course_id).all()
+    ia_questions = db.query(models.IAQuestion).filter(models.IAQuestion.courseId == req.course_id).all()
+    marks_ia = db.query(models.MarksIA).filter(models.MarksIA.courseId == req.course_id).all()
+    marks_ese = db.query(models.MarksESE).filter(models.MarksESE.courseId == req.course_id).all()
+
+    # Build CO-PO mapping dict
+    copo_dict = {}
+    for pm in po_mappings:
+        co_key = f"CO{pm.coNo}"
+        if co_key not in copo_dict:
+            copo_dict[co_key] = {}
+        copo_dict[co_key][pm.po] = pm.val
+
+    # Calculate attainment
+    cos_data = [co_to_dict(co) for co in cos]
+    course_data = course_to_dict(course)
+    ia_qs_data = [{"qNo": q.qNo, "coNo": q.coNo, "maxMarks": q.maxMarks, "assessmentNo": q.assessmentNo} for q in ia_questions]
+    marks_ia_data = [{"prn": m.prn, "qNo": m.qNo, "assessmentNo": m.assessmentNo, "marks": m.marks} for m in marks_ia]
+    marks_ese_data = [{"prn": m.prn, "qNo": m.qNo, "marks": m.marks} for m in marks_ese]
+
+    attainment = calculate_co_attainment_python(
+        students=[student_to_dict(s) for s in students],
+        ia_questions=ia_qs_data,
+        marks_ia=marks_ia_data,
+        marks_ese=marks_ese_data,
+        cos=cos_data,
+        course=course_data
+    )
+
+    report_md = generate_nba_report(
+        course=course_data,
+        cos=cos_data,
+        attainment=attainment,
+        copo_mapping=copo_dict
+    )
+
+    return {"success": True, "data": {"report": report_md, "attainment": attainment}}
+
+
+@app.post("/api/curriculum-gap-plan")
+def api_curriculum_gap_plan(req: NBAReportRequest, db: Session = Depends(get_db)):
+    """
+    Generate NBA Table III: Content Beyond Syllabus & Innovative Gap-Bridging Action Plan (Paper 5 JEET 2026).
+    """
+    course = db.query(models.Course).filter(models.Course.id == req.course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    cos = db.query(models.CourseOutcome).filter(models.CourseOutcome.courseId == req.course_id).all()
+    po_mappings = db.query(models.PoMapping).filter(models.PoMapping.courseId == req.course_id).all()
+    students = db.query(models.Student).filter(models.Student.courseId == req.course_id).all()
+    ia_questions = db.query(models.IAQuestion).filter(models.IAQuestion.courseId == req.course_id).all()
+    marks_ia = db.query(models.MarksIA).filter(models.MarksIA.courseId == req.course_id).all()
+    marks_mse = db.query(models.MarksMSE).filter(models.MarksMSE.courseId == req.course_id).all()
+    marks_ese = db.query(models.MarksESE).filter(models.MarksESE.courseId == req.course_id).all()
+    surveys = db.query(models.Survey).filter(models.Survey.courseId == req.course_id).all()
+
+    copo_dict = {}
+    for pm in po_mappings:
+        co_key = f"CO{pm.coNo}"
+        if co_key not in copo_dict:
+            copo_dict[co_key] = {}
+        copo_dict[co_key][pm.po] = pm.val
+
+    cos_data = [co_to_dict(co) for co in cos]
+    course_data = course_to_dict(course)
+    students_data = [student_to_dict(s) for s in students]
+    ia_qs_data = [{"qNo": q.qNo, "coNo": q.coNo, "maxMarks": q.maxMarks, "assessmentNo": q.assessmentNo, "assessmentType": q.assessmentType} for q in ia_questions]
+    marks_ia_data = [{"prn": m.prn, "qNo": m.qNo, "assessmentNo": m.assessmentNo, "marks": m.marks} for m in marks_ia]
+    marks_mse_data = [{"prn": m.prn, "qNo": m.qNo, "marks": m.marks} for m in marks_mse]
+    marks_ese_data = [{"prn": m.prn, "qNo": m.qNo, "marks": m.marks} for m in marks_ese]
+    surveys_data = [{"prn": s.prn, "co": s.co, "score": s.score} for s in surveys]
+    pomap_data = [{"coNo": p.coNo, "po": p.po, "val": p.val} for p in po_mappings]
+
+    attainment = calculate_co_attainment_python(
+        students=students_data,
+        ia_questions=ia_qs_data,
+        marks_ia=marks_ia_data,
+        marks_ese=marks_ese_data,
+        cos=cos_data,
+        course=course_data,
+        marks_mse=marks_mse_data,
+        surveys=surveys_data,
+        po_mappings=pomap_data
+    )
+
+    report_md = generate_curriculum_gap_plan(course.name, cos_data, copo_dict, attainment)
+    return {"success": True, "data": {"report": report_md, "attainment": attainment}}
+
+
+# ─────────────────────────────────────────────
+# SERVE FRONTEND STATIC FILES
+# ─────────────────────────────────────────────
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from starlette.middleware.base import BaseHTTPMiddleware
+
+# Middleware to disable caching on all HTML and JS files
+class NoCacheMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        path = request.url.path
+        if path.endswith(('.html', '.js', '.css')) or path == '/':
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+        return response
+
+app.add_middleware(NoCacheMiddleware)
+
+# Serve frontend files from the ../frontend directory
+FRONTEND_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'frontend')
+if os.path.isdir(FRONTEND_DIR):
+    # Serve index/login page at root
+    @app.get("/", include_in_schema=False)
+    async def serve_root():
+        index_path = os.path.join(FRONTEND_DIR, 'login.html')
+        if os.path.exists(index_path):
+            return FileResponse(index_path, media_type='text/html')
+        return FileResponse(os.path.join(FRONTEND_DIR, 'index.html'), media_type='text/html')
+
+    # Mount the entire frontend directory for static access
+    app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
+
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True)

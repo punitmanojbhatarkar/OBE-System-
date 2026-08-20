@@ -154,10 +154,16 @@ class Config(Base):
     id = Column(Integer, primary_key=True, default=1)
     academicYear = Column(String, default="2025-26")
     aiEnabled = Column(Boolean, default=True)
+    aiModel = Column(String, nullable=True)
+    aiApiKey = Column(String, nullable=True)
     aiCallsUsed = Column(Integer, default=0)
     maxAICalls = Column(Integer, default=50)
     instituteVision = Column(Text, nullable=True)
     instituteMission = Column(Text, nullable=True)
+    attainmentDefaultLevels = Column(JSON, nullable=True)
+    directWeight = Column(Integer, nullable=True)
+    indirectWeight = Column(Integer, nullable=True)
+    collegeFullName = Column(String, nullable=True)
 
 class Syllabus(Base):
     __tablename__ = "syllabus"
@@ -165,3 +171,10 @@ class Syllabus(Base):
     courseId = Column(String, ForeignKey("courses.id", ondelete="CASCADE"), unique=True)
     modules = Column(Text, nullable=True)   # JSON string
     books = Column(Text, nullable=True)     # JSON string
+
+class IndicatorMapping(Base):
+    __tablename__ = "indicator_mapping"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    courseId = Column(String, ForeignKey("courses.id", ondelete="CASCADE"), unique=True)
+    mappingData = Column(JSON, nullable=True)
+

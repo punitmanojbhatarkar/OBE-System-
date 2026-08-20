@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Migrate Old Data to Backend</title>
+  <style>
+    body { font-family: sans-serif; padding: 40px; background: #f8fafc; color: #0f172a; }
+    .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); max-width: 600px; margin: 0 auto; }
+    h1 { margin-top: 0; color: #2563eb; }
+    button { background: #2563eb; color: white; padding: 12px 24px; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold; }
+    button:hover { background: #1d4ed8; }
+    #log { margin-top: 20px; background: #1e293b; color: #10b981; padding: 15px; border-radius: 8px; font-family: monospace; white-space: pre-wrap; display: none; }
+    .error { color: #ef4444 !important; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Recover Old Data</h1>
+    <p>Because the system was upgraded to use a real backend server, your browser considers the new server (http://127.0.0.1:8080) as a new website with empty data.</p>
+    <p>However, your old data is still safely saved right here! Click the button below to instantly migrate all your old data into the new backend database.</p>
+    
+    <button id="btn-migrate" onclick="startMigration()">Start Migration</button>
+
+    <div id="log"></div>
+  </div>
+
+  <script>
+    function logMsg(msg, isError = false) {
+      const log = document.getElementById('log');
+      log.style.display = 'block';
+      log.innerHTML += `<div class="${isError ? 'error' : ''}">${msg}</div>`;
+    }
+
+    async function startMigration() {
+      const btn = document.getElementById('btn-migrate');
+      btn.disabled = true;
+      btn.textContent = 'Migrating...';
+      document.getElementById('log').innerHTML = '';
+      
+      const backup = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('obe_')) {
+          try {
+            backup[key] = JSON.parse(localStorage.getItem(key));
+          } catch(e) {
+            backup[key] = localStorage.getItem(key);
+          }
+        }
+      }
+
+      if (Object.keys(backup).length === 0) {
+        logMsg('No OBE data found in this local storage. If this is unexpected, ensure you opened this file exactly how you used to open the old system (e.g. double clicking the index.html file).', true);
+        btn.textContent = 'Failed';
+        return;
+      }
+
+      logMsg('Found old data. Sending to backend...');
+
+      try {
+        const res = await fetch('http://127.0.0.1:8080/api/migrate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(backup)
+        });
+
+        if (!res.ok) {
+          const err = await res.text();
+          throw new Error(err);
+        }
+
+        logMsg('Migration successful! Your old data has been restored to the backend database.');
+        logMsg('You can now close this page and open http://127.0.0.1:8080 in your browser!');
+        btn.textContent = 'Done!';
+        btn.style.background = '#10b981';
+      } catch (err) {
+        logMsg(`Error migrating: ${err.message}`, true);
+        logMsg('Please make sure the python backend is running on port 8080.', true);
+        btn.textContent = 'Error';
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

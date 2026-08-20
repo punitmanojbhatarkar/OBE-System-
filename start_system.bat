@@ -1,21 +1,21 @@
 @echo off
 echo ==============================================
-echo 🚀 Starting AI OBE System (Frontend & Backend)
+echo    Starting AI OBE System
 echo ==============================================
 
-:: Start Backend
-echo [1/2] Starting FastAPI Backend...
-start "OBE Backend" cmd /k "cd backend && .\venv\Scripts\python.exe main.py"
-
-:: Wait for a second
-timeout /t 2 /nobreak > nul
-
-:: Start Frontend
-echo [2/2] Starting Frontend UI on Port 3000...
-start "OBE Frontend" cmd /k "cd frontend && npx serve -l 3000"
+:: Start Backend (which also serves frontend files)
+echo [1/1] Starting FastAPI Backend + Frontend...
+cd backend
+if exist venv\Scripts\python.exe (
+    echo Using virtual environment...
+    venv\Scripts\python.exe main.py
+) else (
+    echo Using system Python...
+    python main.py
+)
 
 echo.
-echo ✅ System is booting up!
-echo 🌐 Open http://localhost:3000 in your browser.
-echo ⚠️  Leave the two black console windows open. Closing them stops the server.
+echo System is running!
+echo Open http://localhost:8080 in your browser.
+echo Press Ctrl+C to stop the server.
 echo ==============================================

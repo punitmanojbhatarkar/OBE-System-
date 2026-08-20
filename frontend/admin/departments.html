@@ -191,7 +191,8 @@
   </div>
 </div>
 
-<script src="../scripts/data.js?v=42"></script>`r`n<script src="../scripts/api.js"></script>
+<script src="../scripts/data.js?v=99"></script>
+<script src="../scripts/api.js?v=99"></script>
 <script src="../scripts/auth.js?v=2"></script>
 <script src="../scripts/utils.js"></script>
 <script>
@@ -366,6 +367,14 @@ document.getElementById('dept-form').addEventListener('submit', e => {
         obj.hod = selectedUser.name;
         // Demote existing HODs in this dept
         DB.users.all().filter(u => u.role === 'hod' && u.deptId === id && u.id !== hodUserId).forEach(u => { u.role = 'faculty'; DB.users.update(u); });
+        
+        // Clear HOD from old department
+        const oldDept = DB.departments.byId(selectedUser.deptId);
+        if (oldDept && oldDept.id !== id) {
+          oldDept.hod = '';
+          DB.departments.update(oldDept);
+        }
+
         // Promote selected user
         selectedUser.role = 'hod'; selectedUser.deptId = id; DB.users.update(selectedUser);
       }
@@ -384,6 +393,14 @@ document.getElementById('dept-form').addEventListener('submit', e => {
         newDept.hod = selectedUser.name;
         // Demote existing HODs in target dept if any
         DB.users.all().filter(u => u.role === 'hod' && u.deptId === selectedUser.deptId && u.id !== hodUserId).forEach(u => { u.role = 'faculty'; DB.users.update(u); });
+        
+        // Clear HOD from old department
+        const oldDept = DB.departments.byId(selectedUser.deptId);
+        if (oldDept && oldDept.id !== newDept.id) {
+          oldDept.hod = '';
+          DB.departments.update(oldDept);
+        }
+
         selectedUser.role = 'hod'; selectedUser.deptId = newDept.id; DB.users.update(selectedUser);
         DB.departments.update(newDept);
       }
@@ -394,8 +411,14 @@ document.getElementById('dept-form').addEventListener('submit', e => {
 });
 
 render();
+
+  // Auto-exposed: onclick handlers need to be on window
+  window.closeModal = closeModal;
+  window.del = del;
+  window.openAdd = openAdd;
+  window.openEdit = openEdit;
 })();
 </script>
-<script src="../scripts/ai-chat.js"></script>
+<script src="../scripts/ai-mock.js"></script>
 </body>
 </html>
