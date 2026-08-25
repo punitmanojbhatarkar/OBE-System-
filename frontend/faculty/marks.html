@@ -133,9 +133,9 @@
     </div>
   </div>
 </div>
-<script src="../scripts/data.js?v=99"></script>
-<script src="../scripts/api.js?v=99"></script>
-<script src="../scripts/auth.js?v=2"></script>
+<script src="../scripts/data.js?v=101"></script>
+<script src="../scripts/api.js?v=101"></script>
+<script src="../scripts/auth.js?v=3"></script>
 <script src="../scripts/utils.js"></script>
 <script>
 (async () => {
@@ -150,48 +150,23 @@ let currentAssessId = null;
 let students = [];
 let cos = [];
 
-// Course selector
-const sel = document.getElementById('course-select');
-DB.courses.byFaculty(user.id).forEach(c => { const o=document.createElement('option'); o.value=c.id; o.textContent=`${c.code} – ${c.name}`; sel.appendChild(o); });
-const stored = sessionStorage.getItem('selected_course_id');
-const facCourses = DB.courses.byFaculty(user.id);
-if(stored && facCourses.find(c=>c.id===stored)) { sel.value=stored; loadCourse(stored); }
-else if(facCourses.length) { sel.value=facCourses[0].id; loadCourse(facCourses[0].id); }
-sel.addEventListener('change', e => { if(e.target.value){ sessionStorage.setItem('selected_course_id',e.target.value); loadCourse(e.target.value); }});
-
 function loadCourse(cid) {
   CID = cid;
   students = DB.students.byCourse(cid);
   cos = DB.cos.byCourse(cid).filter(c=>c.text);
-  
   loadTab(currentTab);
 
-  if ((!students || students.length === 0) && cid) {
-    apiFetch(`/api/courses/${cid}/students`).then(sts => {
-      if (sts && sts.length > 0) {
-        mergeLocalStore('obe_students', sts, (a, b) => a.id === b.id || (a.courseId === b.courseId && a.prn === b.prn));
-        students = DB.students.byCourse(cid);
-        if (currentTab === 'marks' && CID === cid) {
-          loadAssessment();
-        } else if (currentTab === 'survey' && CID === cid) {
-          loadSurvey();
-        }
-      }
-    }).catch(e => console.warn('[Marks Entry] Could not fetch students for course:', e));
-  }
-
-  // Check Lock Status
-  setTimeout(() => {
-    const course = DB.courses.byId(cid);
-    const isLocked = course?.isLocked;
-    document.querySelectorAll('input, select, textarea, button[onclick="saveMarks()"], button[onclick="saveSurvey()"]').forEach(el => {
-      if (el.id !== 'course-select' && el.className.indexOf('t-btn') === -1 && el.id !== 'assess-select') el.disabled = isLocked;
+  // Check Lock Status (only disable if truly locked — never disable all inputs)
+  const course = DB.courses.byId(cid);
+  if (course?.isLocked) {
+    document.querySelectorAll('#marks-body input, #survey-body input, button[onclick="saveMarks()"], button[onclick="saveSurvey()"]').forEach(el => {
+      el.disabled = true;
     });
-    if (isLocked) Toast.warning('Course is locked by Audit. Mark entry is disabled.');
-  }, 100);
+    Toast.warning('Course is locked by Audit. Mark entry is disabled.');
+  }
 }
 
-window.switchTab = function(tab, btn) {
+function switchTab(tab, btn) {
   if (currentTab === 'survey') saveSurvey(true);
   else if (currentTab === 'marks') saveMarks(true);
 
@@ -220,14 +195,21 @@ function populateAssessDropdown() {
   const oldVal = sel.value;
   sel.innerHTML = '<option value="">— Select Assessment —</option>';
   asgns.forEach(a => {
-    const typeLabel = a.type === 'ia' ? 'IA' : a.type === 'mse' ? 'MSE' : a.type === 'ese' ? 'ESE' : 'Assignment';
+    // Proper type labels for all assessment types
+    const typeLabel = {
+      'ia': 'IA',
+      'mse': 'MSE',
+      'ese': 'ESE',
+      'question_paper': 'Question Paper',
+      'assignment': 'Assignment'
+    }[a.type] || 'Assessment';
     sel.innerHTML += `<option value="${a.id}">${typeLabel} ${a.no}: ${a.title}</option>`;
   });
   if (asgns.find(a=>a.id===oldVal)) sel.value = oldVal;
   else if (asgns.length > 0) sel.value = asgns[0].id;
 }
 
-window.loadAssessment = function() {
+function loadAssessment() {
   if (!CID) return;
   const asgnId = document.getElementById('assess-select').value;
   currentAssessId = asgnId;
@@ -239,25 +221,60 @@ window.loadAssessment = function() {
   if (!asgnId) {
     qContainer.style.display = 'none';
     head.innerHTML = '';
-    body.innerHTML = '<tr><td colspan="99" class="text-muted" style="text-align:center;padding:24px">Please select an assessment</td></tr>';
+    body.innerHTML = '<tr><td colspan="99" class="text-muted" style="text-align:center;padding:40px"><div style="font-size:32px;margin-bottom:10px">📝</div><div style="font-weight:600">Select an Assessment</div><div style="font-size:13px;color:var(--text-muted)">Choose an assessment from the dropdown above</div></td></tr>';
     return;
   }
 
+  renderMarksTable(asgnId, qContainer, qBody, head, body);
+}
+
+function renderMarksTable(asgnId, qContainer, qBody, head, body) {
   const asgn = DB.assessments.byId(asgnId);
   const asgnQuestions = asgn?.questions || [];
-  
+
+  // If no question structure, show a simple Total Marks entry per student
   if (!asgnQuestions.length) {
     qContainer.style.display = 'none';
-    head.innerHTML = '';
-    body.innerHTML = '<tr><td colspan="99" class="text-muted" style="text-align:center;padding:24px">This assessment has no questions defined. Go to "Assessments & AI" to generate them.</td></tr>';
+    head.innerHTML = '<tr><th>Sr</th><th>PRN</th><th>Name</th><th style="text-align:center;min-width:100px">Total Marks<br><span style="font-size:10px;color:var(--text-muted)">(Max: ' + (asgn?.maxMarks || '—') + ')</span></th><th style="text-align:center">%</th><th style="text-align:center">Status</th></tr>';
+
+    if (!students || students.length === 0) {
+      body.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">
+        <div style="font-size:32px;margin-bottom:10px">👥</div>
+        <div style="font-weight:600;font-size:15px;color:var(--text-primary);margin-bottom:6px">No Students in This Course</div>
+        <div style="font-size:13px;margin-bottom:16px">Please add students in the Students page first.</div>
+        <a href="students.html" class="btn btn-primary btn-sm" style="text-decoration:none">➕ Go to Students</a>
+      </td></tr>`;
+      return;
+    }
+
+    const allMarks = DB.marks.get(CID);
+    const maxM = asgn?.maxMarks || 100;
+    body.innerHTML = '';
+    students.forEach((s, si) => {
+      const existing = allMarks.find(x => x.prn === s.prn && x.assessId === asgnId && x.qNo === 1);
+      const val = existing ? existing.marks : '';
+      const pct = val !== '' ? Math.round((parseFloat(val) / maxM) * 100) : 0;
+      const pass = val !== '' && pct >= 60;
+      body.innerHTML += `<tr>
+        <td>${si+1}</td>
+        <td style="font-size:12px">${s.prn}</td>
+        <td style="font-size:13px;font-weight:500">${s.name}</td>
+        <td style="text-align:center">
+          <input type="number" class="marks-input" data-prn="${s.prn}" data-qno="1" value="${val}" min="0" max="${maxM}" style="width:80px;text-align:center" onchange="updateRowTotals(this.closest('tr'))">
+        </td>
+        <td style="text-align:center;font-size:12px" class="row-pct">${val !== '' ? pct + '%' : '—'}</td>
+        <td style="text-align:center" class="row-status">${val !== '' ? (pass ? '<span style="color:var(--success);font-weight:700">✓ Pass</span>' : '<span style="color:var(--danger);font-weight:700">✕ Fail</span>') : '—'}</td>
+      </tr>`;
+    });
     return;
   }
 
+  // Full question-wise marks entry
   qContainer.style.display = 'block';
   qBody.innerHTML = '';
   asgnQuestions.forEach(q => {
     qBody.innerHTML += `<tr>
-      <td style="font-weight:700;text-align:center">Q${q.qNo}</td>
+      <td style="font-weight:700;text-align:center">${q.qNo}</td>
       <td><div style="font-size:13px">${q.text||'—'}</div></td>
       <td style="text-align:center"><span class="badge badge-info">${q.rbt||'—'}</span></td>
       <td style="text-align:center"><span class="badge badge-primary">CO${q.coNo||1}</span></td>
@@ -267,7 +284,7 @@ window.loadAssessment = function() {
 
   const totalMax = asgnQuestions.reduce((s,q)=>s+(parseFloat(q.marks)||0),0);
   let headHtml = '<tr><th>Sr</th><th>PRN</th><th>Name</th>';
-  asgnQuestions.forEach(q=>headHtml+=`<th style="text-align:center;min-width:60px">Q${q.qNo}<br><span style="font-size:10px;color:var(--text-muted)">(${q.marks})</span></th>`);
+  asgnQuestions.forEach(q=>headHtml+=`<th style="text-align:center;min-width:60px">${q.qNo}<br><span style="font-size:10px;color:var(--text-muted)">(${q.marks})</span></th>`);
   headHtml += '<th style="text-align:center">Total</th><th style="text-align:center">%</th><th style="text-align:center">Status</th></tr>';
   head.innerHTML = headHtml;
 
@@ -275,14 +292,12 @@ window.loadAssessment = function() {
   body.innerHTML = '';
 
   if (!students || students.length === 0) {
-    body.innerHTML = `<tr>
-      <td colspan="99" style="text-align:center;padding:40px;color:var(--text-muted)">
-        <div style="font-size:32px;margin-bottom:10px">👥</div>
-        <div style="font-weight:600;font-size:15px;color:var(--text-primary);margin-bottom:6px">No Students Found in this Course</div>
-        <div style="font-size:13px;margin-bottom:16px">Please enroll students in this course before entering marks or pasting from Excel.</div>
-        <a href="students.html" class="btn btn-primary btn-sm" style="text-decoration:none">➕ Go to Students Menu</a>
-      </td>
-    </tr>`;
+    body.innerHTML = `<tr><td colspan="99" style="text-align:center;padding:40px;color:var(--text-muted)">
+      <div style="font-size:32px;margin-bottom:10px">👥</div>
+      <div style="font-weight:600;font-size:15px;color:var(--text-primary);margin-bottom:6px">No Students in This Course</div>
+      <div style="font-size:13px;margin-bottom:16px">Please add students first, then come back here to enter marks.</div>
+      <a href="students.html" class="btn btn-primary btn-sm" style="text-decoration:none">➕ Go to Students</a>
+    </td></tr>`;
     return;
   }
 
@@ -290,21 +305,21 @@ window.loadAssessment = function() {
     let rowHtml = `<tr><td>${si+1}</td><td style="font-size:12px">${s.prn}</td><td style="font-size:13px;font-weight:500">${s.name}</td>`;
     let total = 0;
     asgnQuestions.forEach(q => {
-      const m = allMarks.find(x => x.prn===s.prn && x.assessId===asgnId && x.qNo===q.qNo);
+      const m = allMarks.find(x => x.prn===s.prn && x.assessId===asgnId && String(x.qNo)===String(q.qNo));
       const val = m ? m.marks : '';
       total += (parseFloat(val)||0);
       rowHtml += `<td style="text-align:center"><input type="number" class="marks-input" data-prn="${s.prn}" data-qno="${q.qNo}" value="${val}" min="0" max="${q.marks}" onchange="updateRowTotals(this.closest('tr'))"></td>`;
     });
     const pct = totalMax>0 ? Math.round((total/totalMax)*100) : 0;
     const pass = pct >= 60;
-    rowHtml += `<td style="text-align:center;font-weight:700" class="row-total">${total}</td>`;
+    rowHtml += `<td style="text-align:center;font-weight:700" class="row-total">${total||'0'}</td>`;
     rowHtml += `<td style="text-align:center;font-size:12px" class="row-pct">${pct}%</td>`;
     rowHtml += `<td style="text-align:center" class="row-status">${pass?'<span style="color:var(--success);font-weight:700">✓ Pass</span>':'<span style="color:var(--danger);font-weight:700">✕ Fail</span>'}</td></tr>`;
     body.innerHTML += rowHtml;
   });
 }
 
-window.updateRowTotals = function(tr) {
+function updateRowTotals(tr) {
   if(!tr || !currentAssessId) return;
   const asgn = DB.assessments.byId(currentAssessId);
   const asgnQuestions = asgn?.questions || [];
@@ -317,7 +332,7 @@ window.updateRowTotals = function(tr) {
   tr.querySelector('.row-status').innerHTML = pct>=60?'<span style="color:var(--success);font-weight:700">✓ Pass</span>':'<span style="color:var(--danger);font-weight:700">✕ Fail</span>';
 }
 
-window.saveMarks = function(silent = false) {
+function saveMarks(silent = false) {
   if(!CID) { 
     if(!silent) Toast.warning('Select a course first.'); 
     return; 
@@ -338,41 +353,83 @@ window.saveMarks = function(silent = false) {
 
 function loadSurvey() {
   if(!CID) return;
-  const activeCOs = cos.filter(c=>c.text);
-  let headHtml = '<tr><th>Sr</th><th>PRN</th><th>Name</th>';
-  activeCOs.forEach(c=>headHtml+=`<th style="text-align:center">${c.code}<br><span style="font-size:10px;color:var(--text-muted)">(1-5)</span></th>`);
-  headHtml += '<th style="text-align:center">Avg %</th><th style="text-align:center">Attained</th></tr>';
-  document.getElementById('survey-head').innerHTML = headHtml;
 
-  const body = document.getElementById('survey-body');
-  body.innerHTML = '';
-  students.forEach((s,si) => {
-    let html = `<tr><td>${si+1}</td><td style="font-size:12px">${s.prn}</td><td style="font-size:13px;font-weight:500">${s.name}</td>`;
-    let sum=0, count=0;
-    activeCOs.forEach(co => {
-      const score = DB.survey.getScore(CID, s.prn, co.no);
-      const val = score!==null&&score!==undefined ? score : '';
-      if(val) { sum+=parseInt(val); count++; }
-      html += `<td style="text-align:center"><input type="number" class="survey-input" data-prn="${s.prn}" data-co="${co.no}" value="${val}" min="1" max="5" onchange="updateSurveyRow(this.closest('tr'))"></td>`;
+  const renderSurvey = () => {
+    const activeCOs = cos.filter(c=>c.text);
+    const surveyHead = document.getElementById('survey-head');
+    const body = document.getElementById('survey-body');
+
+    if (!activeCOs.length) {
+      surveyHead.innerHTML = '';
+      body.innerHTML = `<tr><td colspan="99" style="text-align:center;padding:40px;color:var(--text-muted)">
+        <div style="font-size:32px;margin-bottom:10px">🎯</div>
+        <div style="font-weight:600;font-size:15px;color:var(--text-primary);margin-bottom:6px">No Course Outcomes Defined</div>
+        <div style="font-size:13px;margin-bottom:16px">Please set up COs in the CO &amp; PO Setup page first.</div>
+        <a href="outcomes.html" class="btn btn-primary btn-sm" style="text-decoration:none">➕ Set Up COs</a>
+      </td></tr>`;
+      return;
+    }
+
+    if (!students || students.length === 0) {
+      surveyHead.innerHTML = '';
+      body.innerHTML = `<tr><td colspan="99" style="text-align:center;padding:40px;color:var(--text-muted)">
+        <div style="font-size:32px;margin-bottom:10px">👥</div>
+        <div style="font-weight:600;font-size:15px;color:var(--text-primary);margin-bottom:6px">No Students in This Course</div>
+        <div style="font-size:13px;margin-bottom:16px">Please add students first, then collect exit survey responses.</div>
+        <a href="students.html" class="btn btn-primary btn-sm" style="text-decoration:none">➕ Go to Students</a>
+      </td></tr>`;
+      return;
+    }
+
+    let headHtml = '<tr><th>Sr</th><th>PRN</th><th>Name</th>';
+    activeCOs.forEach(c=>headHtml+=`<th style="text-align:center">${c.code}<br><span style="font-size:10px;color:var(--text-muted)">(1–5)</span></th>`);
+    headHtml += '<th style="text-align:center">Avg %</th><th style="text-align:center">Attained</th></tr>';
+    surveyHead.innerHTML = headHtml;
+
+    body.innerHTML = '';
+    students.forEach((s,si) => {
+      let html = `<tr><td>${si+1}</td><td style="font-size:12px">${s.prn}</td><td style="font-size:13px;font-weight:500">${s.name}</td>`;
+      let sum=0, count=0;
+      activeCOs.forEach(co => {
+        const score = DB.survey.getScore(CID, s.prn, co.no);
+        const val = score!==null&&score!==undefined ? score : '';
+        if(val) { sum+=parseInt(val); count++; }
+        html += `<td style="text-align:center"><input type="number" class="survey-input" data-prn="${s.prn}" data-co="${co.no}" value="${val}" min="1" max="5" placeholder="—" onchange="updateSurveyRow(this.closest('tr'))"></td>`;
+      });
+      const avgPct = count>0 ? Math.round((sum/(count*5))*100) : 0;
+      const att = avgPct >= 60;
+      html += `<td style="text-align:center;font-weight:700" class="surv-avg">${count?avgPct+'%':'—'}</td>`;
+      html += `<td style="text-align:center" class="surv-att">${count?(att?'<span style="color:var(--success);font-weight:700">✓ Yes</span>':'<span style="color:var(--danger);font-weight:700">✕ No</span>'):'—'}</td></tr>`;
+      body.innerHTML += html;
     });
-    const avgPct = count>0 ? Math.round((sum/(count*5))*100) : 0;
-    const att = avgPct >= 60;
-    html += `<td style="text-align:center;font-weight:700" class="surv-avg">${count?avgPct+'%':'—'}</td>`;
-    html += `<td style="text-align:center" class="surv-att">${count?(att?'<span style="color:var(--success);font-weight:700">✓ Yes</span>':'<span style="color:var(--danger);font-weight:700">✕ No</span>'):'—'}</td></tr>`;
-    body.innerHTML += html;
-  });
 
-  let avgHtml = '<tr style="background:rgba(37,99,235,0.15)"><td></td><td></td><td style="font-weight:700;font-size:13px">Class Average</td>';
-  activeCOs.forEach(co => {
-    const scores = students.map(s=>DB.survey.getScore(CID,s.prn,co.no)).filter(v=>v!==null&&v!==undefined);
-    const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : '—';
-    avgHtml += `<td style="text-align:center;font-weight:700;color:var(--primary)">${avg}</td>`;
-  });
-  avgHtml += '<td></td><td></td></tr>';
-  body.innerHTML += avgHtml;
+    // Class average row
+    let avgHtml = '<tr style="background:rgba(37,99,235,0.1)"><td></td><td></td><td style="font-weight:700;font-size:13px">Class Avg</td>';
+    activeCOs.forEach(co => {
+      const scores = students.map(s=>DB.survey.getScore(CID,s.prn,co.no)).filter(v=>v!==null&&v!==undefined&&v!=='');
+      const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : '—';
+      avgHtml += `<td style="text-align:center;font-weight:700;color:var(--primary)">${avg}</td>`;
+    });
+    avgHtml += '<td></td><td></td></tr>';
+    body.innerHTML += avgHtml;
+  };
+
+  // If students not loaded, fetch first
+  if (!students || students.length === 0) {
+    apiFetch(`/api/courses/${CID}/students`).then(sts => {
+      if (sts && sts.length > 0) {
+        mergeLocalStore('obe_students', sts, (a, b) => a.id === b.id || (a.courseId === b.courseId && a.prn === b.prn));
+        students = DB.students.byCourse(CID);
+      }
+      renderSurvey();
+    }).catch(() => renderSurvey());
+  } else {
+    renderSurvey();
+  }
 }
 
-window.updateSurveyRow = function(tr) {
+
+function updateSurveyRow(tr) {
   const inputs = tr.querySelectorAll('.survey-input');
   let sum=0, count=0;
   inputs.forEach(inp => { const v=parseInt(inp.value); if(v) { sum+=v; count++; } });
@@ -381,7 +438,7 @@ window.updateSurveyRow = function(tr) {
   tr.querySelector('.surv-att').innerHTML = count?(pct>=60?'<span style="color:var(--success);font-weight:700">✓ Yes</span>':'<span style="color:var(--danger);font-weight:700">✕ No</span>'):'—';
 }
 
-window.saveSurvey = function(silent = false) {
+function saveSurvey(silent = false) {
   if(!CID) return;
   const list = [];
   document.querySelectorAll('.survey-input').forEach(inp => {
@@ -395,6 +452,23 @@ window.saveSurvey = function(silent = false) {
   if(list.length) DB.survey.saveAll(CID, list);
   if(!silent) Toast.success('Exit survey data saved!');
 }
+
+window.loadCourse = loadCourse;
+window.switchTab = switchTab;
+window.loadAssessment = loadAssessment;
+window.updateRowTotals = updateRowTotals;
+window.saveMarks = saveMarks;
+window.updateSurveyRow = updateSurveyRow;
+window.saveSurvey = saveSurvey;
+
+// Course selector initialization (run after all functions are defined)
+const sel = document.getElementById('course-select');
+DB.courses.byFaculty(user.id).forEach(c => { const o=document.createElement('option'); o.value=c.id; o.textContent=`${c.code} – ${c.name}`; sel.appendChild(o); });
+const stored = sessionStorage.getItem('selected_course_id');
+const facCourses = DB.courses.byFaculty(user.id);
+if(stored && facCourses.find(c=>c.id===stored)) { sel.value=stored; window.loadCourse(stored); }
+else if(facCourses.length) { sel.value=facCourses[0].id; window.loadCourse(facCourses[0].id); }
+sel.addEventListener('change', e => { if(e.target.value){ sessionStorage.setItem('selected_course_id',e.target.value); window.loadCourse(e.target.value); }});
 
 })();
 

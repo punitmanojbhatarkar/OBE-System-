@@ -141,12 +141,20 @@ class Assignment(Base):
     __tablename__ = "assignments"
     id = Column(String, primary_key=True, index=True)
     courseId = Column(String, ForeignKey("courses.id", ondelete="CASCADE"))
+    type = Column(String, default="assignment")          # assignment, ia, mse, ese, question_paper
+    no = Column(Integer, default=1)
     title = Column(String)
+    description = Column(Text, nullable=True)
     topic = Column(String, nullable=True)
     level = Column(String, nullable=True)
-    coNo = Column(Integer, nullable=True)
+    dueDate = Column(String, nullable=True)
+    rbtLevel = Column(String, nullable=True)
+    coNo = Column(Integer, nullable=True)               # legacy single CO
+    coNos = Column(Text, nullable=True)                 # JSON list of CO numbers
     maxMarks = Column(Integer, nullable=True)
-    questions = Column(Text, nullable=True)   # JSON string
+    questions = Column(Text, nullable=True)             # JSON string
+    rubrics = Column(Text, nullable=True)               # JSON string
+    aiGenerated = Column(Boolean, default=False)
     createdAt = Column(String, nullable=True)
 
 class Config(Base):
@@ -178,3 +186,22 @@ class IndicatorMapping(Base):
     courseId = Column(String, ForeignKey("courses.id", ondelete="CASCADE"), unique=True)
     mappingData = Column(JSON, nullable=True)
 
+
+class Remedial(Base):
+    __tablename__ = 'remedial'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    courseId = Column(String, ForeignKey('courses.id', ondelete='CASCADE'))
+    prn = Column(String)
+    remedialDone = Column(Boolean, default=False)
+    retestScores = Column(JSON, nullable=True)
+    
+    __table_args__ = (UniqueConstraint('courseId', 'prn', name='_remedial_course_prn_uc'),)
+
+class Target(Base):
+    __tablename__ = 'targets'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    courseId = Column(String, ForeignKey('courses.id', ondelete='CASCADE'))
+    assessId = Column(String)
+    targetData = Column(JSON, nullable=True)
+    
+    __table_args__ = (UniqueConstraint('courseId', 'assessId', name='_targets_course_assess_uc'),)

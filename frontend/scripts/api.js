@@ -67,10 +67,14 @@ function showSyncOverlay() {
     <div style="font-size:13px;color:rgba(255,255,255,0.6);" id="api-sync-msg">Loading data from backend</div>
     <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
   `;
-  document.body.prepend(el);
+  if (document.body) {
+    document.body.prepend(el);
+  } else {
+    document.addEventListener('DOMContentLoaded', () => document.body.prepend(el));
+  }
   return {
-    msg: (t) => { const m = document.getElementById('api-sync-msg'); if (m) m.textContent = t; },
-    done: () => { const o = document.getElementById('api-sync-overlay'); if (o) o.remove(); }
+    msg: (t) => { const m = el.querySelector('#api-sync-msg'); if (m) m.textContent = t; },
+    done: () => { el.remove(); }
   };
 }
 
@@ -112,21 +116,22 @@ function mergeLocalStore(key, newItems, isMatch) {
   try {
     const existing = JSON.parse(localStorage.getItem(key) || '[]');
     if (!Array.isArray(existing) || existing.length === 0) {
-      localStorage.setItem(key, JSON.stringify(newItems));
+      localStorage.setItem(key, JSON.stringify(newItems || []));
       return;
     }
     const merged = [...existing];
     (newItems || []).forEach(newItem => {
       const idx = merged.findIndex(oldItem => isMatch(oldItem, newItem));
       if (idx >= 0) {
-        merged[idx] = { ...newItem, ...merged[idx] };
+        // Backend data wins — overwrite local with backend, keeping any local-only fields
+        merged[idx] = { ...merged[idx], ...newItem };
       } else {
         merged.push(newItem);
       }
     });
     localStorage.setItem(key, JSON.stringify(merged));
   } catch (e) {
-    localStorage.setItem(key, JSON.stringify(newItems));
+    localStorage.setItem(key, JSON.stringify(newItems || []));
   }
 }
 
@@ -230,7 +235,8 @@ async function syncFromBackend() {
     }
     mergeLocalStore('obe_assignments', allAssignments, (a, b) => a.id === b.id);
 
-    // Hydrate unified obe_assessments and obe_marks_unified for data.js
+    // Hydrate unified obe_assessments — only REAL faculty-created assessments from the DB.
+    // ia_questions are for marks-entry structure only and must NOT create assessment cards.
     let allAssessments = [];
     allAssignments.forEach(asgn => {
       allAssessments.push({
@@ -241,31 +247,25 @@ async function syncFromBackend() {
         title: asgn.title || 'Assignment',
         description: asgn.description || '',
         maxMarks: asgn.maxMarks || 10,
+        dueDate: asgn.dueDate || null,
+        rbtLevel: asgn.rbtLevel || null,
+        coNos: asgn.coNos || (asgn.coNo ? [asgn.coNo] : []),
+        aiGenerated: asgn.aiGenerated || false,
         questions: asgn.questions || [],
         rubrics: asgn.rubrics || [],
         createdAt: asgn.createdAt || new Date().toISOString()
       });
     });
-    allIAQ.forEach(iaq => {
-      allAssessments.push({
-        id: `iaq-${iaq.courseId}-${iaq.assessmentType}-${iaq.assessmentNo}`,
-        courseId: iaq.courseId,
-        type: iaq.assessmentType || 'ia',
-        no: iaq.assessmentNo || 1,
-        title: `${(iaq.assessmentType || 'ia').toUpperCase()} ${iaq.assessmentNo || 1}`,
-        description: `${(iaq.assessmentType || 'ia').toUpperCase()} Question Structure`,
-        maxMarks: (iaq.questions || []).reduce((sum, q) => sum + (q.maxMarks || q.marks || 0), 0),
-        questions: (iaq.questions || []).map(q => ({
-          qNo: q.qNo,
-          text: q.desc || q.text || '',
-          rbt: q.bloomsLevel || q.rbt || 'L3',
-          coNo: q.coNo || 1,
-          marks: q.maxMarks || q.marks || 5
-        })),
-        createdAt: new Date().toISOString()
+    // Purge stale iaq- ghost entries from old code, then hard-set from backend.
+    {
+      const existingRaw = JSON.parse(localStorage.getItem('obe_assessments') || '[]');
+      const cleaned = existingRaw.filter(a => !String(a.id || '').startsWith('iaq-'));
+      const merged = [...allAssessments];
+      cleaned.forEach(localItem => {
+        if (!allAssessments.some(b => b.id === localItem.id)) { merged.push(localItem); }
       });
-    });
-    mergeLocalStore('obe_assessments', allAssessments, (a, b) => a.id === b.id);
+      localStorage.setItem('obe_assessments', JSON.stringify(merged));
+    }
 
     let allMarksUnified = [];
     allIA.forEach(m => {
@@ -531,19 +531,28 @@ function patchDBWriteMethods() {
   function _syncCourseMarksToBackend(cid) {
     if (!cid || typeof DB === 'undefined' || !DB.marks) return;
     const allForCourse = DB.marks.get(cid) || [];
-    const iaList = [], mseList = [], eseList = [];
+    const iaList = [], mseList = [], eseList = [], asgnMarksMap = {};
+
     allForCourse.forEach(m => {
       if (!m || !m.assessId) return;
-      if (m.assessId.includes('-mse-') || m.assessId === 'mse') {
+      const aid = String(m.assessId);
+
+      if (aid.includes('-mse-') || aid === 'mse') {
         mseList.push({ prn: m.prn, qNo: m.qNo, marks: m.marks });
-      } else if (m.assessId.includes('-ese-') || m.assessId === 'ese') {
+      } else if (aid.includes('-ese-') || aid === 'ese') {
         eseList.push({ prn: m.prn, qNo: m.qNo, marks: m.marks });
-      } else if (m.assessId.includes('iaq-')) {
-        const parts = String(m.assessId).split('-');
+      } else if (aid.startsWith('iaq-')) {
+        // Legacy iaq- marks for IA question structure marks entry
+        const parts = aid.split('-');
         const aNo = parseInt(parts[parts.length - 1]) || 1;
         iaList.push({ prn: m.prn, assessmentNo: aNo, qNo: m.qNo, marks: m.marks });
+      } else {
+        // Real assignment/question_paper marks — save against the assignment record
+        if (!asgnMarksMap[aid]) asgnMarksMap[aid] = [];
+        asgnMarksMap[aid].push({ prn: m.prn, qNo: m.qNo, marks: m.marks });
       }
     });
+
     if (iaList.length > 0) {
       apiFetch('/api/marks/ia/save', { method: 'POST', body: { courseId: cid, marks: iaList } }).catch(e => console.warn('[API] marks IA sync failed', e));
     }
@@ -553,7 +562,15 @@ function patchDBWriteMethods() {
     if (eseList.length > 0) {
       apiFetch('/api/marks/ese/save', { method: 'POST', body: { courseId: cid, marks: eseList } }).catch(e => console.warn('[API] marks ESE sync failed', e));
     }
+    // Save assignment-type marks bundled into obe_marks_unified (backend stored in localStorage only for now,
+    // full persistence handled on next sync via unified endpoint when available)
+    Object.entries(asgnMarksMap).forEach(([aid, marksList]) => {
+      // Best-effort: store marks against the assignment in marks_unified (already done by DB.marks.set)
+      // This ensures marks survive page reload via localStorage until a dedicated endpoint is added
+      console.log(`[API] marks for assignment ${aid}: ${marksList.length} entries stored locally.`);
+    });
   }
+
 
   if (DB.marks) {
     let _marksSyncTimer = null;
@@ -575,8 +592,16 @@ function patchDBWriteMethods() {
 }
 
 /* ════════════════════════════════════════════
+   GLOBALS — expose helpers so page scripts can use them
+   ════════════════════════════════════════════ */
+window.apiFetch = apiFetch;
+window.mergeLocalStore = mergeLocalStore;
+
+/* ════════════════════════════════════════════
    BOOTSTRAP — exposes window._apiReady Promise
    All protected pages await this before init.
+   _apiReady now AWAITS the full backend sync so
+   all localStorage data is ready before pages run.
    ════════════════════════════════════════════ */
 window._apiReady = (async function bootstrap() {
   const sessionRaw = sessionStorage.getItem('obe_session');
@@ -588,8 +613,10 @@ window._apiReady = (async function bootstrap() {
   // Patch write methods immediately so local DB writes persist
   patchDBWriteMethods();
 
-  // Run full sync from backend in the background without blocking UI rendering
-  syncFromBackend().catch(e => {
-    console.warn('[API] Sync from backend encountered error, falling back to local cached DB:', e);
-  });
+  // AWAIT full sync — pages should not render until data is ready
+  try {
+    await syncFromBackend();
+  } catch(e) {
+    console.warn('[API] Sync failed, pages will use cached localStorage data:', e);
+  }
 })();

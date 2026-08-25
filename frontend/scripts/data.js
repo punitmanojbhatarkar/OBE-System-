@@ -17,6 +17,7 @@ const DB = (() => {
     students    : 'obe_students',
     assessments : 'obe_assessments',
     marksUnified: 'obe_marks_unified',
+    survey      : 'obe_survey',
     submissions : 'obe_submissions',
     config      : 'obe_config',
     remedial    : 'obe_remedial',

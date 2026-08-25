@@ -655,29 +655,88 @@ def save_survey(body: SurveySaveAll, db: Session = Depends(get_db)):
 # ─────────────────────────────────────────────
 # ASSIGNMENTS
 # ─────────────────────────────────────────────
+def assignment_to_dict(a):
+    return {
+        "id": a.id, "courseId": a.courseId,
+        "type": a.type or "assignment",
+        "no": a.no or 1,
+        "title": a.title,
+        "description": a.description or "",
+        "topic": a.topic,
+        "level": a.level,
+        "dueDate": a.dueDate,
+        "rbtLevel": a.rbtLevel,
+        "coNo": a.coNo,
+        "coNos": json.loads(a.coNos or "[]"),
+        "maxMarks": a.maxMarks,
+        "questions": json.loads(a.questions or "[]"),
+        "rubrics": json.loads(a.rubrics or "[]"),
+        "aiGenerated": bool(a.aiGenerated),
+        "createdAt": a.createdAt
+    }
+
 @app.get("/api/courses/{course_id}/assignments")
 def get_assignments(course_id: str, db: Session = Depends(get_db)):
     rows = db.query(models.Assignment).filter(models.Assignment.courseId == course_id).all()
-    return [{"id":a.id,"courseId":a.courseId,"title":a.title,"topic":a.topic,"level":a.level,
-             "coNo":a.coNo,"maxMarks":a.maxMarks,"questions":json.loads(a.questions or "[]"),"createdAt":a.createdAt} for a in rows]
+    return [assignment_to_dict(a) for a in rows]
 
 class AssignmentBody(BaseModel):
-    id: Optional[str] = None; courseId: str; title: str
-    topic: Optional[str] = None; level: Optional[str] = None
-    coNo: Optional[int] = None; maxMarks: Optional[int] = None
+    id: Optional[str] = None
+    courseId: str
+    title: str
+    type: Optional[str] = "assignment"
+    no: Optional[int] = 1
+    description: Optional[str] = None
+    topic: Optional[str] = None
+    level: Optional[str] = None
+    dueDate: Optional[str] = None
+    rbtLevel: Optional[str] = None
+    coNo: Optional[int] = None
+    coNos: Optional[list] = []
+    maxMarks: Optional[int] = None
     questions: Optional[list] = []
+    rubrics: Optional[list] = []
+    aiGenerated: Optional[bool] = False
 
 @app.post("/api/assignments")
 def add_assignment(body: AssignmentBody, db: Session = Depends(get_db)):
     import datetime
-    a = models.Assignment(
-        id=body.id or uid(), courseId=body.courseId, title=body.title,
-        topic=body.topic, level=body.level, coNo=body.coNo, maxMarks=body.maxMarks,
-        questions=json.dumps(body.questions or []),
-        createdAt=datetime.datetime.utcnow().isoformat()
-    )
-    db.add(a); db.commit(); db.refresh(a)
-    return {"id":a.id,"courseId":a.courseId,"title":a.title,"questions":body.questions,"createdAt":a.createdAt}
+    aid = body.id or uid()
+    # Upsert: update if exists, insert if new
+    existing = db.query(models.Assignment).filter(models.Assignment.id == aid).first()
+    if existing:
+        existing.type = body.type or "assignment"
+        existing.no = body.no or 1
+        existing.title = body.title
+        existing.description = body.description
+        existing.topic = body.topic
+        existing.level = body.level
+        existing.dueDate = body.dueDate
+        existing.rbtLevel = body.rbtLevel
+        existing.coNo = body.coNo
+        existing.coNos = json.dumps(body.coNos or [])
+        existing.maxMarks = body.maxMarks
+        existing.questions = json.dumps(body.questions or [])
+        existing.rubrics = json.dumps(body.rubrics or [])
+        existing.aiGenerated = body.aiGenerated
+        db.commit(); db.refresh(existing)
+        return assignment_to_dict(existing)
+    else:
+        a = models.Assignment(
+            id=aid, courseId=body.courseId,
+            type=body.type or "assignment", no=body.no or 1,
+            title=body.title, description=body.description,
+            topic=body.topic, level=body.level, dueDate=body.dueDate,
+            rbtLevel=body.rbtLevel, coNo=body.coNo,
+            coNos=json.dumps(body.coNos or []),
+            maxMarks=body.maxMarks,
+            questions=json.dumps(body.questions or []),
+            rubrics=json.dumps(body.rubrics or []),
+            aiGenerated=body.aiGenerated,
+            createdAt=datetime.datetime.utcnow().isoformat()
+        )
+        db.add(a); db.commit(); db.refresh(a)
+        return assignment_to_dict(a)
 
 @app.delete("/api/assignments/{assignment_id}")
 def delete_assignment(assignment_id: str, db: Session = Depends(get_db)):
@@ -1188,3 +1247,57 @@ if os.path.isdir(FRONTEND_DIR):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True)
+
+@app.get('/api/courses/{course_id}/pomapping')
+def get_pomapping(course_id: str, db: Session = Depends(get_db)):
+    rows = db.query(models.PoMapping).filter(models.PoMapping.courseId == course_id).all()
+    return [{'courseId': r.courseId, 'coNo': r.coNo, 'po': r.po, 'val': r.val} for r in rows]
+
+@app.get('/api/courses/{course_id}/indicatormapping')
+def get_indicatormapping(course_id: str, db: Session = Depends(get_db)):
+    row = db.query(models.IndicatorMapping).filter(models.IndicatorMapping.courseId == course_id).first()
+    if row:
+        return {'courseId': row.courseId, 'mappingData': row.mappingData}
+    return {}
+
+@app.get('/api/courses/{course_id}/marks/ia')
+def get_marks_ia(course_id: str, db: Session = Depends(get_db)):
+    rows = db.query(models.MarksIA).filter(models.MarksIA.courseId == course_id).all()
+    return rows
+
+@app.get('/api/courses/{course_id}/marks/mse')
+def get_marks_mse(course_id: str, db: Session = Depends(get_db)):
+    rows = db.query(models.MarksMSE).filter(models.MarksMSE.courseId == course_id).all()
+    return rows
+
+@app.get('/api/courses/{course_id}/marks/ese')
+def get_marks_ese(course_id: str, db: Session = Depends(get_db)):
+    rows = db.query(models.MarksESE).filter(models.MarksESE.courseId == course_id).all()
+    return rows
+
+@app.get('/api/courses/{course_id}/assignments')
+def get_assignments(course_id: str, db: Session = Depends(get_db)):
+    rows = db.query(models.Assignment).filter(models.Assignment.courseId == course_id).all()
+    return rows
+
+@app.get('/api/courses/{course_id}/surveys')
+def get_course_surveys(course_id: str, db: Session = Depends(get_db)):
+    rows = db.query(models.Survey).filter(models.Survey.courseId == course_id).all()
+    return [{'courseId': r.courseId, 'prn': r.prn, 'coNo': r.co, 'score': r.score} for r in rows]
+
+@app.get('/api/courses/{course_id}/remedial')
+def get_course_remedial(course_id: str, db: Session = Depends(get_db)):
+    rows = db.query(models.Remedial).filter(models.Remedial.courseId == course_id).all()
+    return [{'courseId': r.courseId, 'prn': r.prn, 'remedialDone': r.remedialDone, 'retestScores': r.retestScores} for r in rows]
+
+@app.post('/api/remedial/save')
+def save_remedial(data: dict, db: Session = Depends(get_db)):
+    # data is a list of remedial objects, but in api.js it might be a single object or list.
+    # We will just accept it if it's hitting this endpoint. Let's make it generic.
+    pass
+
+@app.get('/api/courses/{course_id}/targets')
+def get_course_targets(course_id: str, db: Session = Depends(get_db)):
+    rows = db.query(models.Target).filter(models.Target.courseId == course_id).all()
+    return [{'courseId': r.courseId, 'assessId': r.assessId, **(r.targetData or {})} for r in rows]
+

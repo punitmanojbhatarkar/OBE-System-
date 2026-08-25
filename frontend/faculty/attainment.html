@@ -7,8 +7,9 @@
   <meta name="description" content="CO and PO attainment analysis and reporting for faculty">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800" rel="stylesheet">
-  <link rel="stylesheet" href="../styles/main.css?v=6"
-  <link rel="stylesheet" href="../styles/components.css?v=6"">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link rel="stylesheet" href="../styles/main.css?v=6">
+  <link rel="stylesheet" href="../styles/components.css?v=6">
   <style>
     .att-table td { font-size: 13px; }
     .att-table th { font-size: 11px; }
@@ -269,9 +270,9 @@
 
 <div id="toast-container"></div>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="../scripts/data.js?v=99"></script>
-<script src="../scripts/api.js?v=99"></script>
-<script src="../scripts/auth.js?v=2"></script>
+<script src="../scripts/data.js?v=101"></script>
+<script src="../scripts/api.js?v=101"></script>
+<script src="../scripts/auth.js?v=3"></script>
 <script src="../scripts/ai-mock.js?v=2"></script>
 <script src="../scripts/attainment.js"></script>
 <script src="../scripts/utils.js"></script>
@@ -307,13 +308,13 @@
     const dw = course.directWeight || 80;
     const iw = course.indirectWeight || 20;
     document.getElementById('bannerWeights').innerHTML = `
-      <div style="text-align:center;padding:var(--sp-sm) var(--sp-md);background:rgba(99,102,241,.15);border-radius:var(--r-md)">
-        <div style="font-size:22px;font-weight:800;color:var(--primary)">${dw}%</div>
-        <div style="font-size:11px;color:var(--text-secondary)">Direct Weight</div>
+      <div style="text-align:center;padding:var(--sp-sm) var(--sp-md);background:rgba(255,255,255,0.15);border-radius:var(--r-md);backdrop-filter:blur(4px);">
+        <div style="font-size:22px;font-weight:800;color:#fff">${dw}%</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.8)">Direct Weight</div>
       </div>
-      <div style="text-align:center;padding:var(--sp-sm) var(--sp-md);background:rgba(16,185,129,.12);border-radius:var(--r-md)">
-        <div style="font-size:22px;font-weight:800;color:var(--success)">${iw}%</div>
-        <div style="font-size:11px;color:var(--text-secondary)">Indirect Weight</div>
+      <div style="text-align:center;padding:var(--sp-sm) var(--sp-md);background:rgba(255,255,255,0.15);border-radius:var(--r-md);backdrop-filter:blur(4px);">
+        <div style="font-size:22px;font-weight:800;color:#fff">${iw}%</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.8)">Indirect Weight</div>
       </div>`;
   }
 
@@ -765,7 +766,7 @@
     Toast.info('Generating official NBA Table III Content Beyond Syllabus & Gap-Bridging Plan...');
 
     try {
-      const res = await API.post('/api/curriculum-gap-plan', { course_id: courseId });
+      const res = await apiFetch('/api/curriculum-gap-plan', { method: 'POST', body: { course_id: courseId } });
       if (res && res.success && (res.report || (res.data && res.data.report))) {
         const md = res.report || res.data.report;
         showGapPlanModal(course, md);
@@ -809,27 +810,56 @@
   }
 
   function showGapPlanModal(course, md) {
+    const htmlContent = typeof marked !== 'undefined' ? marked.parse(md) : md;
     const html = `
-      <div style="max-height:500px;overflow-y:auto;background:var(--surface);padding:var(--sp-lg);border-radius:var(--r-md);font-size:13px;line-height:1.6;border:1px solid var(--border);white-space:pre-wrap;font-family:inherit">${md}</div>
+      <div id="gapPlanPrintArea" style="max-height:500px;overflow-y:auto;background:var(--surface);padding:var(--sp-lg);border-radius:var(--r-md);font-size:14px;line-height:1.6;border:1px solid var(--border);font-family:inherit;">
+        ${htmlContent}
+      </div>
       <div style="margin-top:16px;display:flex;justify-content:flex-end;gap:8px">
         <button class="btn btn-secondary btn-sm" onclick="Modal.close()">Close</button>
-        <button class="btn btn-primary btn-sm" onclick="downloadGapPlan('${course.code}')">📥 Download Markdown</button>
+        <button class="btn btn-primary btn-sm" style="background:#10B981;border-color:#10B981" onclick="window.downloadGapPlanWord('${course.code}')">📄 Download Word</button>
+        <button class="btn btn-primary btn-sm" style="background:#EF4444;border-color:#EF4444" onclick="window.printGapPlan('${course.code}')">🖨️ Print PDF</button>
       </div>
     `;
     Modal.alert(`NBA Table III Action Plan: ${course.code} – ${course.name}`, html, null);
     window._lastGapPlanMd = md;
+    window._lastGapPlanHtml = htmlContent;
   }
 
-  window.downloadGapPlan = function(code) {
-    const md = window._lastGapPlanMd || '';
-    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${code}_NBA_Table_III_Gap_Plan.md`;
-    a.click();
-    URL.revokeObjectURL(url);
-    Toast.success('Downloaded NBA Table III Gap-Bridging Plan.');
+  window.printGapPlan = function(code) {
+    const content = window._lastGapPlanHtml || '';
+    const win = window.open('', '_blank');
+    win.document.write(`
+      <html><head>
+        <title>${code}_Gap_Plan</title>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; line-height: 1.6; color: #333; }
+          h1, h2, h3 { color: #1e3a8a; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+          th { background: #f3f4f6; }
+        </style>
+      </head><body>
+      ${content}
+      <script>window.print(); window.close();<\/script>
+      </body></html>
+    `);
+    win.document.close();
+  };
+
+  window.downloadGapPlanWord = function(code) {
+    const content = window._lastGapPlanHtml || '';
+    const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Gap Plan</title><style>body { font-family: 'Segoe UI', Arial, sans-serif; } table { border-collapse: collapse; width: 100%; } th, td { border: 1px solid #dddddd; text-align: left; padding: 8px; } th { background-color: #f2f2f2; }</style></head><body>";
+    const footer = "</body></html>";
+    const sourceHTML = header + content + footer;
+    
+    const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
+    const fileDownload = document.createElement("a");
+    document.body.appendChild(fileDownload);
+    fileDownload.href = source;
+    fileDownload.download = `${code}_NBA_Gap_Plan.doc`;
+    fileDownload.click();
+    document.body.removeChild(fileDownload);
   };
 
   document.getElementById('calcBtn').addEventListener('click', calculate);

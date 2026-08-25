@@ -55,7 +55,20 @@ const Modal = (() => {
     open(html);
     document.getElementById('modal-confirm-btn').onclick = () => { close(); onYes(); };
   }
-  return { open, close, confirm };
+  function alert(title, msg, onOk) {
+    const html = `
+      <div class="modal-header">
+        <h3 class="modal-title">${title}</h3>
+        <button class="modal-close" onclick="Modal.close()">✕</button>
+      </div>
+      <div style="color:var(--text-secondary);font-size:14px;margin-bottom:16px;">${msg}</div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="modal-alert-btn">OK</button>
+      </div>`;
+    open(html, {wide: true});
+    document.getElementById('modal-alert-btn').onclick = () => { close(); if(onOk) onOk(); };
+  }
+  return { open, close, confirm, alert };
 })();
 
 /* ── Tab Switcher ── */

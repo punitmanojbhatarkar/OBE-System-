@@ -175,7 +175,7 @@ const Auth = (() => {
     const roleEl   = document.querySelector('.user-role');
     const avatarEl = document.querySelector('.user-avatar');
     if (nameEl)   nameEl.textContent   = u.name || 'User';
-    if (roleEl)   roleEl.textContent   = u.role ? u.role.charAt(0).toUpperCase() + u.role.slice(1) : '';
+    if (roleEl)   roleEl.innerHTML     = (u.role ? u.role.charAt(0).toUpperCase() + u.role.slice(1) : '') + '<br><span style="font-size:10px;opacity:0.8;font-weight:normal">' + (u.username || '') + '</span>';
     if (avatarEl) avatarEl.textContent = u.avatar || (u.name ? u.name[0].toUpperCase() : 'U');
 
     // Unified Sidebar for HOD
