@@ -8,3 +8,5 @@ langchain-google-genai
 langchain-community
 numpy
 faiss-cpu
+PyJWT
+passlib[bcrypt]

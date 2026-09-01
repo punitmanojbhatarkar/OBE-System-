@@ -74,6 +74,7 @@
           <option value="">Select Course…</option>
         </select>
         <button class="btn btn-primary" id="calcBtn">⚡ Calculate Attainment</button>
+        <button class="btn btn-success" id="exportExcelBtn" style="display:none;" onclick="exportExcel()">⬇ Export Excel</button>
         <button class="btn btn-secondary" id="gapPlanBtn" style="background:#059669;color:#fff;border-color:#059669;font-weight:600;">📋 NBA Table III Gap Plan</button>
       </div>
     </header>
@@ -372,29 +373,100 @@
     });
   }
 
+  window.openActionPlanModal = function(coCode, coNo, targetAttainment, actualAttainment) {
+    const courseId = document.getElementById('courseSelect').value;
+    const plan = DB.actionPlans.getPlan(courseId, coNo) || { actionProposed: '', academicYear: '2025-26' };
+    const gap = targetAttainment - actualAttainment;
+    
+    const html = `
+      <div class="form-group">
+        <label class="form-label">Target Level</label>
+        <input type="text" class="form-control" value="2 (Target Pct: ${targetAttainment}%)" disabled>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Actual Level</label>
+        <input type="text" class="form-control" value="${actualAttainment}" disabled>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Gap</label>
+        <input type="text" class="form-control" value="${gap > 0 ? gap.toFixed(2) : 0}" disabled>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Academic Year</label>
+        <input type="text" id="ap-year" class="form-control" value="${plan.academicYear}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Action Proposed (NBA Requirement)</label>
+        <textarea id="ap-action" class="form-control" rows="4" placeholder="Describe the corrective actions, pedagogical changes, or extra sessions planned to improve attainment...">${plan.actionProposed}</textarea>
+      </div>
+      <div style="text-align:right; margin-top:16px;">
+        <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveActionPlan(${coNo}, ${targetAttainment}, ${actualAttainment})">Save Action Plan</button>
+      </div>
+    `;
+    Modal.alert(`Action Plan for ${coCode}`, html, null);
+  };
+
+  window.saveActionPlan = function(coNo, target, actual) {
+    const courseId = document.getElementById('courseSelect').value;
+    const actionProposed = document.getElementById('ap-action').value.trim();
+    const academicYear = document.getElementById('ap-year').value.trim();
+    const gap = target - actual;
+
+    if (!actionProposed) {
+      Toast.warning('Action proposed is required by NBA.');
+      return;
+    }
+
+    const plan = {
+      courseId, coNo, targetAttainment: target, actualAttainment: actual,
+      gap: gap > 0 ? gap : 0, actionProposed, academicYear
+    };
+
+    DB.actionPlans.savePlan(plan);
+    Modal.close();
+    Toast.success('Action Plan saved successfully!');
+    calculate(); // Re-render to update the button text
+  };
   function renderFinal(finalData) {
     const tbody = document.getElementById('finalBody');
     tbody.innerHTML = '';
     const summary = document.getElementById('finalSummary');
     let attainedCount = 0;
+    
+    const courseId = document.getElementById('courseSelect').value;
+    const course = DB.courses.byId(courseId);
+    const levels = course.attainmentLevels || {1:65,2:75,3:85};
 
     finalData.forEach(d => {
       const attained = d.finalLevel !== null && d.finalLevel >= 2;
       if (attained) attainedCount++;
+      
+      const coLevels = d.co.levels || {};
+      const targetPct = (coLevels[2] !== undefined && coLevels[2] !== null && coLevels[2] !== '') ? coLevels[2] : (levels[2] || 75);
+
+      let actionPlanBtn = '';
+      if (!attained) {
+        const existingPlan = DB.actionPlans.getPlan(courseId, d.co.no);
+        const btnText = existingPlan ? 'Edit Action Plan' : 'Add Action Plan';
+        const btnClass = existingPlan ? 'btn-secondary' : 'btn-primary';
+        actionPlanBtn = `<button class="btn btn-sm ${btnClass}" style="margin-left:8px;font-size:11px;padding:2px 6px;" onclick="openActionPlanModal('${d.coCode}', ${d.co.no}, ${targetPct}, ${d.finalLevel})">${btnText}</button>`;
+      }
+
       tbody.insertAdjacentHTML('beforeend', `
         <tr>
           <td><strong>${d.coCode}</strong></td>
-          <td style="max-width:260px;font-size:12px">${d.co.text.substring(0,70)}${d.co.text.length>70?'…':''}</td>
-          <td>${d.directLevel !== null ? attBadge(d.directLevel) : '<span class="text-muted">—</span>'}</td>
-          <td>${d.indirectLevel !== null ? attBadge(d.indirectLevel) : '<span class="text-muted">—</span>'}</td>
-          <td>${d.finalLevel !== null ? attBadge(d.finalLevel) : '<span class="text-muted">—</span>'}</td>
+          <td style="max-width:260px;font-size:12px">${d.co.text.substring(0,80)}${d.co.text.length>80?'…':''}</td>
+          <td>${d.directLevel !== null ? d.directLevel.toFixed(2) : '—'}</td>
+          <td>${d.indirectLevel !== null ? d.indirectLevel.toFixed(2) : '—'}</td>
+          <td class="pct-cell">${d.finalLevel !== null ? d.finalLevel.toFixed(2) : '—'}</td>
           <td>${attained 
-            ? '<span class="badge badge-success">✓ Attained</span>' 
-            : '<span class="badge badge-danger">✗ Not Attained</span>'}</td>
+            ? '<span class="badge badge-success">Attained</span>' 
+            : '<span class="badge badge-danger">Not Attained</span>'}${actionPlanBtn}</td>
         </tr>`);
     });
 
-    const course = DB.courses.byId(document.getElementById('courseSelect').value);
+    // course is already defined above
     const target = parseFloat(course.targetLevel) || 2.0;
     const avgLevel = finalData.length ? finalData.reduce((acc,d)=>acc+(d.finalLevel||0),0) / finalData.length : 0;
     
@@ -560,6 +632,9 @@
   function calculate() {
     const courseId = document.getElementById('courseSelect').value;
     if (!courseId) { Toast.warning('Please select a course first.'); return; }
+    
+    const exportBtn = document.getElementById('exportExcelBtn');
+    if (exportBtn) exportBtn.style.display = 'inline-block';
     sessionStorage.setItem('selected_course_id', courseId);
 
     const course = DB.courses.byId(courseId);
@@ -880,6 +955,35 @@
   window.showRemedialPlanModal = showRemedialPlanModal;
   window.generateGapBridgingPlan = generateGapBridgingPlan;
 })();
+
+    async function exportExcel() {
+      const courseId = document.getElementById('courseSelect').value;
+      if (!courseId) return;
+      try {
+        const res = await window.apiFetch('/api/courses/'+courseId+'/attainment-server');
+        const res2 = await fetch('http://127.0.0.1:8080/api/courses/'+courseId+'/export-excel', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(res)
+        });
+        if(res2.ok) {
+            const blob = await res2.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Attainment_${courseId}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        } else {
+            alert("Export failed");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Failed to export.");
+      }
+    }
+
 </script>
 </body>
 </html>

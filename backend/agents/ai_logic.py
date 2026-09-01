@@ -33,10 +33,24 @@ import numpy as np
 
 def get_llm(temperature: float = 0.1):
     """Return a configured Gemini 2.5 Flash LLM instance."""
+    api_key = os.getenv("GEMINI_API_KEY")
+    
+    # Try to fetch from Admin Config if available
+    try:
+        from database import SessionLocal
+        import models
+        db = SessionLocal()
+        config = db.query(models.Config).first()
+        if config and config.aiApiKey:
+            api_key = config.aiApiKey
+        db.close()
+    except Exception as e:
+        print(f"Failed to load API key from DB: {e}")
+        
     return ChatGoogleGenerativeAI(
         model="gemini-2.5-flash",
         temperature=temperature,
-        google_api_key=os.getenv("GEMINI_API_KEY"),
+        google_api_key=api_key or "DUMMY_KEY_TO_PREVENT_CRASH",
         max_retries=1
     )
 

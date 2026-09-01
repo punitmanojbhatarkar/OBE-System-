@@ -344,10 +344,19 @@ const DB = (() => {
       const m=get(KEYS.poMapping).find(x=>x.courseId===cid&&String(x.coNo)===String(coNo)&&x.po===po);
       return m ? m.val : 0;
     },
-    setValue(cid,coNo,po,val) {
+    getJustification(cid,coNo,po) {
+      const m=get(KEYS.poMapping).find(x=>x.courseId===cid&&String(x.coNo)===String(coNo)&&x.po===po);
+      return m ? (m.justification || '') : '';
+    },
+    setValue(cid,coNo,po,val,justification='') {
       let all=get(KEYS.poMapping);
       const idx=all.findIndex(x=>x.courseId===cid&&String(x.coNo)===String(coNo)&&x.po===po);
-      if(idx>=0) all[idx].val=val; else all.push({courseId:cid,coNo:Number(coNo),po,val});
+      if(idx>=0) {
+        all[idx].val = val;
+        all[idx].justification = justification;
+      } else {
+        all.push({courseId:cid,coNo:Number(coNo),po,val,justification});
+      }
       set(KEYS.poMapping,all);
     },
     saveMatrix(cid, matrix) {
@@ -508,8 +517,20 @@ const DB = (() => {
     }
   };
 
+  const actionPlans = {
+    all() { return get('obe_action_plans'); },
+    getPlan(courseId, coNo) { return actionPlans.all().find(p => p.courseId === courseId && String(p.coNo) === String(coNo)); },
+    savePlan(plan) {
+      let all = actionPlans.all();
+      const idx = all.findIndex(p => p.courseId === plan.courseId && String(p.coNo) === String(plan.coNo));
+      if (idx >= 0) all[idx] = { ...all[idx], ...plan };
+      else all.push(plan);
+      set('obe_action_plans', all);
+    }
+  };
+
   /* ── Public API ── */
-  return { init, reset, uid, departments, users, courses, cos, poMapping, indicatorMapping, remedial, students, marks, survey, assessments, assignments: assessments, submissions, config, gaps, courseAudit, syllabus, KEYS };
+  return { init, reset, uid, departments, users, courses, cos, poMapping, indicatorMapping, remedial, students, marks, survey, assessments, assignments: assessments, submissions, config, gaps, courseAudit, syllabus, actionPlans, KEYS };
 
 })();
 

@@ -72,6 +72,7 @@ def course_to_dict(c: models.Course) -> dict:
         "lecturesPerWeek": c.lecturesPerWeek, "totalStudents": c.totalStudents,
         "teachingPhilosophy": c.teachingPhilosophy, "status": c.status,
         "examScheme": {"ia": c.ia, "mse": c.mse, "ese": c.ese},
+        "coThreshold": getattr(c, "coThreshold", 60),
         "attainmentLevels": {1: c.attLevel1, 2: c.attLevel2, 3: c.attLevel3},
         "directWeight": c.directWeight, "indirectWeight": c.indirectWeight,
     }
@@ -354,6 +355,8 @@ class CourseBody(BaseModel):
     status: Optional[str] = "active"
     examScheme: Optional[ExamScheme] = None
     directWeight: Optional[int] = 80; indirectWeight: Optional[int] = 20
+    coThreshold: Optional[int] = 60
+    attainmentLevels: Optional[dict] = None
 
 @app.post("/api/courses")
 def add_course(body: CourseBody, db: Session = Depends(get_db)):
@@ -378,12 +381,16 @@ def update_course(course_id: str, body: CourseBody, db: Session = Depends(get_db
     if not c: raise HTTPException(404)
     for f in ["code","name","shortName","deptId","facultyId","semester","year","division","batch",
               "champion","champDate","lecturesPerWeek","totalStudents","teachingPhilosophy","status",
-              "directWeight","indirectWeight"]:
+              "directWeight","indirectWeight","coThreshold"]:
         val = getattr(body, f, None)
         if val is not None: setattr(c, f, val)
     if body.klass: c.klass = body.klass
     if body.examScheme:
         c.ia = body.examScheme.ia; c.mse = body.examScheme.mse; c.ese = body.examScheme.ese
+    if body.attainmentLevels:
+        c.attLevel1 = body.attainmentLevels.get("1", c.attLevel1)
+        c.attLevel2 = body.attainmentLevels.get("2", c.attLevel2)
+        c.attLevel3 = body.attainmentLevels.get("3", c.attLevel3)
     db.commit()
     return course_to_dict(c)
 
@@ -456,17 +463,17 @@ def delete_co(co_id: str, db: Session = Depends(get_db)):
 @app.get("/api/courses/{course_id}/pomapping")
 def get_pomapping(course_id: str, db: Session = Depends(get_db)):
     rows = db.query(models.PoMapping).filter(models.PoMapping.courseId == course_id).all()
-    return [{"courseId":r.courseId,"coNo":r.coNo,"po":r.po,"val":r.val} for r in rows]
+    return [{"courseId":r.courseId,"coNo":r.coNo,"po":r.po,"val":r.val,"justification":r.justification} for r in rows]
 
 class POMapSave(BaseModel):
     courseId: str
-    matrix: list  # [{coNo, po, val}]
+    matrix: list  # [{coNo, po, val, justification}]
 
 @app.post("/api/pomapping/save")
 def save_pomapping(body: POMapSave, db: Session = Depends(get_db)):
     db.query(models.PoMapping).filter(models.PoMapping.courseId == body.courseId).delete()
     for item in body.matrix:
-        db.add(models.PoMapping(courseId=body.courseId, coNo=item["coNo"], po=item["po"], val=item["val"]))
+        db.add(models.PoMapping(courseId=body.courseId, coNo=item["coNo"], po=item["po"], val=item["val"], justification=item.get("justification", "")))
     db.commit()
     return {"success": True}
 
@@ -1251,7 +1258,7 @@ if __name__ == "__main__":
 @app.get('/api/courses/{course_id}/pomapping')
 def get_pomapping(course_id: str, db: Session = Depends(get_db)):
     rows = db.query(models.PoMapping).filter(models.PoMapping.courseId == course_id).all()
-    return [{'courseId': r.courseId, 'coNo': r.coNo, 'po': r.po, 'val': r.val} for r in rows]
+    return [{'courseId': r.courseId, 'coNo': r.coNo, 'po': r.po, 'val': r.val, 'justification': r.justification} for r in rows]
 
 @app.get('/api/courses/{course_id}/indicatormapping')
 def get_indicatormapping(course_id: str, db: Session = Depends(get_db)):
@@ -1301,3 +1308,48 @@ def get_course_targets(course_id: str, db: Session = Depends(get_db)):
     rows = db.query(models.Target).filter(models.Target.courseId == course_id).all()
     return [{'courseId': r.courseId, 'assessId': r.assessId, **(r.targetData or {})} for r in rows]
 
+\n
+# ── ACTION PLANS ──
+class ActionPlanBody(BaseModel):
+    courseId: str
+    coNo: int
+    targetAttainment: float
+    actualAttainment: float
+    gap: float
+    actionProposed: str
+    academicYear: Optional[str] = "2025-26"
+
+@app.get("/api/courses/{course_id}/actionplans")
+def get_action_plans(course_id: str, db: Session = Depends(get_db)):
+    rows = db.query(models.ActionPlan).filter(models.ActionPlan.courseId == course_id).all()
+    return [{
+        "id": r.id, "courseId": r.courseId, "coNo": r.coNo,
+        "targetAttainment": r.targetAttainment, "actualAttainment": r.actualAttainment,
+        "gap": r.gap, "actionProposed": r.actionProposed,
+        "actionTaken": r.actionTaken, "academicYear": r.academicYear
+    } for r in rows]
+
+@app.post("/api/actionplans")
+def save_action_plan(body: ActionPlanBody, db: Session = Depends(get_db)):
+    plan = db.query(models.ActionPlan).filter(
+        models.ActionPlan.courseId == body.courseId, 
+        models.ActionPlan.coNo == body.coNo
+    ).first()
+    
+    if plan:
+        plan.targetAttainment = body.targetAttainment
+        plan.actualAttainment = body.actualAttainment
+        plan.gap = body.gap
+        plan.actionProposed = body.actionProposed
+        plan.academicYear = body.academicYear
+    else:
+        plan = models.ActionPlan(
+            courseId=body.courseId, coNo=body.coNo,
+            targetAttainment=body.targetAttainment,
+            actualAttainment=body.actualAttainment,
+            gap=body.gap, actionProposed=body.actionProposed,
+            academicYear=body.academicYear
+        )
+        db.add(plan)
+    db.commit()
+    return {"success": True, "id": plan.id}

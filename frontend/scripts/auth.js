@@ -57,6 +57,7 @@ const Auth = (() => {
         prn     : user.prn   || null,
         avatar  : user.avatar || user.name[0].toUpperCase(),
         loginAt : Date.now(),
+        token   : data.access_token
       };
       sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
       return { ok: true, user: session };
@@ -75,6 +76,12 @@ const Auth = (() => {
   function getUser() {
     try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)); }
     catch(e) { return null; }
+  }
+
+  /* ── Get current token ── */
+  function getToken() {
+    const user = getUser();
+    return user ? user.token : null;
   }
 
   /* ── Require auth (call at top of each protected page) ── */
@@ -262,5 +269,5 @@ const Auth = (() => {
     });
   }
 
-  return { login, logout, getUser, requireAuth, redirectToDashboard, populateSidebar, highlightNav, DASHBOARDS, exportDatabase, importDatabasePrompt };
+  return { login, logout, getUser, getToken, requireAuth, redirectToDashboard, populateSidebar, highlightNav, DASHBOARDS, exportDatabase, importDatabasePrompt };
 })();

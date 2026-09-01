@@ -324,9 +324,13 @@
       <div class="section-card">
         <div class="section-card-title">🎯 Attainment Threshold Settings</div>
         <p style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--sp-lg)">
-          Set the minimum percentage of students required to attain each level. Standard MITAOE thresholds: L1=65%, L2=75%, L3=85%.
+          Set the minimum percentage of students required to attain each level, and the overall CO Target score.
         </p>
-        <div class="form-row" style="max-width:500px;">
+        <div class="form-row" style="max-width:650px;">
+          <div class="form-group">
+            <label class="form-label" style="color:var(--primary)">Target CO Score (%)</label>
+            <input class="form-control" id="s-co-thresh" type="number" min="0" max="100" value="60">
+          </div>
           <div class="form-group">
             <label class="form-label" style="color:var(--lvl-1-text)">Level 1 Threshold (%)</label>
             <input class="form-control" id="s-lvl1" type="number" min="0" max="100" value="65">
@@ -429,6 +433,7 @@
 
     // Thresholds
     const lvls = currentCourse.attainmentLevels || { 1:65, 2:75, 3:85 };
+    document.getElementById('s-co-thresh').value = currentCourse.coThreshold || 60;
     document.getElementById('s-lvl1').value = lvls[1];
     document.getElementById('s-lvl2').value = lvls[2];
     document.getElementById('s-lvl3').value = lvls[3];
@@ -598,6 +603,7 @@
       status           : document.getElementById('s-status').value,
       teachingPhilosophy: document.getElementById('s-philosophy').value.trim(),
       examScheme       : { ia, mse, ese },
+      coThreshold      : parseInt(document.getElementById('s-co-thresh').value) || 60,
       directWeight     : parseInt(document.getElementById('s-direct-wt').value) || 80,
       indirectWeight   : parseInt(document.getElementById('s-indirect-wt').value) || 20,
       attainmentLevels : {

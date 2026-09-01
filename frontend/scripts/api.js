@@ -27,12 +27,24 @@ async function apiFetch(path, opts = {}) {
   
   const exec = async () => {
     try {
+      const sessionRaw = sessionStorage.getItem('obe_session');
+      const session = sessionRaw ? JSON.parse(sessionRaw) : null;
+      const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+      if (session && session.token) {
+        headers['Authorization'] = `Bearer ${session.token}`;
+      }
+
       const res = await fetch(API_BASE + path, {
-        headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
+        headers: headers,
         ...opts,
         body: opts.body ? JSON.stringify(opts.body) : undefined,
       });
       if (!res.ok) {
+        if (res.status === 401 && !path.includes('/api/auth/login')) {
+          // Token expired or invalid, auto logout
+          sessionStorage.removeItem('obe_session');
+          window.location.href = 'login.html';
+        }
         const err = await res.json().catch(() => ({ detail: res.statusText }));
         throw new Error(err.detail || res.statusText);
       }
@@ -354,8 +366,8 @@ function patchDBWriteMethods() {
 
   // ── PO Mapping ──
   const _poSetValue = DB.poMapping.setValue.bind(DB.poMapping);
-  DB.poMapping.setValue = function(cid, coNo, po, val) {
-    _poSetValue(cid, coNo, po, val);
+  DB.poMapping.setValue = function(cid, coNo, po, val, justification='') {
+    _poSetValue(cid, coNo, po, val, justification);
     // Also persist individual cell change to backend
     const currentMatrix = DB.poMapping.byCourse(cid);
     apiFetch('/api/pomapping/save', { method: 'POST', body: { courseId: cid, matrix: currentMatrix } })
@@ -620,3 +632,11 @@ window._apiReady = (async function bootstrap() {
     console.warn('[API] Sync failed, pages will use cached localStorage data:', e);
   }
 })();
+\n
+  // ── Action Plans ──
+  const _apSave = DB.actionPlans.savePlan.bind(DB.actionPlans);
+  DB.actionPlans.savePlan = function(plan) {
+    _apSave(plan);
+    apiFetch('/api/actionplans', { method: 'POST', body: plan })
+      .catch(e => console.warn('[API] action plan save failed', e));
+  };

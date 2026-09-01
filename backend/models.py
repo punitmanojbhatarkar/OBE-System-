@@ -44,6 +44,7 @@ class Course(Base):
     ia = Column(Integer, default=30)
     mse = Column(Integer, default=20)
     ese = Column(Integer, default=50)
+    coThreshold = Column(Integer, default=60)
     attLevel1 = Column(Integer, default=65)
     attLevel2 = Column(Integer, default=75)
     attLevel3 = Column(Integer, default=85)
@@ -205,3 +206,24 @@ class Target(Base):
     targetData = Column(JSON, nullable=True)
     
     __table_args__ = (UniqueConstraint('courseId', 'assessId', name='_targets_course_assess_uc'),)
+
+class AuditLog(Base):
+    __tablename__ = 'audit_logs'
+    id = Column(String, primary_key=True, index=True)
+    user_id = Column(String, index=True)
+    action = Column(String)
+    details = Column(String)
+    timestamp = Column(String)
+
+\n
+class ActionPlan(Base):
+    __tablename__ = 'action_plans'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    courseId = Column(String, ForeignKey('courses.id', ondelete='CASCADE'))
+    coNo = Column(Integer)
+    targetAttainment = Column(Float)
+    actualAttainment = Column(Float)
+    gap = Column(Float)
+    actionProposed = Column(Text)
+    actionTaken = Column(Boolean, default=False)
+    academicYear = Column(String)
