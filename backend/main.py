@@ -1308,7 +1308,7 @@ def get_course_targets(course_id: str, db: Session = Depends(get_db)):
     rows = db.query(models.Target).filter(models.Target.courseId == course_id).all()
     return [{'courseId': r.courseId, 'assessId': r.assessId, **(r.targetData or {})} for r in rows]
 
-\n
+
 # ── ACTION PLANS ──
 class ActionPlanBody(BaseModel):
     courseId: str

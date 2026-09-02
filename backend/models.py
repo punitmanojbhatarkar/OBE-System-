@@ -215,7 +215,7 @@ class AuditLog(Base):
     details = Column(String)
     timestamp = Column(String)
 
-\n
+
 class ActionPlan(Base):
     __tablename__ = 'action_plans'
     id = Column(Integer, primary_key=True, autoincrement=True)
