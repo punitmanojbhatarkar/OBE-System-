@@ -257,7 +257,7 @@ function showEmptyState() {
 function renderCOs() {
   const body = document.getElementById('co-body');
   body.innerHTML = '';
-  const blooms = ['','L1','L2','L3','L4','L5','L6'];
+  const blooms = ['','L3','L4','L5','L6'];
   
   // Resolve course-level defaults for placeholders
   const course = DB.courses.byId(currentCourseId);
@@ -318,6 +318,12 @@ function renderPOs() {
 
 function saveAll() {
   if(!currentCourseId) { Toast.warning('Select a course first.'); return; }
+
+  const cqiTarget = parseFloat(document.getElementById('cqi-target').value);
+  if (cqiTarget > 3.0 || cqiTarget < 1.0) {
+    Toast.error('CQI Target must be between 1.0 and 3.0.');
+    return;
+  }
 
   // Save COs
   const textareas = document.querySelectorAll('textarea[data-field="text"]');

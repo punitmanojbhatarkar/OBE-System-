@@ -5,9 +5,12 @@
    Also overrides all DB write methods to POST/PUT/DELETE to the backend.
    ============================================================ */
 
-// Auto-detect: if served from the backend (same origin), use relative URLs.
-// If opened as file:// or from a different server (like npx serve), use hardcoded URL.
-const API_BASE = (window.location.port === '8080') ? '' : 'http://127.0.0.1:8080';
+// Change this URL to your live Render backend URL after deploying it
+const PROD_API_URL = 'https://obe-backend-replace-me.onrender.com';
+
+// Auto-detect: if served locally, use local backend. Otherwise, use Render backend.
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_BASE = isLocal ? 'http://127.0.0.1:8080' : PROD_API_URL;
 window.API_BASE = API_BASE;
 
 let apiQueue = Promise.resolve();

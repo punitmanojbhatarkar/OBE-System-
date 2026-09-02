@@ -391,7 +391,12 @@
   function saveCourse() {
     const code  = document.getElementById('f-code').value.trim();
     const name  = document.getElementById('f-name').value.trim();
+    const deptId = document.getElementById('f-dept').value;
+    const facultyId = document.getElementById('f-faculty') ? document.getElementById('f-faculty').value : (editingId ? (DB.courses.byId(editingId)?.facultyId || user.id) : user.id);
+
     if (!code || !name) { Toast.error('Course Code and Name are required.'); return; }
+    if (!deptId) { Toast.error('Department is required. Please create a department first.'); return; }
+    if (!facultyId) { Toast.error('Faculty assignment is required.'); return; }
 
     const ia  = parseInt(document.getElementById('f-ia').value) || 30;
     const mse = parseInt(document.getElementById('f-mse').value) || 20;

@@ -135,53 +135,10 @@
         <span style="margin-left:auto;font-size:12px;color:var(--text-muted)" id="course-dept-label"></span>
       </div>
 
-      <!-- SECTION 1: Basic Info -->
+      <!-- SECTION 1: Additional Course Details -->
       <div class="section-card">
-        <div class="section-card-title">📋 Basic Information</div>
+        <div class="section-card-title">📋 Additional Details</div>
         <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Course Code</label>
-            <input class="form-control" id="s-code" placeholder="230331T">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Short Name</label>
-            <input class="form-control" id="s-short" placeholder="EDA">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Semester</label>
-            <select class="form-control" id="s-sem">
-              <option>I</option><option>II</option><option>III</option><option>IV</option>
-              <option>V</option><option>VI</option><option>VII</option><option>VIII</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Course Name</label>
-          <input class="form-control" id="s-name" placeholder="Full course name">
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Academic Year</label>
-            <input class="form-control" id="s-year" placeholder="2025-26">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Class</label>
-            <input class="form-control" id="s-class" placeholder="TY BTech">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Division</label>
-            <input class="form-control" id="s-div" placeholder="A">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Batch</label>
-            <input class="form-control" id="s-batch" placeholder="A1, A2">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Faculty Champion / HOD</label>
-            <input class="form-control" id="s-champ" placeholder="Dr. Name">
-          </div>
           <div class="form-group">
             <label class="form-label">Champion Date</label>
             <input class="form-control" id="s-champ-date" type="date">
@@ -189,13 +146,6 @@
           <div class="form-group">
             <label class="form-label">Lectures / Week</label>
             <input class="form-control" id="s-lpw" type="number" min="1" max="10" value="3">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Status</label>
-            <select class="form-control" id="s-status">
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
           </div>
         </div>
         <div class="form-group">
@@ -241,29 +191,6 @@
             <div class="ring-label">Total</div>
           </div>
         </div>
-        <div class="form-row" style="max-width:600px;margin:0 auto;">
-          <div class="form-group">
-            <label class="form-label">Internal Assessment (IA)</label>
-            <input class="form-control" id="s-ia" type="number" min="0" max="100" value="30" oninput="updateScheme()">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Mid-Semester Exam (MSE)</label>
-            <input class="form-control" id="s-mse" type="number" min="0" max="100" value="20" oninput="updateScheme()">
-          </div>
-          <div class="form-group">
-            <label class="form-label">End-Semester Exam (ESE)</label>
-            <input class="form-control" id="s-ese" type="number" min="0" max="100" value="50" oninput="updateScheme()">
-          </div>
-        </div>
-        <div class="form-row" style="max-width:400px;margin:var(--sp-md) auto 0;">
-          <div class="form-group">
-            <label class="form-label">Direct Attainment Weight (%)</label>
-            <input class="form-control" id="s-direct-wt" type="number" min="0" max="100" value="80">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Indirect Attainment Weight (%)</label>
-            <input class="form-control" id="s-indirect-wt" type="number" min="0" max="100" value="20">
-          </div>
         </div>
       </div>
 
@@ -318,32 +245,6 @@
           </table>
         </div>
         <button class="add-row-btn" onclick="addMSERow()">➕ Add Question</button>
-      </div>
-
-      <!-- Attainment Target Levels -->
-      <div class="section-card">
-        <div class="section-card-title">🎯 Attainment Threshold Settings</div>
-        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--sp-lg)">
-          Set the minimum percentage of students required to attain each level, and the overall CO Target score.
-        </p>
-        <div class="form-row" style="max-width:650px;">
-          <div class="form-group">
-            <label class="form-label" style="color:var(--primary)">Target CO Score (%)</label>
-            <input class="form-control" id="s-co-thresh" type="number" min="0" max="100" value="60">
-          </div>
-          <div class="form-group">
-            <label class="form-label" style="color:var(--lvl-1-text)">Level 1 Threshold (%)</label>
-            <input class="form-control" id="s-lvl1" type="number" min="0" max="100" value="65">
-          </div>
-          <div class="form-group">
-            <label class="form-label" style="color:var(--lvl-2-text)">Level 2 Threshold (%)</label>
-            <input class="form-control" id="s-lvl2" type="number" min="0" max="100" value="75">
-          </div>
-          <div class="form-group">
-            <label class="form-label" style="color:var(--lvl-3-text)">Level 3 Threshold (%)</label>
-            <input class="form-control" id="s-lvl3" type="number" min="0" max="100" value="85">
-          </div>
-        </div>
       </div>
 
       <!-- Save Button -->
@@ -404,49 +305,16 @@
     document.getElementById('course-status-badge').className = `badge ${(currentCourse.status||'active')==='active' ? 'badge-success' : 'badge-muted'}`;
     document.getElementById('course-dept-label').textContent = dept ? dept.name : '';
 
-    // Populate Basic Info
-    document.getElementById('s-code').value      = currentCourse.code  || '';
-    document.getElementById('s-short').value     = currentCourse.shortName || '';
-    document.getElementById('s-name').value      = currentCourse.name  || '';
-    document.getElementById('s-year').value      = currentCourse.year  || '2025-26';
-    document.getElementById('s-class').value     = currentCourse.class || '';
-    document.getElementById('s-div').value       = currentCourse.division || '';
-    document.getElementById('s-batch').value     = currentCourse.batch || '';
-    document.getElementById('s-champ').value     = currentCourse.champion || '';
+    // Populate Additional Details
     document.getElementById('s-champ-date').value = currentCourse.champDate || '';
     document.getElementById('s-lpw').value       = currentCourse.lecturesPerWeek || 3;
-    document.getElementById('s-status').value    = currentCourse.status || 'active';
     document.getElementById('s-philosophy').value = currentCourse.teachingPhilosophy || '';
-    // Set semester
-    document.getElementById('s-sem').value = currentCourse.semester || 'V';
 
-    // Exam Scheme
+    // Exam Scheme (Display only)
     const es = currentCourse.examScheme || { ia:30, mse:20, ese:50 };
-    document.getElementById('s-ia').value  = es.ia;
-    document.getElementById('s-mse').value = es.mse;
-    document.getElementById('s-ese').value = es.ese;
-    updateScheme();
-
-    // Weights
-    document.getElementById('s-direct-wt').value   = currentCourse.directWeight   || 80;
-    document.getElementById('s-indirect-wt').value = currentCourse.indirectWeight || 20;
-
-    // Thresholds
-    const lvls = currentCourse.attainmentLevels || { 1:65, 2:75, 3:85 };
-    document.getElementById('s-co-thresh').value = currentCourse.coThreshold || 60;
-    document.getElementById('s-lvl1').value = lvls[1];
-    document.getElementById('s-lvl2').value = lvls[2];
-    document.getElementById('s-lvl3').value = lvls[3];
-
-    // IA Table
-    loadIATable();
-    loadMSETable();
-  }
-
-  function updateScheme() {
-    const ia  = parseInt(document.getElementById('s-ia').value)  || 0;
-    const mse = parseInt(document.getElementById('s-mse').value) || 0;
-    const ese = parseInt(document.getElementById('s-ese').value) || 0;
+    const ia = es.ia || 30;
+    const mse = es.mse || 20;
+    const ese = es.ese || 50;
     const tot = ia + mse + ese;
     document.getElementById('ia-display').textContent  = ia;
     document.getElementById('mse-display').textContent = mse;
@@ -455,6 +323,14 @@
     const badge = document.getElementById('marks-total-badge');
     badge.textContent = `Total: ${tot}`;
     badge.style.background = tot === 100 ? '' : 'var(--danger)';
+
+    // IA Table
+    loadIATable();
+    loadMSETable();
+  }
+
+  function updateScheme() {
+    // Left empty since it was removed
   }
 
   /* ── IA Table ── */
@@ -485,7 +361,7 @@
         <td><input value="${q.desc||''}" placeholder="Question description…" onchange="updateQField('${type}',${i},'desc',this.value)"></td>
         <td>
           <select style="background:var(--surface);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:4px 8px;font-size:13px" onchange="updateQField('${type}',${i},'bloomsLevel',this.value)">
-            ${['L1','L2','L3','L4','L5','L6'].map(l => `<option ${q.bloomsLevel===l?'selected':''}>${l}</option>`).join('')}
+            ${['L3','L4','L5','L6'].map(l => `<option ${q.bloomsLevel===l?'selected':''}>${l}</option>`).join('')}
           </select>
         </td>
         <td>
@@ -522,7 +398,7 @@
     newRow.innerHTML = `
       <td>${rows + 1}</td>
       <td><input placeholder="Question description…"></td>
-      <td><select style="background:var(--surface);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:4px 8px;font-size:13px">${['L1','L2','L3','L4','L5','L6'].map(l=>`<option>${l}</option>`).join('')}</select></td>
+      <td><select style="background:var(--surface);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:4px 8px;font-size:13px">${['L3','L4','L5','L6'].map(l=>`<option>${l}</option>`).join('')}</select></td>
       <td><select style="background:var(--surface);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:4px 8px;font-size:13px">${coOptions}</select></td>
       <td><input type="number" min="1" max="50" value="5" style="width:60px"></td>
       <td><button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="this.closest('tr').remove();renumberRows('ia-tbody')">🗑️</button></td>`;
@@ -541,7 +417,7 @@
     newRow.innerHTML = `
       <td>${rows + 1}</td>
       <td><input placeholder="Question description…"></td>
-      <td><select style="background:var(--surface);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:4px 8px;font-size:13px">${['L1','L2','L3','L4','L5','L6'].map(l=>`<option>${l}</option>`).join('')}</select></td>
+      <td><select style="background:var(--surface);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:4px 8px;font-size:13px">${['L3','L4','L5','L6'].map(l=>`<option>${l}</option>`).join('')}</select></td>
       <td><select style="background:var(--surface);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:4px 8px;font-size:13px">${coOptions}</select></td>
       <td><input type="number" min="1" max="50" value="5" style="width:60px"></td>
       <td><button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="this.closest('tr').remove();renumberRows('mse-tbody')">🗑️</button></td>`;
@@ -582,38 +458,14 @@
     if (!currentCourse) { Toast.error('No course selected.'); return; }
     const cid = currentCourse.id;
 
-    const ia  = parseInt(document.getElementById('s-ia').value)  || 30;
-    const mse = parseInt(document.getElementById('s-mse').value) || 20;
-    const ese = parseInt(document.getElementById('s-ese').value) || 50;
-
     // Build updated course object
     const updated = {
       ...currentCourse,
-      code             : document.getElementById('s-code').value.trim(),
-      shortName        : document.getElementById('s-short').value.trim(),
-      name             : document.getElementById('s-name').value.trim(),
-      semester         : document.getElementById('s-sem').value,
-      year             : document.getElementById('s-year').value.trim(),
-      class            : document.getElementById('s-class').value.trim(),
-      division         : document.getElementById('s-div').value.trim(),
-      batch            : document.getElementById('s-batch').value.trim(),
-      champion         : document.getElementById('s-champ').value.trim(),
       champDate        : document.getElementById('s-champ-date').value,
       lecturesPerWeek  : parseInt(document.getElementById('s-lpw').value) || 3,
-      status           : document.getElementById('s-status').value,
-      teachingPhilosophy: document.getElementById('s-philosophy').value.trim(),
-      examScheme       : { ia, mse, ese },
-      coThreshold      : parseInt(document.getElementById('s-co-thresh').value) || 60,
-      directWeight     : parseInt(document.getElementById('s-direct-wt').value) || 80,
-      indirectWeight   : parseInt(document.getElementById('s-indirect-wt').value) || 20,
-      attainmentLevels : {
-        1: parseInt(document.getElementById('s-lvl1').value) || 65,
-        2: parseInt(document.getElementById('s-lvl2').value) || 75,
-        3: parseInt(document.getElementById('s-lvl3').value) || 85,
-      },
+      teachingPhilosophy: document.getElementById('s-philosophy').value.trim()
     };
 
-    if (!updated.name || !updated.code) { Toast.error('Course Code and Name are required.'); return; }
     DB.courses.update(updated);
 
     // Save IA question structure

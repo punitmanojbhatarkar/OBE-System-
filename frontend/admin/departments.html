@@ -175,12 +175,12 @@
         <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Will create: hod.code@mitaoe.ac.in / hod123</div>
       </div>
       <div class="form-group">
-        <label class="form-label">Vision Statement</label>
-        <textarea class="form-control" id="f-vision" rows="2" placeholder="e.g. To be a center of excellence..."></textarea>
+        <label class="form-label">Vision Statement <span style="color:#f87171">*</span></label>
+        <textarea class="form-control" id="f-vision" rows="2" placeholder="e.g. To be a center of excellence..." required></textarea>
       </div>
       <div class="form-group">
-        <label class="form-label">Mission Statement</label>
-        <textarea class="form-control" id="f-mission" rows="2" placeholder="e.g. To foster innovation..."></textarea>
+        <label class="form-label">Mission Statement <span style="color:#f87171">*</span></label>
+        <textarea class="form-control" id="f-mission" rows="2" placeholder="e.g. To foster innovation..." required></textarea>
       </div>
       <input type="hidden" id="f-id">
       <div class="modal-footer">
@@ -248,36 +248,51 @@ function render() {
     return;
   }
 
-  grid.innerHTML = depts.map((d, i) => {
+  let tableHtml = `<table style="width:100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden;">
+    <thead>
+      <tr style="background: rgba(0,0,0,0.02); border-bottom: 1px solid var(--border); text-align: left;">
+        <th style="padding: 12px 16px; font-weight: 600; color: var(--text-secondary); font-size: 12px; text-transform: uppercase;">Code</th>
+        <th style="padding: 12px 16px; font-weight: 600; color: var(--text-secondary); font-size: 12px; text-transform: uppercase;">Department Name</th>
+        <th style="padding: 12px 16px; font-weight: 600; color: var(--text-secondary); font-size: 12px; text-transform: uppercase;">HOD</th>
+        <th style="padding: 12px 16px; font-weight: 600; color: var(--text-secondary); font-size: 12px; text-transform: uppercase;">Stats</th>
+        <th style="padding: 12px 16px; font-weight: 600; color: var(--text-secondary); font-size: 12px; text-transform: uppercase; text-align: right;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>`;
+
+  tableHtml += depts.map((d, i) => {
     const courses = allCourses.filter(c => c.deptId === d.id).length;
     const faculty = allUsers.filter(u => u.role === 'faculty' && u.deptId === d.id).length;
     const hod = allUsers.find(u => u.role === 'hod' && u.deptId === d.id);
-    const gradClass = GRADIENTS[i % GRADIENTS.length];
-    const icon = DEPT_ICONS[i % DEPT_ICONS.length];
+    
     const hodHtml = hod
-      ? `<div class="hod-row"><div class="hod-avatar">${hod.name[0]?.toUpperCase()}</div><div class="hod-info"><div class="hod-name">${hod.name}</div><div class="hod-label">Head of Department</div></div><span class="badge badge-warning" style="font-size:10px">HOD</span></div>`
-      : `<div class="no-hod-row">⚠️ No HOD assigned — please assign one</div>`;
+      ? `<div style="display:flex;align-items:center;gap:8px;"><div style="width:24px;height:24px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">${hod.name[0]?.toUpperCase()}</div><span style="font-size:13px;font-weight:500;">${hod.name}</span></div>`
+      : `<span style="color:var(--danger);font-size:12px;">⚠️ Unassigned</span>`;
+      
     return `
-    <div class="dept-card">
-      <div class="dept-banner ${gradClass}">
-        <div class="dept-code-badge">${d.code}</div>
-        <div class="dept-banner-icon">${icon}</div>
-      </div>
-      <div class="dept-body">
-        <h3 class="dept-name">${d.name}</h3>
-        <div class="dept-stats">
-          <div class="dept-stat"><span>📚</span><div><div class="stat-num">${courses}</div><div class="stat-lbl">Courses</div></div></div>
-          <div class="dept-stat"><span>👨‍🏫</span><div><div class="stat-num">${faculty}</div><div class="stat-lbl">Faculty</div></div></div>
-        </div>
-        ${hodHtml}
-        ${d.vision ? `<div style="font-size:11px;color:var(--text-muted);font-style:italic;border-left:2px solid var(--border);padding-left:8px;line-height:1.5">${d.vision.substring(0,100)}${d.vision.length>100?'…':''}</div>` : ''}
-      </div>
-      <div class="dept-footer">
-        <button class="btn btn-secondary btn-sm" onclick="openEdit('${d.id}')">✏️ Edit</button>
-        <button class="btn btn-ghost btn-sm" onclick="del('${d.id}','${d.name}')" style="color:var(--danger)">🗑 Delete</button>
-      </div>
-    </div>`;
+      <tr style="border-bottom: 1px solid var(--border);">
+        <td style="padding: 12px 16px;"><span class="badge" style="background:var(--primary-alpha);color:var(--primary);font-family:monospace;font-size:13px;">${d.code}</span></td>
+        <td style="padding: 12px 16px;">
+          <div style="font-weight:600;color:var(--text);font-size:14px;">${d.name}</div>
+          ${d.vision ? `<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${d.vision.substring(0,60)}${d.vision.length>60?'…':''}</div>` : ''}
+        </td>
+        <td style="padding: 12px 16px;">${hodHtml}</td>
+        <td style="padding: 12px 16px;font-size:12px;color:var(--text-secondary);">
+          <span style="margin-right:8px;">📚 ${courses}</span>
+          <span>👨‍🏫 ${faculty}</span>
+        </td>
+        <td style="padding: 12px 16px; text-align: right; white-space: nowrap;">
+          <button class="btn btn-secondary btn-sm" onclick="openEdit('${d.id}')" style="padding: 4px 8px; font-size: 12px; margin-right: 4px;">✏️ Edit</button>
+          <button class="btn btn-ghost btn-sm" onclick="del('${d.id}','${d.name}')" style="padding: 4px 8px; font-size: 12px; color: var(--danger);">🗑 Delete</button>
+        </td>
+      </tr>`;
   }).join('');
+
+  tableHtml += `</tbody></table>`;
+  
+  // Make grid 1 column for table
+  grid.style.gridTemplateColumns = "1fr";
+  grid.innerHTML = tableHtml;
 }
 
 function openAdd() {
@@ -335,6 +350,11 @@ document.getElementById('dept-form').addEventListener('submit', e => {
   const hodUserId = document.getElementById('f-hod-select').value;
   const vision  = document.getElementById('f-vision').value.trim();
   const mission = document.getElementById('f-mission').value.trim();
+
+  if (!vision || !mission) {
+    Toast.error('Vision and Mission statements are required.');
+    return;
+  }
 
   // Code uniqueness
   const codeExists = DB.departments.all().find(d => d.code === code && d.id !== id);
