@@ -48,7 +48,7 @@ def get_llm(temperature: float = 0.1):
         print(f"Failed to load API key from DB: {e}")
         
     return ChatGoogleGenerativeAI(
-        model="gemini-1.5-flash",
+        model="gemini-3.5-flash",
         temperature=temperature,
         google_api_key=api_key or "DUMMY_KEY_TO_PREVENT_CRASH",
         max_retries=2
