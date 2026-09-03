@@ -62,6 +62,11 @@ class CourseOutcome(Base):
     text = Column(Text, nullable=True)
     bloomsLevel = Column(String, nullable=True)
     assessedThrough = Column(String, nullable=True)  # comma-sep string
+    target = Column(Integer, default=60)
+    l1 = Column(Integer, default=65)
+    l2 = Column(Integer, default=75)
+    l3 = Column(Integer, default=85)
+    surveyQ = Column(String, nullable=True)
     course = relationship("Course")
 
 class PoMapping(Base):

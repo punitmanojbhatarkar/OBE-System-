@@ -83,6 +83,7 @@ def co_to_dict(co: models.CourseOutcome) -> dict:
         "id": co.id, "courseId": co.courseId, "no": co.no, "code": co.code,
         "text": co.text or "", "bloomsLevel": co.bloomsLevel or "",
         "assessedThrough": (co.assessedThrough or "").split(",") if co.assessedThrough else [],
+        "target": co.target, "l1": co.l1, "l2": co.l2, "l3": co.l3, "surveyQ": co.surveyQ or ""
     }
 
 def user_to_dict(u: models.User) -> dict:
@@ -420,13 +421,19 @@ class COBody(BaseModel):
     id: Optional[str] = None; courseId: str; no: int; code: str
     text: Optional[str] = ""; bloomsLevel: Optional[str] = ""
     assessedThrough: Optional[list] = []
+    target: Optional[int] = 60
+    l1: Optional[int] = 65
+    l2: Optional[int] = 75
+    l3: Optional[int] = 85
+    surveyQ: Optional[str] = ""
 
 @app.post("/api/cos")
 def add_co(body: COBody, db: Session = Depends(get_db)):
     co = models.CourseOutcome(
         id=body.id or uid(), courseId=body.courseId, no=body.no, code=body.code,
         text=body.text, bloomsLevel=body.bloomsLevel,
-        assessedThrough=",".join(body.assessedThrough) if body.assessedThrough else ""
+        assessedThrough=",".join(body.assessedThrough) if body.assessedThrough else "",
+        target=body.target, l1=body.l1, l2=body.l2, l3=body.l3, surveyQ=body.surveyQ
     )
     db.add(co); db.commit(); db.refresh(co)
     return co_to_dict(co)
@@ -443,7 +450,9 @@ def save_all_cos(body: COSaveAll, db: Session = Depends(get_db)):
             id=item.get("id") or uid(), courseId=body.courseId,
             no=item.get("no",1), code=item.get("code",""),
             text=item.get("text",""), bloomsLevel=item.get("bloomsLevel",""),
-            assessedThrough=",".join(item.get("assessedThrough",[])) if item.get("assessedThrough") else ""
+            assessedThrough=",".join(item.get("assessedThrough",[])) if item.get("assessedThrough") else "",
+            target=item.get("target", 60), l1=item.get("l1", 65), l2=item.get("l2", 75), l3=item.get("l3", 85),
+            surveyQ=item.get("surveyQ", "")
         )
         db.add(co)
     db.commit()
@@ -455,6 +464,7 @@ def update_co(co_id: str, body: COBody, db: Session = Depends(get_db)):
     if not co: raise HTTPException(404)
     co.text = body.text; co.bloomsLevel = body.bloomsLevel
     co.assessedThrough = ",".join(body.assessedThrough) if body.assessedThrough else ""
+    co.target = body.target; co.l1 = body.l1; co.l2 = body.l2; co.l3 = body.l3; co.surveyQ = body.surveyQ
     db.commit()
     return co_to_dict(co)
 
