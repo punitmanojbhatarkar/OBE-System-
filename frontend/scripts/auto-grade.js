@@ -71,8 +71,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     assignmentSelect.innerHTML = '<option value="">-- Choose Assignment --</option><option value="manual">-- Custom / Manual --</option>';
     if (!cid) return;
 
-    const allAssignments = JSON.parse(localStorage.getItem('obe_assignments') || '[]');
-    const courseAsgn = allAssignments.filter(a => a.courseId === cid);
+    const courseAsgn = DB.assessments.byCourse(cid).filter(a => a.type === 'assignment' || a.type === 'question_paper');
     courseAsgn.forEach(a => {
       const opt = document.createElement('option');
       opt.value = a.id;
@@ -92,8 +91,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       rubricsInput.value = '';
       return;
     }
-    const allAssignments = JSON.parse(localStorage.getItem('obe_assignments') || '[]');
-    const a = allAssignments.find(x => x.id === sel);
+    const a = DB.assessments.byId(sel);
     if (!a) return;
     
     maxMarksInput.value = a.maxMarks || a.marks || 10;
