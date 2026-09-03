@@ -22,6 +22,20 @@ from agents.ai_logic import (
 load_dotenv()
 models.Base.metadata.create_all(bind=engine)
 
+from sqlalchemy import text
+def migrate_db():
+    with engine.connect() as conn:
+        for col in ["target INTEGER DEFAULT 60", "l1 INTEGER DEFAULT 65", "l2 INTEGER DEFAULT 75", "l3 INTEGER DEFAULT 85", "surveyQ VARCHAR"]:
+            try:
+                conn.execute(text(f"ALTER TABLE course_outcomes ADD COLUMN {col}"))
+            except Exception:
+                pass
+        try:
+            conn.commit()
+        except:
+            pass
+migrate_db()
+
 app = FastAPI(title="AI OBE System", version="2.0.0")
 
 from fastapi import Request
