@@ -502,7 +502,7 @@ async function checkBloomsWithAI() {
       
       // Overwrite current COs with generated ones, ensuring exactly 6 slots
       let newCOs = generatedCOs.slice(0, 6).map((g, idx) => ({
-        id: `CO${idx+1}`, no: idx + 1, code: `CO${idx+1}`,
+        id: DB.uid(), no: idx + 1, code: `CO${idx+1}`,
         text: g.text,
         bloomsLevel: g.level,
         targetStudent: g.target || 60,
@@ -517,7 +517,7 @@ async function checkBloomsWithAI() {
       while(newCOs.length < 6) {
         const idx = newCOs.length;
         newCOs.push({
-          id: `CO${idx+1}`, no: idx + 1, code: `CO${idx+1}`,
+          id: DB.uid(), no: idx + 1, code: `CO${idx+1}`,
           text: '', bloomsLevel: '', targetStudent: 60, level1: 65, level2: 75, level3: 85, surveyQ: g.surveyQ || '', assessedThrough: []
         });
       }
