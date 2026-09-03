@@ -603,6 +603,16 @@ function patchDBWriteMethods() {
     };
   }
 
+  // ── Action Plans ──
+  if (typeof DB !== 'undefined' && DB.actionPlans && DB.actionPlans.savePlan) {
+    const _apSave = DB.actionPlans.savePlan.bind(DB.actionPlans);
+    DB.actionPlans.savePlan = function(plan) {
+      _apSave(plan);
+      apiFetch('/api/actionplans', { method: 'POST', body: plan })
+        .catch(e => console.warn('[API] action plan save failed', e));
+    };
+  }
+
   console.log('[API] DB write methods patched to persist to backend.');
 }
 
@@ -635,11 +645,3 @@ window._apiReady = (async function bootstrap() {
     console.warn('[API] Sync failed, pages will use cached localStorage data:', e);
   }
 })();
-\n
-  // ── Action Plans ──
-  const _apSave = DB.actionPlans.savePlan.bind(DB.actionPlans);
-  DB.actionPlans.savePlan = function(plan) {
-    _apSave(plan);
-    apiFetch('/api/actionplans', { method: 'POST', body: plan })
-      .catch(e => console.warn('[API] action plan save failed', e));
-  };
