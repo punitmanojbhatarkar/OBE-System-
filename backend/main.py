@@ -303,12 +303,18 @@ def add_user(body: UserBody, db: Session = Depends(get_db)):
 @app.put("/api/users/{user_id}")
 def update_user(user_id: str, body: UserBody, db: Session = Depends(get_db)):
     u = db.query(models.User).filter(models.User.id == user_id).first()
-    if not u: raise HTTPException(404)
+    is_new = False
+    if not u:
+        is_new = True
+        u = models.User(id=user_id, email=body.email, password=body.password, role=body.role)
     for f in ["name","email","role","deptId","avatar"]:
         val = getattr(body, f, None)
         if val is not None: setattr(u, f, val)
     if body.password: u.password = body.password
+    if is_new:
+        db.add(u)
     db.commit()
+    db.refresh(u)
     return user_to_dict(u)
 
 @app.delete("/api/users/{user_id}")
