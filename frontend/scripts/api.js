@@ -320,7 +320,7 @@ async function syncFromBackend() {
     mergeLocalStore('obe_survey', allSurvey, (a, b) => a.courseId === b.courseId && a.prn === b.prn && String(a.co) === String(b.co));
 
     // Mark as initialized so data.js doesn't re-seed with initial institutional data
-    localStorage.setItem('obe_initialized_v2', '1');
+    localStorage.setItem('obe_initialized_v3', '1');
 
     overlay.done();
     console.log('[API] Sync complete — all data loaded from backend.');
