@@ -468,13 +468,13 @@ def save_all_cos(body: COSaveAll, db: Session = Depends(get_db)):
         co = models.CourseOutcome(
             id=item.get("id") or uid(), courseId=body.courseId,
             no=item.get("no",1), code=item.get("code",""),
-            text=item.get("text",""), bloomsLevel=item.get("bloomsLevel",""),
+            text=item.get("text") or "", bloomsLevel=item.get("bloomsLevel") or "",
             assessedThrough=",".join(item.get("assessedThrough",[])) if item.get("assessedThrough") else "",
-            target=item.get("studentThreshold", 60),
-            l1=levels.get("1", 65) if isinstance(levels, dict) else 65,
-            l2=levels.get("2", 75) if isinstance(levels, dict) else 75,
-            l3=levels.get("3", 85) if isinstance(levels, dict) else 85,
-            surveyQ=item.get("surveyQuestion", "")
+            target=item.get("studentThreshold") or 60,
+            l1=levels.get("1") or 65,
+            l2=levels.get("2") or 75,
+            l3=levels.get("3") or 85,
+            surveyQ=item.get("surveyQuestion") or ""
         )
         db.add(co)
     db.commit()

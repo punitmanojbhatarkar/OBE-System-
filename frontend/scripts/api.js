@@ -183,8 +183,21 @@ async function syncFromBackend() {
     const users = await apiFetch('/api/users');
     mergeLocalStore('obe_users', users, (a, b) => a.id === b.id || a.email === b.email);
 
-    overlay.msg('Loading courses…');
+    overlay.msg('Loading courses...');
     const courses = await apiFetch('/api/courses');
+    
+    const localCourses = JSON.parse(localStorage.getItem('obe_courses') || '[]');
+    if (courses.length === 0 && localCourses.length > 0) {
+      overlay.msg('Restoring database...');
+      for (const c of localCourses) {
+        await apiFetch('/api/courses', { method: 'POST', body: c }).catch(() => {});
+      }
+      // Re-fetch courses after restoring
+      const restored = await apiFetch('/api/courses');
+      courses.length = 0;
+      courses.push(...restored);
+    }
+    
     mergeLocalStore('obe_courses', courses.map(normalizeCourse), (a, b) => a.id === b.id);
 
     overlay.msg('Loading course outcomes…');
