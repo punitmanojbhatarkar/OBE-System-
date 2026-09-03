@@ -97,7 +97,9 @@ def co_to_dict(co: models.CourseOutcome) -> dict:
         "id": co.id, "courseId": co.courseId, "no": co.no, "code": co.code,
         "text": co.text or "", "bloomsLevel": co.bloomsLevel or "",
         "assessedThrough": (co.assessedThrough or "").split(",") if co.assessedThrough else [],
-        "target": co.target, "l1": co.l1, "l2": co.l2, "l3": co.l3, "surveyQ": co.surveyQ or ""
+        "studentThreshold": co.target,
+        "levels": {"1": co.l1, "2": co.l2, "3": co.l3},
+        "surveyQuestion": co.surveyQ or ""
     }
 
 def user_to_dict(u: models.User) -> dict:
@@ -435,11 +437,9 @@ class COBody(BaseModel):
     id: Optional[str] = None; courseId: str; no: int; code: str
     text: Optional[str] = ""; bloomsLevel: Optional[str] = ""
     assessedThrough: Optional[list] = []
-    target: Optional[int] = 60
-    l1: Optional[int] = 65
-    l2: Optional[int] = 75
-    l3: Optional[int] = 85
-    surveyQ: Optional[str] = ""
+    studentThreshold: Optional[int] = 60
+    levels: Optional[dict] = {"1": 65, "2": 75, "3": 85}
+    surveyQuestion: Optional[str] = ""
 
 @app.post("/api/cos")
 def add_co(body: COBody, db: Session = Depends(get_db)):
@@ -447,7 +447,11 @@ def add_co(body: COBody, db: Session = Depends(get_db)):
         id=body.id or uid(), courseId=body.courseId, no=body.no, code=body.code,
         text=body.text, bloomsLevel=body.bloomsLevel,
         assessedThrough=",".join(body.assessedThrough) if body.assessedThrough else "",
-        target=body.target, l1=body.l1, l2=body.l2, l3=body.l3, surveyQ=body.surveyQ
+        target=body.studentThreshold,
+        l1=body.levels.get("1", 65) if body.levels else 65,
+        l2=body.levels.get("2", 75) if body.levels else 75,
+        l3=body.levels.get("3", 85) if body.levels else 85,
+        surveyQ=body.surveyQuestion
     )
     db.add(co); db.commit(); db.refresh(co)
     return co_to_dict(co)
@@ -460,13 +464,17 @@ class COSaveAll(BaseModel):
 def save_all_cos(body: COSaveAll, db: Session = Depends(get_db)):
     db.query(models.CourseOutcome).filter(models.CourseOutcome.courseId == body.courseId).delete()
     for item in body.cos:
+        levels = item.get("levels", {}) or {}
         co = models.CourseOutcome(
             id=item.get("id") or uid(), courseId=body.courseId,
             no=item.get("no",1), code=item.get("code",""),
             text=item.get("text",""), bloomsLevel=item.get("bloomsLevel",""),
             assessedThrough=",".join(item.get("assessedThrough",[])) if item.get("assessedThrough") else "",
-            target=item.get("target", 60), l1=item.get("l1", 65), l2=item.get("l2", 75), l3=item.get("l3", 85),
-            surveyQ=item.get("surveyQ", "")
+            target=item.get("studentThreshold", 60),
+            l1=levels.get("1", 65) if isinstance(levels, dict) else 65,
+            l2=levels.get("2", 75) if isinstance(levels, dict) else 75,
+            l3=levels.get("3", 85) if isinstance(levels, dict) else 85,
+            surveyQ=item.get("surveyQuestion", "")
         )
         db.add(co)
     db.commit()
@@ -478,7 +486,11 @@ def update_co(co_id: str, body: COBody, db: Session = Depends(get_db)):
     if not co: raise HTTPException(404)
     co.text = body.text; co.bloomsLevel = body.bloomsLevel
     co.assessedThrough = ",".join(body.assessedThrough) if body.assessedThrough else ""
-    co.target = body.target; co.l1 = body.l1; co.l2 = body.l2; co.l3 = body.l3; co.surveyQ = body.surveyQ
+    co.target = body.studentThreshold
+    co.l1 = body.levels.get("1", 65) if body.levels else 65
+    co.l2 = body.levels.get("2", 75) if body.levels else 75
+    co.l3 = body.levels.get("3", 85) if body.levels else 85
+    co.surveyQ = body.surveyQuestion
     db.commit()
     return co_to_dict(co)
 
