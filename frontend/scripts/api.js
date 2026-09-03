@@ -6,7 +6,7 @@
    ============================================================ */
 
 // Change this URL to your live Render backend URL after deploying it
-const PROD_API_URL = 'https://obe-backend-replace-me.onrender.com';
+const PROD_API_URL = 'https://obe-system-backend-t0ri.onrender.com';
 
 // Auto-detect: if served locally, use local backend. Otherwise, use Render backend.
 const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
