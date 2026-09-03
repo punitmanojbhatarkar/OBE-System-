@@ -49,9 +49,13 @@ async function apiFetch(path, opts = {}) {
           window.location.href = 'login.html';
         }
         const err = await res.json().catch(() => ({ detail: res.statusText }));
-        throw new Error(err.detail || res.statusText);
+        throw new Error(err.message || err.error || err.detail || res.statusText);
       }
-      return await res.json();
+      const json = await res.json();
+      if (json && json.success === false) {
+        throw new Error(json.error || 'Unknown API Error');
+      }
+      return json;
     } catch (e) {
       console.error('[API]', path, e.message);
       throw e;

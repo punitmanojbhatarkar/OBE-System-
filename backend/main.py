@@ -32,7 +32,8 @@ import traceback
 async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=500,
-        content={"message": str(exc), "traceback": traceback.format_exc()}
+        content={"message": str(exc), "traceback": traceback.format_exc()},
+        headers={"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Private-Network": "true"}
     )
 
 @app.middleware("http")
@@ -836,7 +837,12 @@ class SyllabusRequest(BaseModel):
 
 @app.post("/api/extract-syllabus")
 def api_extract_syllabus(req: SyllabusRequest):
-    return {"success": True, "data": extract_syllabus(req.text)}
+    try:
+        return {"success": True, "data": extract_syllabus(req.text)}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "error": f"AI Extraction Failed (check API Key in Configuration): {str(e)}"}
 
 class PhilosophyRequest(BaseModel):
     courseName: str; deptVision: str; deptMission: str
