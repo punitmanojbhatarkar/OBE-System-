@@ -13,7 +13,10 @@ const AI = (() => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    if (!res.ok) throw new Error(`Backend Error: ${res.statusText}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(`Backend Error: ${err.message || err.detail || res.statusText}`);
+    }
     const data = await res.json();
     if (data.success === false) throw new Error(`${data.error}`);
     return data.data;
