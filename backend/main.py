@@ -157,25 +157,10 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
         # Check by lowercase email
         user = db.query(models.User).filter(models.User.email.ilike(email_clean)).first()
     if not user:
-        # Auto-provision new/trial user so login never fails for test accounts
-        role = "hod" if "hod" in email_clean else ("student" if "student" in email_clean else ("admin" if "admin" in email_clean else "faculty"))
-        name = email_clean.split("@")[0].replace(".", " ").title()
-        user = models.User(
-            id=f"usr-{uid()}",
-            name=name if len(name) > 1 else "Trial User",
-            email=req.email.strip(),
-            password=req.password,
-            role=role,
-            deptId="dept-cs" if role in ["faculty", "hod", "student"] else None,
-            avatar=name[0].upper() if name else "U"
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-    elif user.password != req.password:
-        # Accept password update for trial convenience
-        user.password = req.password
-        db.commit()
+        return {"success": False, "error": "User not found. Please check your email."}
+    if user.password != req.password:
+        return {"success": False, "error": "Invalid password."}
+    
     return {"success": True, "user": user_to_dict(user)}
 
 # ─────────────────────────────────────────────
