@@ -10,3 +10,4 @@ numpy
 faiss-cpu
 PyJWT
 passlib[bcrypt]
+python-multipart
