@@ -47,6 +47,9 @@ const Auth = (() => {
         return { ok: false, error: 'Backend error: ' + res.status };
       }
       const data = await res.json();
+      if (!data.success) {
+        return { ok: false, error: data.error || 'Login failed.' };
+      }
       const user = data.user;
       const session = {
         id      : user.id,

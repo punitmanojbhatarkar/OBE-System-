@@ -157,7 +157,22 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
         # Check by lowercase email
         user = db.query(models.User).filter(models.User.email.ilike(email_clean)).first()
     if not user:
-        return {"success": False, "error": "User not found. Please check your email."}
+        if email_clean == "admin@mitaoe.ac.in":
+            # Auto-provision admin user if it doesn't exist (critical for Render ephemeral SQLite)
+            user = models.User(
+                id=f"usr-{uid()}",
+                name="System Administrator",
+                email="admin@mitaoe.ac.in",
+                password=req.password, # Use the password they provide as the new admin password
+                role="admin",
+                deptId=None,
+                avatar="A"
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+        else:
+            return {"success": False, "error": "User not found. Please check your email."}
     if user.password != req.password:
         return {"success": False, "error": "Invalid password."}
     
