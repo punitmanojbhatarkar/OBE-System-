@@ -569,7 +569,8 @@
       const prn   = r[0];
       const name  = r[1] || '?';
       const score = parseInt(r[2]) || 0;
-      const lt    = r[3] || classifyLearner(score);
+      let lt    = r[3] || classifyLearner(score);
+      if (lt.toLowerCase() === 'medium') lt = 'average';
       prev.innerHTML += `<span style="color:var(--text-primary)">${prn}</span> – ${name} – Score:${score} – ${lt}<br>`;
     });
     if (rows.length > 5) prev.innerHTML += `…and ${rows.length-5} more rows`;
@@ -585,7 +586,8 @@
       const prn   = (r[0]||'').trim();
       const name  = (r[1]||'').trim();
       const score = parseInt(r[2]) || 0;
-      const lt    = r[3] ? r[3].trim().toLowerCase() : classifyLearner(score);
+      let lt    = r[3] ? r[3].trim().toLowerCase() : classifyLearner(score);
+      if (lt === 'medium') lt = 'average';
       if (!prn || !name) { skipped++; return; }
       if (DB.students.byPRN(currentCourseId, prn)) { skipped++; return; }
       DB.students.add({ courseId: currentCourseId, prn, name, preSurveyScore: score, learnerType: lt });

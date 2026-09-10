@@ -172,7 +172,11 @@ function scrollTo(id) {
 
 /* ── Parse tab-delimited paste from Excel ── */
 function parsePaste(text) {
-  return text.trim().split('\n').map(row => row.split('\t').map(c=>c.trim()));
+  return text.trim().split('\n').map(row => {
+    if (row.includes('\t')) return row.split('\t').map(c=>c.trim());
+    if (row.includes(',')) return row.split(',').map(c=>c.trim());
+    return row.split(/\s{2,}/).map(c=>c.trim());
+  });
 }
 
 /* ── Light-mode chart color palette ── */
