@@ -250,7 +250,8 @@ function generateReport(){
         html+=`<td style="text-align:left;font-size:9px;padding:3px 5px">${ind.comp_text}</td>`;
         html+=`<td style="text-align:left;font-size:9px;padding:3px 5px">${ind.indicator}</td>`;
         cos.forEach(co=>{
-          const val=mapState6a[key]?mapState6a[key][co.no]:'';
+          const stateObj = mapState6a[key] ? mapState6a[key][co.no] : '';
+          const val = typeof stateObj === 'object' ? (stateObj.val || '') : stateObj;
           const bg=val==='Y'?'#d1fae5':val==='N'?'#fee2e2':'transparent';
           const fc=val==='Y'?'#065f46':val==='N'?'#991b1b':'#94a3b8';
           html+=`<td style="background:${bg};color:${fc};font-weight:700;text-align:center">${val||'—'}</td>`;
@@ -260,7 +261,14 @@ function generateReport(){
       html+=`<tr style="background:#e0e7ff"><td colspan="4" style="text-align:right;font-weight:700;font-size:10px;color:#3730a3;padding:4px 6px">Mapping Level for ${po}:</td>`;
       cos.forEach(co=>{
         let yCount=0;
-        indicators.forEach(ind=>{const key=`${ind.comp_id}_${ind.indicator}`;if(mapState6a[key]&&mapState6a[key][co.no]==='Y')yCount++;});
+        indicators.forEach(ind=>{
+          const key=`${ind.comp_id}_${ind.indicator}`;
+          if(mapState6a[key] && mapState6a[key][co.no]){
+            const stateObj = mapState6a[key][co.no];
+            const val = typeof stateObj === 'object' ? stateObj.val : stateObj;
+            if (val === 'Y') yCount++;
+          }
+        });
         const lvl=yCount>=3?3:yCount===2?2:yCount===1?1:0;
         const bg=lvl===3?'#d1fae5':lvl===2?'#fef3c7':lvl===1?'#ffedd5':'transparent';
         const fc=lvl===3?'#065f46':lvl===2?'#92400e':lvl===1?'#9a3412':'#94a3b8';
