@@ -142,25 +142,35 @@ async def migrate_db(request: Request, db: Session = Depends(get_db)):
                 hod=d.get('hod'), vision=d.get('vision'), mission=d.get('mission')
             ))
         db.commit() # Commit so Users can reference them
+        
+    valid_depts = {d.id for d in db.query(models.Department).all()}
             
     # 2. Insert Users (Parent of Courses)
     if 'obe_users' in data:
         for u in data['obe_users']:
+            did = u.get('deptId')
+            if did not in valid_depts: did = None
             db.merge(models.User(
                 id=u.get('id'), name=u.get('name'), email=u.get('email'), 
                 password=u.get('password', '1234'), role=u.get('role'), 
-                deptId=u.get('deptId'), avatar=u.get('avatar')
+                deptId=did, avatar=u.get('avatar')
             ))
         db.commit()
+        
+    valid_users = {u.id for u in db.query(models.User).all()}
             
     # 3. Insert Courses
     if 'obe_courses' in data:
         for c in data['obe_courses']:
             exam = c.get('examScheme') or {}
             att = c.get('attainmentLevels') or {}
+            did = c.get('deptId')
+            fid = c.get('facultyId')
+            if did not in valid_depts: did = None
+            if fid not in valid_users: fid = None
             db.merge(models.Course(
                 id=c.get('id'), code=c.get('code'), name=c.get('name'), shortName=c.get('shortName'), 
-                deptId=c.get('deptId'), facultyId=c.get('facultyId'), semester=c.get('semester'), 
+                deptId=did, facultyId=fid, semester=c.get('semester'), 
                 year=c.get('year'), division=c.get('division'), batch=c.get('batch'), klass=c.get('class'), 
                 champion=c.get('champion'), champDate=c.get('champDate'), 
                 lecturesPerWeek=c.get('lecturesPerWeek', 3), totalStudents=c.get('totalStudents', 0), 
@@ -171,14 +181,18 @@ async def migrate_db(request: Request, db: Session = Depends(get_db)):
             ))
         db.commit()
         
+    valid_courses = {c.id for c in db.query(models.Course).all()}
+        
     # 4. Insert COs
     if 'obe_cos' in data:
         for co in data['obe_cos']:
+            cid = co.get('courseId')
+            if cid not in valid_courses: continue # Skip COs without valid courses
             assessed = co.get('assessedThrough')
             if isinstance(assessed, list):
                 assessed = ",".join(assessed)
             db.merge(models.CourseOutcome(
-                id=co.get('id'), courseId=co.get('courseId'), no=co.get('no'), code=co.get('code'),
+                id=co.get('id'), courseId=cid, no=co.get('no'), code=co.get('code'),
                 text=co.get('text') or co.get('description'), bloomsLevel=co.get('bloomsLevel') or co.get('btLevel'),
                 assessedThrough=assessed
             ))
@@ -187,8 +201,10 @@ async def migrate_db(request: Request, db: Session = Depends(get_db)):
     # 5. Insert Students
     if 'obe_students' in data:
         for s in data['obe_students']:
+            cid = s.get('courseId')
+            if cid not in valid_courses: continue # Skip students without valid courses
             db.merge(models.Student(
-                id=s.get('id'), courseId=s.get('courseId'), prn=s.get('prn'),
+                id=s.get('id'), courseId=cid, prn=s.get('prn'),
                 name=s.get('name'), preSurveyScore=s.get('preSurveyScore'),
                 learnerType=s.get('learnerType')
             ))
