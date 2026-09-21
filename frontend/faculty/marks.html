@@ -3,106 +3,329 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Marks Entry | OBE System – MITAOE</title>
+  <title>Marks & Survey Evaluation | OBE System – MITAOE</title>
+  <meta name="description" content="Faculty marks evaluation hub for Direct CO-wise and Question-wise grading, Excel import, and Course Exit Survey.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../styles/main.css?v=6">
-  <link rel="stylesheet" href="../styles/components.css?v=6">
-  <style>
-    .survey-input{width:48px;text-align:center;padding:6px;background:var(--surface);border:1.5px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:14px;font-weight:700;outline:none;font-family:inherit;transition:all var(--t-fast);}
-    .survey-input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,0.12);}
-  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles/main.css">
+  <link rel="stylesheet" href="../styles/components.css">
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    /* ── Course Selector & Topbar ── */
+    .course-selector-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 14px 20px; margin-bottom: var(--sp-md);
+      flex-wrap: wrap; gap: 14px;
+    }
+
+    /* ── Modern Assessment Pill Stepper ── */
+    .assess-pills-wrap {
+      display: flex; align-items: center; gap: 8px; overflow-x: auto;
+      padding: 4px 2px 12px 2px; margin-bottom: var(--sp-md);
+      scrollbar-width: thin;
+    }
+    .assess-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 9px 16px; border-radius: var(--r-full);
+      background: var(--surface); border: 1.5px solid var(--border);
+      color: var(--text-secondary); font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s ease; white-space: nowrap;
+      user-select: none;
+    }
+    .assess-pill:hover {
+      border-color: var(--primary); color: var(--text-primary);
+      background: var(--surface-2); transform: translateY(-1px);
+    }
+    .assess-pill.active {
+      background: var(--primary); color: #FFFFFF;
+      border-color: var(--primary);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    }
+    .assess-pill .pill-badge {
+      font-size: 11px; padding: 2px 7px; border-radius: 99px;
+      background: var(--surface-2); color: var(--text-secondary);
+      font-weight: 700;
+    }
+    .assess-pill.active .pill-badge {
+      background: rgba(255, 255, 255, 0.25); color: #FFFFFF;
+    }
+    .assess-pill.add-pill {
+      border-style: dashed; background: transparent;
+      color: var(--primary);
+    }
+    .assess-pill.add-pill:hover {
+      background: rgba(37, 99, 235, 0.05); border-color: var(--primary);
+    }
+
+    /* ── Action & Mode Control Bar ── */
+    .control-panel-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 16px 20px; margin-bottom: var(--sp-md);
+    }
+    .control-panel-header {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 14px;
+    }
+
+    /* ── Segmented Mode Switcher ── */
+    .segmented-switch {
+      display: inline-flex; background: var(--surface-2);
+      border: 1px solid var(--border); border-radius: var(--r-md);
+      padding: 3px; gap: 4px;
+    }
+    .segmented-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px; font-size: 12.5px; font-weight: 600;
+      border-radius: 6px; border: none; background: transparent;
+      color: var(--text-secondary); cursor: pointer; transition: all 0.15s ease;
+    }
+    .segmented-btn:hover { color: var(--text-primary); }
+    .segmented-btn.active {
+      background: var(--surface); color: var(--primary);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); font-weight: 700;
+    }
+
+    /* ── Live Analytics Ribbon ── */
+    .analytics-ribbon {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px; margin-top: 14px; padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+    .ribbon-card {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--surface-2); border-radius: var(--r-md);
+      padding: 10px 14px; border: 1px solid var(--border);
+    }
+    .ribbon-icon-wrap {
+      width: 36px; height: 36px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(37, 99, 235, 0.1); color: var(--primary);
+      font-size: 16px; flex-shrink: 0;
+    }
+    .ribbon-val { font-size: 16px; font-weight: 800; color: var(--text-primary); line-height: 1.2; }
+    .ribbon-lbl { font-size: 11px; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; }
+
+    /* ── Interactive Marks Grid ── */
+    .marks-table-wrap {
+      position: relative; max-height: 580px; overflow: auto;
+      border: 1px solid var(--border); border-radius: var(--r-lg);
+      background: var(--surface);
+    }
+    .marks-table {
+      width: 100%; border-collapse: separate; border-spacing: 0;
+      font-size: 13px;
+    }
+    .marks-table th {
+      position: sticky; top: 0; z-index: 10;
+      background: var(--surface-2); color: var(--text-secondary);
+      font-size: 11.5px; font-weight: 700; text-transform: uppercase;
+      padding: 10px 12px; border-bottom: 1.5px solid var(--border);
+      text-align: left;
+    }
+    .marks-table th.center, .marks-table td.center { text-align: center; }
+    .marks-table td {
+      padding: 8px 12px; border-bottom: 1px solid var(--border);
+      color: var(--text-primary); vertical-align: middle;
+    }
+    .marks-table tbody tr:hover { background: rgba(37, 99, 235, 0.02); }
+
+    .marks-input {
+      width: 72px; padding: 6px 8px; font-size: 13px; font-weight: 700;
+      text-align: center; border-radius: var(--r-sm);
+      border: 1.5px solid var(--border); background: var(--surface);
+      color: var(--text-primary); font-family: ui-monospace, monospace;
+      outline: none; transition: all 0.15s ease;
+    }
+    .marks-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+      background: #FFFFFF;
+    }
+    .marks-input.invalid {
+      border-color: var(--danger) !important;
+      background: rgba(239, 68, 68, 0.08) !important;
+      color: var(--danger);
+    }
+
+    /* ── Smart Upload Dropzone ── */
+    .smart-dropzone {
+      border: 2px dashed var(--border); border-radius: var(--r-lg);
+      padding: 28px 20px; text-align: center; background: var(--surface-2);
+      cursor: pointer; transition: all 0.2s ease;
+    }
+    .smart-dropzone:hover, .smart-dropzone.dragover {
+      border-color: var(--primary); background: rgba(37, 99, 235, 0.04);
+      transform: scale(1.005);
+    }
+  </style>
 </head>
 <body>
 <div class="app-shell">
+
+  <!-- SIDEBAR -->
   <aside class="sidebar">
-    <div class="sidebar-logo"><div class="logo-icon">OBE</div><div><div class="logo-text">OBE System</div><div class="logo-sub">MITAOE</div></div></div>
+    <div class="sidebar-logo">
+      <div class="logo-icon">OBE</div>
+      <div><div class="logo-text">OBE System</div><div class="logo-sub">MITAOE</div></div>
+    </div>
     <nav class="sidebar-nav">
       <p class="nav-section-label">Overview</p>
-      <a class="nav-item" href="dashboard.html">📊 Dashboard</a>
-      <a class="nav-item" href="courses.html">📚 My Courses</a>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon" data-icon="dashboard"></span><span>Dashboard</span></a>
+      <a class="nav-item" href="courses.html"><span class="nav-icon" data-icon="courses"></span><span>My Courses</span></a>
+      
       <p class="nav-section-label">Course Management</p>
-      <a class="nav-item" href="syllabus.html">📖 Syllabus Setup</a>
-      <a class="nav-item" href="outcomes.html">🎯 CO & PO Setup</a>
-      <a class="nav-item" href="co-po-map.html">🗺️ CO-PO Mapping</a>
-      <a class="nav-item" href="6a-matrix.html">📋 6A Indicator Mapping</a>
-      <a class="nav-item" href="students.html">👥 Students</a>
+      <a class="nav-item" href="syllabus.html"><span class="nav-icon" data-icon="syllabus"></span><span>Syllabus Setup</span></a>
+      <a class="nav-item" href="outcomes.html"><span class="nav-icon" data-icon="outcomes"></span><span>CO & PO Setup</span></a>
+      <a class="nav-item" href="co-po-map.html"><span class="nav-icon" data-icon="map"></span><span>CO-PO Mapping</span></a>
+      <a class="nav-item" href="6a-matrix.html"><span class="nav-icon" data-icon="matrix"></span><span>6A Indicator Matrix</span></a>
+      <a class="nav-item" href="students.html"><span class="nav-icon" data-icon="students"></span><span>Students</span></a>
+      
       <p class="nav-section-label">Assessment</p>
-      <a class="nav-item active" href="marks.html">📝 Marks Entry</a>
-      <a class="nav-item" href="attainment.html">📈 Attainment</a>
-      <a class="nav-item" href="assignments.html">🤖 Assessments & AI</a>
-      <a class="nav-item" href="auto-grade.html">✅ Auto-Grading</a>
-      <a class="nav-item" href="question-paper.html">📄 Question Paper</a>
-      <a class="nav-item" href="reports.html">📄 Reports & Export</a>
+      <a class="nav-item active" href="marks.html"><span class="nav-icon" data-icon="marks"></span><span>Marks Entry</span></a>
+      <a class="nav-item" href="attainment.html"><span class="nav-icon" data-icon="attainment"></span><span>Attainment</span></a>
+      <a class="nav-item" href="assignments.html"><span class="nav-icon" data-icon="assignments"></span><span>Assignments & AI</span></a>
+      <a class="nav-item" href="auto-grade.html"><span class="nav-icon" data-icon="grade"></span><span>Auto-Grading</span></a>
+      <a class="nav-item" href="question-paper.html"><span class="nav-icon" data-icon="paper"></span><span>Question Paper</span></a>
+      <a class="nav-item" href="reports.html"><span class="nav-icon" data-icon="reports"></span><span>Reports & Export</span></a>
     </nav>
     <div class="sidebar-footer">
-      <div class="user-card"><div class="user-avatar"></div><div><div class="user-name"></div><div class="user-role"></div></div></div>
-      <button class="btn btn-ghost btn-sm w-full" data-action="logout" style="margin-top:8px">🚪 Logout</button>
+      <div class="user-card" onclick="Auth.logout()">
+        <div class="user-avatar"></div>
+        <div><div class="user-name"></div><div class="user-role"></div></div>
+      </div>
+      <button class="btn btn-secondary btn-sm w-full" data-action="logout" style="margin-top:8px; width:100%;">
+        <span data-icon="logout"></span><span>Sign Out</span>
+      </button>
     </div>
   </aside>
+
+  <!-- MAIN CONTENT -->
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
-        <h1 class="topbar-title">Marks Entry</h1>
-        <div class="topbar-breadcrumb">Assessment <span>›</span> Marks Entry</div>
+        <h1 class="topbar-title">Student Marks & Survey Evaluation</h1>
+        <div class="topbar-breadcrumb">Assessment <span>›</span> Marks & Exit Survey Evaluation</div>
       </div>
-      <div class="topbar-right">
-        <select class="form-control" id="course-select" style="width:260px"><option value="">— Select Course —</option></select>
+      <div class="topbar-right" style="display:flex;gap:8px;align-items:center;">
+        <a class="btn btn-secondary btn-sm" href="attainment.html">
+          <span>View Attainment Report</span><span data-icon="arrow-right"></span>
+        </a>
       </div>
     </header>
-    <div class="page-content">
-      <div class="tab-selector mb-lg">
-        <button class="t-btn active" onclick="switchTab('marks',this)">📝 Marks Entry</button>
-        <button class="t-btn" onclick="switchTab('survey',this)">💬 Exit Survey</button>
-      </div>
 
-      <!-- Marks Tab Content -->
-      <div id="tab-marks" class="tab-panel active">
-        <div class="card mb-lg">
-          <div class="card-header">
-            <div><div class="card-title">Marks Entry</div><div class="card-subtitle">Select an assessment to view structure and enter marks</div></div>
-            <div style="display:flex;gap:8px">
-              <select class="form-control" id="assess-select" onchange="loadAssessment()" style="width:250px"><option value="">— Select Assessment —</option></select>
-              <button class="btn btn-secondary btn-sm" onclick="toggleQStruct()" id="btn-toggle-q" title="Show/Hide Question & CO Structure">👁️ Structure</button>
-              <button class="btn btn-secondary btn-sm" onclick="openPasteModal()">📋 Paste from Excel</button>
-              <button class="btn btn-primary btn-sm" onclick="saveMarks()">💾 Save Marks</button>
-            </div>
+    <div class="page-content">
+
+      <!-- ── TOP CONSOLIDATED CONTROL BAR ── -->
+      <div class="card" style="padding:14px 20px;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;">
+          <!-- Course Selector -->
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span style="font-size:13px;font-weight:700;color:var(--text-secondary);">Course:</span>
+            <select class="form-select" id="course-select" style="min-width:280px;font-weight:700;padding:6px 12px;"></select>
+            <span id="badge-students" class="badge badge-neutral font-mono" style="font-size:11.5px;">0 Students</span>
           </div>
-          <!-- Question Structure (Read-only) -->
-          <div style="margin-bottom:16px; display:none" id="q-struct-container">
-            <h4 style="font-size:14px;font-weight:700;margin-bottom:8px">Question Structure</h4>
-            <div class="table-wrapper">
-              <table class="q-struct-table">
-                <thead><tr><th style="width:60px;text-align:center">Q.No</th><th>Description</th><th style="width:100px;text-align:center">Blooms</th><th style="width:80px;text-align:center">CO</th><th style="width:100px;text-align:center">Max Marks</th></tr></thead>
-                <tbody id="q-struct-body"></tbody>
-              </table>
-            </div>
+
+          <!-- Main Actions -->
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="openUploadModal()">
+              <span data-icon="upload"></span><span>Upload Excel / CSV</span>
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="quickFillSampleMarks()" title="Auto fill demo scores">
+              <span data-icon="sparkles"></span><span>Demo Fill</span>
+            </button>
+            <button class="btn btn-primary btn-sm" onclick="saveActiveMarks()" style="font-weight:700;padding:7px 18px;">
+              <span data-icon="check"></span><span>Save Marks</span>
+            </button>
           </div>
-          <!-- Marks Entry Grid -->
-          <div>
-            <h4 style="font-size:14px;font-weight:700;margin-bottom:8px">Student Marks</h4>
-            <div class="table-wrapper" style="max-height:500px;overflow-y:auto">
-              <table id="marks-table">
-                <thead id="marks-head"></thead>
-                <tbody id="marks-body"></tbody>
-              </table>
+        </div>
+
+        <!-- Assessment Selector Pills & Mode Toggle -->
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+          <!-- Assessment Stepper Pills -->
+          <div class="assess-pills-wrap" id="assess-pills-container" style="margin-bottom:0;padding-bottom:0;"></div>
+
+          <!-- Right: Entry Mode + Student Search -->
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <div class="segmented-switch">
+              <button class="segmented-btn active" id="btn-mode-co" onclick="setEntryMode('co')">
+                <span data-icon="target"></span><span>CO-Wise</span>
+              </button>
+              <button class="segmented-btn" id="btn-mode-q" onclick="setEntryMode('q')">
+                <span data-icon="edit"></span><span>Question-Wise</span>
+              </button>
             </div>
+            <input type="text" class="form-input" id="search-student" placeholder="🔍 Search student…" style="width:180px;padding:5px 10px;font-size:12px;" oninput="renderMarksSheet()">
+          </div>
+        </div>
+
+        <!-- Question Blueprint Config (Only shown when Question-Wise mode is toggled) -->
+        <div id="q-config-drawer" style="display:none;margin-top:12px;padding:12px;background:var(--surface-2);border-radius:var(--r-md);border:1px solid var(--border);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="font-size:12px;font-weight:700;color:var(--text-primary);">Configure Questions for this Assessment</span>
+            <button class="btn btn-secondary btn-sm" style="font-size:11px;padding:2px 8px;" onclick="addQuestionToActiveAssess()">+ Add Question</button>
+          </div>
+          <div class="table-responsive">
+            <table class="table" style="font-size:12px;background:var(--surface);">
+              <thead>
+                <tr>
+                  <th style="width:60px;text-align:center">Q#</th>
+                  <th>Description</th>
+                  <th style="width:120px">Bloom's Level</th>
+                  <th style="width:100px">Target CO</th>
+                  <th style="width:100px;text-align:center">Max Marks</th>
+                  <th style="width:50px;text-align:right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="q-config-tbody"></tbody>
+            </table>
           </div>
         </div>
       </div>
 
-      <!-- Survey Tab -->
-      <div id="tab-survey" class="tab-panel">
+      <!-- ── SECTION 1: ASSESSMENT MARKS ENTRY TABLE ── -->
+      <div id="section-marks">
+        <!-- Compact 1-Line Cohort Stats Bar -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:0 4px;font-size:12.5px;color:var(--text-secondary);flex-wrap:wrap;gap:8px;">
+          <div id="cohort-summary-text">
+            <strong>Cohort Summary:</strong> <span id="stat-summary-content">Loading summary...</span>
+          </div>
+          <div style="font-size:11.5px;color:var(--text-muted);">
+            Use <strong>Enter / Arrow Keys</strong> to quickly navigate cells
+          </div>
+        </div>
+
+        <!-- Marks Grid Table -->
+        <div class="marks-table-wrap">
+          <table class="marks-table" id="marks-sheet-table">
+            <thead id="marks-sheet-head"></thead>
+            <tbody id="marks-sheet-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── SECTION 2: COURSE EXIT SURVEY ── -->
+      <div id="section-survey" style="display:none;">
         <div class="card">
           <div class="card-header">
-            <div><div class="card-title">💬 Exit Survey (Course Feedback)</div><div class="card-subtitle">Student self-assessment per Course Outcome (1-5 scale)</div></div>
-            <button class="btn btn-primary btn-sm" onclick="saveSurvey()">💾 Save Survey</button>
+            <div>
+              <div class="card-title"><span data-icon="feedback"></span><span>Course Exit Survey Matrix</span></div>
+              <div class="card-subtitle">Student self-evaluation ratings (Likert 1–5 scale per Course Outcome)</div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-secondary btn-sm" onclick="quickFillSurveyRatings()">
+                <span data-icon="sparkles"></span><span>Demo Fill</span>
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="saveSurveyMatrix()">
+                <span data-icon="check"></span><span>Save Exit Survey</span>
+              </button>
+            </div>
           </div>
-          <div class="table-wrapper" style="max-height:500px;overflow-y:auto">
-            <table id="survey-table">
-              <thead id="survey-head"></thead>
-              <tbody id="survey-body"></tbody>
+          
+          <div class="marks-table-wrap" style="max-height:560px;">
+            <table class="marks-table" id="survey-sheet-table">
+              <thead id="survey-sheet-head"></thead>
+              <tbody id="survey-sheet-body"></tbody>
             </table>
           </div>
         </div>
@@ -111,661 +334,938 @@
     </div>
   </main>
 </div>
-<div id="toast-container"></div>
-<div id="paste-modal" class="modal-backdrop" style="display:none">
-  <div class="modal" style="max-width:560px">
-    <div class="modal-header"><h3 class="modal-title">📋 Paste or Upload from Excel</h3><button class="modal-close" onclick="closePasteModal()">✕</button></div>
-    <div style="margin-bottom:14px;padding:14px;border:2px dashed var(--primary);border-radius:10px;background:rgba(37,99,235,0.04);display:flex;align-items:center;justify-content:space-between;gap:12px">
-      <div>
-        <div style="font-weight:700;font-size:14px;color:var(--primary);margin-bottom:3px">📂 Direct Excel Sheet Upload</div>
-        <div style="font-size:12px;color:var(--text-secondary)">Upload any <b>.xlsx, .xls, or .csv</b> file. Automatically extracts Marks, Student Name / Roll No, CO & Bloom's (RBT) levels!</div>
-      </div>
-      <label class="btn btn-primary btn-sm" style="cursor:pointer;margin:0;white-space:nowrap">
-        <span>📎 Upload File</span>
-        <input type="file" id="excel-upload-file" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleExcelUpload(event)">
-      </label>
+
+<!-- ============================================================== -->
+<!-- SMART EXCEL / CSV UPLOAD MODAL -->
+<!-- ============================================================== -->
+<div id="upload-modal" class="modal-overlay">
+  <div class="modal-content" style="max-width:640px;">
+    <div class="modal-header">
+      <h3 class="modal-title">Upload Marks Spreadsheet</h3>
+      <button class="btn btn-secondary btn-sm btn-icon" onclick="closeUploadModal()"><span data-icon="close"></span></button>
     </div>
-    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:8px">Or copy & paste cells from Excel below:</p>
-    <textarea class="form-control" id="paste-area" rows="8" placeholder="Paste tab-separated data here..."></textarea>
-    <div class="modal-footer" style="margin-top:12px">
-      <button class="btn btn-secondary" onclick="closePasteModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="applyPaste()">Apply Pasted Data</button>
+    <div class="modal-body">
+      <div class="alert alert-info" style="font-size:12.5px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <span>Supports Excel (<strong>.xlsx, .xls</strong>) and <strong>.csv</strong> files. Automatically recognizes PRNs, Student Names, and CO/Question marks.</span>
+        <button class="btn btn-secondary btn-sm" style="font-size:11px;padding:3px 8px;" onclick="downloadMarksTemplate()">Download Template</button>
+      </div>
+
+      <!-- Dropzone -->
+      <div class="smart-dropzone" id="marks-dropzone" onclick="document.getElementById('marks-file-input').click()">
+        <input type="file" id="marks-file-input" accept=".xlsx,.xls,.csv,.tsv" style="display:none" onchange="handleMarksFileSelect(event)">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <span data-icon="upload" style="font-size:28px;color:var(--primary);"></span>
+          <div style="font-weight:700;font-size:14px;color:var(--text-primary);">Click or Drag & Drop Marks File Here</div>
+          <div style="font-size:12px;color:var(--text-secondary);">Works with Direct CO Columns (CO1, CO2...) or Question Columns (Q1, Q2...)</div>
+        </div>
+      </div>
+
+      <!-- Upload Preview Box -->
+      <div id="upload-preview-box" style="display:none;margin-top:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span class="badge badge-success" id="upload-status-badge">0 Records Detected</span>
+          <span id="upload-file-name" style="font-size:12px;color:var(--text-secondary);font-weight:600;">file.xlsx</span>
+        </div>
+        <div class="table-responsive" style="max-height:200px;border:1px solid var(--border);border-radius:var(--r-md);">
+          <table class="table" style="font-size:12px;" id="upload-preview-table">
+            <thead id="upload-preview-head"></thead>
+            <tbody id="upload-preview-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeUploadModal()">Cancel</button>
+      <button class="btn btn-primary" id="btn-apply-upload" onclick="applyUploadedMarks()" disabled>
+        <span data-icon="check"></span><span>Apply Marks to Sheet</span>
+      </button>
     </div>
   </div>
 </div>
-<script src="../scripts/data.js?v=101"></script>
-<script src="../scripts/api.js?v=101"></script>
-<script src="../scripts/auth.js?v=3"></script>
+
+<!-- ============================================================== -->
+<!-- ADD / CONFIGURE ASSESSMENT MODAL -->
+<!-- ============================================================== -->
+<div id="add-assess-modal" class="modal-overlay">
+  <div class="modal-content" style="max-width:500px;">
+    <div class="modal-header">
+      <h3 class="modal-title" id="assess-modal-title">Add Assessment Component</h3>
+      <button class="btn btn-secondary btn-sm btn-icon" onclick="closeAssessModal()"><span data-icon="close"></span></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Assessment Type *</label>
+        <select class="form-select" id="modal-assess-type" onchange="updateAssessModalDefaults()">
+          <option value="ia">Internal Assessment (IA)</option>
+          <option value="mse">Mid-Semester Examination (MSE)</option>
+          <option value="ese">End-Semester Examination (ESE)</option>
+          <option value="assignment">Assignment / CIE Project</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Assessment Title / Name *</label>
+        <input class="form-input" id="modal-assess-title" placeholder="e.g. IA 3, Lab Test, Quiz">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group">
+          <label class="form-label">Sequence #</label>
+          <input class="form-input" id="modal-assess-no" type="number" min="1" max="10" value="3">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Total Max Marks *</label>
+          <input class="form-input" id="modal-assess-max" type="number" min="5" max="100" value="20">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeAssessModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveNewAssessment()">Save Assessment</button>
+    </div>
+  </div>
+</div>
+
+<script src="../scripts/icons.js"></script>
+<script src="../scripts/data.js"></script>
+<script src="../scripts/api.js"></script>
+<script src="../scripts/auth.js"></script>
 <script src="../scripts/utils.js"></script>
+<script src="../scripts/ai-chat.js"></script>
 <script>
 (async () => {
   await (window._apiReady || Promise.resolve());
   const user = Auth.requireAuth(['faculty', 'hod']);
-if(!user) throw 0;
-Auth.populateSidebar(user);
+  if(!user) throw 0;
 
-let CID = null;
-let currentTab = 'marks';
-let currentAssessId = null;
-let students = [];
-let cos = [];
+  let CID = null;
+  let currentMainTab = 'marks'; // 'marks' | 'survey'
+  let currentEntryMode = 'co';   // 'co' (Direct CO-wise) | 'q' (Question blueprint)
+  let activeAssessId = null;
 
-function loadCourse(cid) {
-  CID = cid;
-  students = DB.students.byCourse(cid);
-  cos = DB.cos.byCourse(cid).filter(c=>c.text);
-  loadTab(currentTab);
+  let activeCourse = null;
+  let activeCOs = [];
+  let enrolledStudents = [];
+  let courseAssessments = [];
+  let currentParsedUpload = null;
 
-  // Check Lock Status (only disable if truly locked — never disable all inputs)
-  const course = DB.courses.byId(cid);
-  if (course?.isLocked) {
-    document.querySelectorAll('#marks-body input, #survey-body input, button[onclick="saveMarks()"], button[onclick="saveSurvey()"]').forEach(el => {
-      el.disabled = true;
-    });
-    Toast.warning('Course is locked by Audit. Mark entry is disabled.');
-  }
-}
+  // Initialize course dropdown
+  const courseSel = document.getElementById('course-select');
+  const facultyCourses = DB.courses.byFaculty(user.id);
+  courseSel.innerHTML = facultyCourses.map(c => `<option value="${c.id}">${c.code} – ${c.name}</option>`).join('');
 
-function switchTab(tab, btn) {
-  if (currentTab === 'survey') saveSurvey(true);
-  else if (currentTab === 'marks') saveMarks(true);
+  const storedCourseId = sessionStorage.getItem('selected_course_id');
+  const defaultCid = (storedCourseId && facultyCourses.find(c => c.id === storedCourseId)) ? storedCourseId : (facultyCourses[0]?.id || null);
 
-  document.querySelectorAll('.t-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
-
-  currentTab = tab;
-  document.getElementById(`tab-${tab}`).classList.add('active');
-  loadTab(tab);
-}
-
-function loadTab(tab) {
-  if(!CID) return;
-  if(tab === 'survey') {
-    loadSurvey();
-  } else if(tab === 'marks') {
-    populateAssessDropdown();
-    loadAssessment();
-  }
-}
-
-function populateAssessDropdown() {
-  const asgns = DB.assessments.byCourse(CID);
-  const sel = document.getElementById('assess-select');
-  const oldVal = sel.value;
-  sel.innerHTML = '<option value="">— Select Assessment —</option>';
-  asgns.forEach(a => {
-    // Proper type labels for all assessment types
-    const typeLabel = {
-      'ia': 'IA',
-      'mse': 'MSE',
-      'ese': 'ESE',
-      'question_paper': 'Question Paper',
-      'assignment': 'Assignment'
-    }[a.type] || 'Assessment';
-    sel.innerHTML += `<option value="${a.id}">${typeLabel} ${a.no}: ${a.title}</option>`;
-  });
-  if (asgns.find(a=>a.id===oldVal)) sel.value = oldVal;
-  else if (asgns.length > 0) sel.value = asgns[0].id;
-}
-
-function loadAssessment() {
-  if (!CID) return;
-  const asgnId = document.getElementById('assess-select').value;
-  currentAssessId = asgnId;
-  const qContainer = document.getElementById('q-struct-container');
-  const qBody = document.getElementById('q-struct-body');
-  const head = document.getElementById('marks-head');
-  const body = document.getElementById('marks-body');
-
-  if (!asgnId) {
-    qContainer.style.display = 'none';
-    head.innerHTML = '';
-    body.innerHTML = '<tr><td colspan="99" class="text-muted" style="text-align:center;padding:40px"><div style="font-size:32px;margin-bottom:10px">📝</div><div style="font-weight:600">Select an Assessment</div><div style="font-size:13px;color:var(--text-muted)">Choose an assessment from the dropdown above</div></td></tr>';
-    return;
+  if (defaultCid) {
+    courseSel.value = defaultCid;
+    loadCourse(defaultCid);
   }
 
-  renderMarksTable(asgnId, qContainer, qBody, head, body);
-}
-
-function renderMarksTable(asgnId, qContainer, qBody, head, body) {
-  const asgn = DB.assessments.byId(asgnId);
-  const asgnQuestions = asgn?.questions || [];
-
-  // If no question structure, show a simple Total Marks entry per student
-  if (!asgnQuestions.length) {
-    qContainer.style.display = 'none';
-    head.innerHTML = '<tr><th>Sr</th><th>PRN</th><th>Name</th><th style="text-align:center;min-width:100px">Total Marks<br><span style="font-size:10px;color:var(--text-muted)">(Max: ' + (asgn?.maxMarks || '—') + ')</span></th><th style="text-align:center">%</th><th style="text-align:center">Status</th></tr>';
-
-    if (!students || students.length === 0) {
-      body.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">
-        <div style="font-size:32px;margin-bottom:10px">👥</div>
-        <div style="font-weight:600;font-size:15px;color:var(--text-primary);margin-bottom:6px">No Students in This Course</div>
-        <div style="font-size:13px;margin-bottom:16px">Please add students in the Students page first.</div>
-        <a href="students.html" class="btn btn-primary btn-sm" style="text-decoration:none">➕ Go to Students</a>
-      </td></tr>`;
-      return;
-    }
-
-    const allMarks = DB.marks.get(CID);
-    const maxM = asgn?.maxMarks || 100;
-    body.innerHTML = '';
-    students.forEach((s, si) => {
-      const existing = allMarks.find(x => x.prn === s.prn && x.assessId === asgnId && x.qNo === 1);
-      const val = existing ? existing.marks : '';
-      const pct = val !== '' ? Math.round((parseFloat(val) / maxM) * 100) : 0;
-      const pass = val !== '' && pct >= 60;
-      body.innerHTML += `<tr>
-        <td>${si+1}</td>
-        <td style="font-size:12px">${s.prn}</td>
-        <td style="font-size:13px;font-weight:500">${s.name}</td>
-        <td style="text-align:center">
-          <input type="number" class="marks-input" data-prn="${s.prn}" data-qno="1" value="${val}" min="0" max="${maxM}" style="width:80px;text-align:center" onchange="updateRowTotals(this.closest('tr'))">
-        </td>
-        <td style="text-align:center;font-size:12px" class="row-pct">${val !== '' ? pct + '%' : '—'}</td>
-        <td style="text-align:center" class="row-status">${val !== '' ? (pass ? '<span style="color:var(--success);font-weight:700">✓ Pass</span>' : '<span style="color:var(--danger);font-weight:700">✕ Fail</span>') : '—'}</td>
-      </tr>`;
-    });
-    return;
-  }
-
-  // Full question-wise marks entry
-  qContainer.style.display = 'block';
-  qBody.innerHTML = '';
-  asgnQuestions.forEach(q => {
-    qBody.innerHTML += `<tr>
-      <td style="font-weight:700;text-align:center">${q.qNo}</td>
-      <td><div style="font-size:13px">${q.text||'—'}</div></td>
-      <td style="text-align:center"><span class="badge badge-info">${q.rbt||'—'}</span></td>
-      <td style="text-align:center"><span class="badge badge-primary">CO${q.coNo||1}</span></td>
-      <td style="text-align:center;font-weight:700">${q.marks}</td>
-    </tr>`;
-  });
-
-  const totalMax = asgnQuestions.reduce((s,q)=>s+(parseFloat(q.marks)||0),0);
-  let headHtml = '<tr><th>Sr</th><th>PRN</th><th>Name</th>';
-  asgnQuestions.forEach(q=>headHtml+=`<th style="text-align:center;min-width:60px">${q.qNo}<br><span style="font-size:10px;color:var(--text-muted)">(${q.marks})</span></th>`);
-  headHtml += '<th style="text-align:center">Total</th><th style="text-align:center">%</th><th style="text-align:center">Status</th></tr>';
-  head.innerHTML = headHtml;
-
-  const allMarks = DB.marks.get(CID);
-  body.innerHTML = '';
-
-  if (!students || students.length === 0) {
-    body.innerHTML = `<tr><td colspan="99" style="text-align:center;padding:40px;color:var(--text-muted)">
-      <div style="font-size:32px;margin-bottom:10px">👥</div>
-      <div style="font-weight:600;font-size:15px;color:var(--text-primary);margin-bottom:6px">No Students in This Course</div>
-      <div style="font-size:13px;margin-bottom:16px">Please add students first, then come back here to enter marks.</div>
-      <a href="students.html" class="btn btn-primary btn-sm" style="text-decoration:none">➕ Go to Students</a>
-    </td></tr>`;
-    return;
-  }
-
-  students.forEach((s,si) => {
-    let rowHtml = `<tr><td>${si+1}</td><td style="font-size:12px">${s.prn}</td><td style="font-size:13px;font-weight:500">${s.name}</td>`;
-    let total = 0;
-    asgnQuestions.forEach(q => {
-      const m = allMarks.find(x => x.prn===s.prn && x.assessId===asgnId && String(x.qNo)===String(q.qNo));
-      const val = m ? m.marks : '';
-      total += (parseFloat(val)||0);
-      rowHtml += `<td style="text-align:center"><input type="number" class="marks-input" data-prn="${s.prn}" data-qno="${q.qNo}" value="${val}" min="0" max="${q.marks}" onchange="updateRowTotals(this.closest('tr'))"></td>`;
-    });
-    const pct = totalMax>0 ? Math.round((total/totalMax)*100) : 0;
-    const pass = pct >= 60;
-    rowHtml += `<td style="text-align:center;font-weight:700" class="row-total">${total||'0'}</td>`;
-    rowHtml += `<td style="text-align:center;font-size:12px" class="row-pct">${pct}%</td>`;
-    rowHtml += `<td style="text-align:center" class="row-status">${pass?'<span style="color:var(--success);font-weight:700">✓ Pass</span>':'<span style="color:var(--danger);font-weight:700">✕ Fail</span>'}</td></tr>`;
-    body.innerHTML += rowHtml;
-  });
-}
-
-function updateRowTotals(tr) {
-  if(!tr || !currentAssessId) return;
-  const asgn = DB.assessments.byId(currentAssessId);
-  const asgnQuestions = asgn?.questions || [];
-  const inputs = tr.querySelectorAll('.marks-input');
-  let total=0; const maxTotal = asgnQuestions.reduce((s,q)=>s+(parseFloat(q.marks)||0),0);
-  inputs.forEach(inp=>total += parseFloat(inp.value)||0);
-  const pct = maxTotal>0?Math.round((total/maxTotal)*100):0;
-  tr.querySelector('.row-total').textContent = total;
-  tr.querySelector('.row-pct').textContent = pct+'%';
-  tr.querySelector('.row-status').innerHTML = pct>=60?'<span style="color:var(--success);font-weight:700">✓ Pass</span>':'<span style="color:var(--danger);font-weight:700">✕ Fail</span>';
-}
-
-function saveMarks(silent = false) {
-  if(!CID) { 
-    if(!silent) Toast.warning('Select a course first.'); 
-    return; 
-  }
-  if (!currentAssessId) return;
-
-  document.querySelectorAll('#marks-body .marks-input').forEach(inp => {
-    const prn = inp.dataset.prn;
-    const qNo = parseInt(inp.dataset.qno);
-    const val = parseFloat(inp.value);
-    if (!isNaN(val)) {
-      DB.marks.set(CID, prn, currentAssessId, qNo, val);
+  courseSel.addEventListener('change', e => {
+    if (e.target.value) {
+      sessionStorage.setItem('selected_course_id', e.target.value);
+      loadCourse(e.target.value);
     }
   });
 
-  if(!silent) Toast.success('Marks saved successfully!');
-}
+  renderAllIcons();
+  initDropzone();
 
-function loadSurvey() {
-  if(!CID) return;
-
-  const renderSurvey = () => {
-    const activeCOs = cos.filter(c=>c.text);
-    const surveyHead = document.getElementById('survey-head');
-    const body = document.getElementById('survey-body');
+  /* ── Load Active Course ── */
+  function loadCourse(cid) {
+    CID = cid;
+    activeCourse = DB.courses.byId(cid);
+    
+    // Deduplicate COs by unique CO number
+    const rawCOs = DB.cos.byCourse(cid).filter(c => c && (c.text || c.code));
+    const seen = new Set();
+    activeCOs = rawCOs.filter(c => {
+      const num = parseInt(c.no) || 1;
+      if (seen.has(num)) return false;
+      seen.add(num);
+      return true;
+    }).sort((a,b) => (a.no || 1) - (b.no || 1));
 
     if (!activeCOs.length) {
-      surveyHead.innerHTML = '';
-      body.innerHTML = `<tr><td colspan="99" style="text-align:center;padding:40px;color:var(--text-muted)">
-        <div style="font-size:32px;margin-bottom:10px">🎯</div>
-        <div style="font-weight:600;font-size:15px;color:var(--text-primary);margin-bottom:6px">No Course Outcomes Defined</div>
-        <div style="font-size:13px;margin-bottom:16px">Please set up COs in the CO &amp; PO Setup page first.</div>
-        <a href="outcomes.html" class="btn btn-primary btn-sm" style="text-decoration:none">➕ Set Up COs</a>
-      </td></tr>`;
-      return;
+      activeCOs = [1,2,3,4,5,6].map(n => ({ id: `co-${cid}-${n}`, courseId: cid, no: n, code: `CO${n}`, text: `Course Outcome ${n}` }));
     }
 
-    if (!students || students.length === 0) {
-      surveyHead.innerHTML = '';
-      body.innerHTML = `<tr><td colspan="99" style="text-align:center;padding:40px;color:var(--text-muted)">
-        <div style="font-size:32px;margin-bottom:10px">👥</div>
-        <div style="font-weight:600;font-size:15px;color:var(--text-primary);margin-bottom:6px">No Students in This Course</div>
-        <div style="font-size:13px;margin-bottom:16px">Please add students first, then collect exit survey responses.</div>
-        <a href="students.html" class="btn btn-primary btn-sm" style="text-decoration:none">➕ Go to Students</a>
-      </td></tr>`;
-      return;
+    enrolledStudents = DB.students.byCourse(cid);
+
+    const bStu = document.getElementById('badge-students');
+    if (bStu) bStu.textContent = `${enrolledStudents.length} Students`;
+
+    // Ensure unified assessments exist
+    courseAssessments = DB.assessments.byCourse(cid);
+    
+    if (courseAssessments.length > 0) {
+      if (!activeAssessId || !courseAssessments.find(a => a.id === activeAssessId)) {
+        activeAssessId = courseAssessments[0].id;
+      }
+    } else {
+      activeAssessId = null;
     }
 
-    let headHtml = '<tr><th>Sr</th><th>PRN</th><th>Name</th>';
-    activeCOs.forEach(c=>headHtml+=`<th style="text-align:center">${c.code}<br><span style="font-size:10px;color:var(--text-muted)">(1–5)</span></th>`);
-    headHtml += '<th style="text-align:center">Avg %</th><th style="text-align:center">Attained</th></tr>';
-    surveyHead.innerHTML = headHtml;
+    renderAssessmentPills();
+    if (currentMainTab === 'marks') {
+      renderMarksSheet();
+    } else {
+      renderSurveySheet();
+    }
+    renderAllIcons();
+  }
 
-    body.innerHTML = '';
-    students.forEach((s,si) => {
-      let html = `<tr><td>${si+1}</td><td style="font-size:12px">${s.prn}</td><td style="font-size:13px;font-weight:500">${s.name}</td>`;
-      let sum=0, count=0;
-      activeCOs.forEach(co => {
-        const score = DB.survey.getScore(CID, s.prn, co.no);
-        const val = score!==null&&score!==undefined ? score : '';
-        if(val) { sum+=parseInt(val); count++; }
-        html += `<td style="text-align:center"><input type="number" class="survey-input" data-prn="${s.prn}" data-co="${co.no}" value="${val}" min="1" max="5" placeholder="—" onchange="updateSurveyRow(this.closest('tr'))"></td>`;
-      });
-      const avgPct = count>0 ? Math.round((sum/(count*5))*100) : 0;
-      const att = avgPct >= 60;
-      html += `<td style="text-align:center;font-weight:700" class="surv-avg">${count?avgPct+'%':'—'}</td>`;
-      html += `<td style="text-align:center" class="surv-att">${count?(att?'<span style="color:var(--success);font-weight:700">✓ Yes</span>':'<span style="color:var(--danger);font-weight:700">✕ No</span>'):'—'}</td></tr>`;
-      body.innerHTML += html;
+  /* ── Switch Main Tab (Marks vs Survey) ── */
+  function switchMainTab(tab) {
+    currentMainTab = tab;
+    document.getElementById('section-marks').style.display = tab === 'marks' ? 'block' : 'none';
+    document.getElementById('section-survey').style.display = tab === 'survey' ? 'block' : 'none';
+
+    renderAssessmentPills();
+    if (tab === 'marks') renderMarksSheet();
+    else renderSurveySheet();
+    renderAllIcons();
+  }
+
+  /* ── Render Assessment Stepper Pills ── */
+  function renderAssessmentPills() {
+    const container = document.getElementById('assess-pills-container');
+    if (!container) return;
+
+    let html = '';
+    courseAssessments.forEach(a => {
+      const isActive = currentMainTab === 'marks' && a.id === activeAssessId;
+      const typeLabel = { 'ia': 'IA', 'mse': 'Mid-Sem (MSE)', 'ese': 'End-Sem (ESE)', 'assignment': 'Assignment' }[a.type] || a.type.toUpperCase();
+      const maxM = a.maxMarks || 20;
+
+      html += `
+        <div class="assess-pill ${isActive ? 'active' : ''}" onclick="selectAssessment('${a.id}')">
+          <span>${typeLabel} ${a.no > 1 && a.type !== 'mse' && a.type !== 'ese' ? a.no : ''}</span>
+          <span class="pill-badge">${maxM}M</span>
+        </div>
+      `;
     });
 
-    // Class average row
-    let avgHtml = '<tr style="background:rgba(37,99,235,0.1)"><td></td><td></td><td style="font-weight:700;font-size:13px">Class Avg</td>';
+    html += `
+      <div class="assess-pill add-pill" onclick="openAddAssessModal()">
+        <span data-icon="plus"></span><span>Add Exam</span>
+      </div>
+      <div class="assess-pill ${currentMainTab === 'survey' ? 'active' : ''}" style="margin-left:auto;" onclick="switchMainTab('survey')">
+        <span data-icon="feedback"></span><span>Exit Survey</span>
+      </div>
+    `;
+
+    container.innerHTML = html;
+    renderAllIcons(container);
+  }
+
+  /* ── Select Assessment Component ── */
+  function selectAssessment(aid) {
+    activeAssessId = aid;
+    if (currentMainTab !== 'marks') {
+      currentMainTab = 'marks';
+      document.getElementById('section-marks').style.display = 'block';
+      document.getElementById('section-survey').style.display = 'none';
+    }
+    renderAssessmentPills();
+    renderMarksSheet();
+  }
+
+  /* ── Set Entry Mode (Direct CO vs Question Blueprint) ── */
+  function setEntryMode(mode) {
+    currentEntryMode = mode;
+    document.getElementById('btn-mode-co').classList.toggle('active', mode === 'co');
+    document.getElementById('btn-mode-q').classList.toggle('active', mode === 'q');
+    document.getElementById('q-config-drawer').style.display = mode === 'q' ? 'block' : 'none';
+
+    if (mode === 'q') renderQuestionConfig();
+    renderMarksSheet();
+    renderAllIcons();
+  }
+
+  /* ── Get Active Assessment Object ── */
+  function getActiveAssess() {
+    return courseAssessments.find(a => a.id === activeAssessId) || courseAssessments[0] || null;
+  }
+
+  /* ── Render Question Blueprint Config in Question Mode ── */
+  function renderQuestionConfig() {
+    const asgn = getActiveAssess();
+    const tbody = document.getElementById('q-config-tbody');
+    if (!asgn || !tbody) return;
+
+    const questions = asgn.questions || [];
+    if (!questions.length) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:12px;color:var(--text-muted);">No questions configured yet. Click "+ Add Question" to define your question structure.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = questions.map((q, idx) => `
+      <tr>
+        <td style="text-align:center;font-weight:700;">Q${q.qNo}</td>
+        <td><input type="text" class="form-input" style="padding:4px 8px;font-size:12px;" value="${q.desc || `Question ${q.qNo}`}" onchange="updateQuestionField(${idx}, 'desc', this.value)"></td>
+        <td>
+          <select class="form-select" style="padding:4px 6px;font-size:12px;" onchange="updateQuestionField(${idx}, 'bloomsLevel', this.value)">
+            <option value="L3" ${q.bloomsLevel === 'L3' ? 'selected' : ''}>L3 - Apply</option>
+            <option value="L4" ${q.bloomsLevel === 'L4' ? 'selected' : ''}>L4 - Analyze</option>
+            <option value="L5" ${q.bloomsLevel === 'L5' ? 'selected' : ''}>L5 - Evaluate</option>
+            <option value="L6" ${q.bloomsLevel === 'L6' ? 'selected' : ''}>L6 - Create</option>
+          </select>
+        </td>
+        <td>
+          <select class="form-select" style="padding:4px 6px;font-size:12px;" onchange="updateQuestionField(${idx}, 'coNo', parseInt(this.value))">
+            ${activeCOs.map(co => `<option value="${co.no}" ${q.coNo === co.no ? 'selected' : ''}>${co.code}</option>`).join('')}
+          </select>
+        </td>
+        <td style="text-align:center;">
+          <input type="number" class="form-input" style="width:65px;padding:4px 6px;font-size:12px;text-align:center;" min="1" max="100" value="${q.maxMarks || 10}" onchange="updateQuestionField(${idx}, 'maxMarks', parseFloat(this.value))">
+        </td>
+        <td style="text-align:right;">
+          <button class="btn btn-danger btn-sm btn-icon" style="padding:2px 6px;" onclick="removeQuestion(${idx})"><span data-icon="trash"></span></button>
+        </td>
+      </tr>
+    `).join('');
+    renderAllIcons(tbody);
+  }
+
+  function updateQuestionField(idx, field, val) {
+    const asgn = getActiveAssess();
+    if (!asgn || !asgn.questions || !asgn.questions[idx]) return;
+    asgn.questions[idx][field] = val;
+    // Update total max marks
+    asgn.maxMarks = asgn.questions.reduce((sum, q) => sum + (parseFloat(q.maxMarks) || 0), 0);
+    DB.assessments.update(asgn);
+    renderMarksSheet();
+  }
+
+  function addQuestionToActiveAssess() {
+    const asgn = getActiveAssess();
+    if (!asgn) return;
+    if (!asgn.questions) asgn.questions = [];
+    const nextQ = asgn.questions.length + 1;
+    asgn.questions.push({
+      qNo: nextQ,
+      desc: `Question ${nextQ}`,
+      bloomsLevel: 'L3',
+      coNo: ((nextQ - 1) % (activeCOs.length || 1)) + 1,
+      maxMarks: 10
+    });
+    asgn.maxMarks = asgn.questions.reduce((sum, q) => sum + (parseFloat(q.maxMarks) || 0), 0);
+    DB.assessments.update(asgn);
+    renderQuestionConfig();
+    renderMarksSheet();
+  }
+
+  function removeQuestion(idx) {
+    const asgn = getActiveAssess();
+    if (!asgn || !asgn.questions) return;
+    asgn.questions.splice(idx, 1);
+    asgn.questions.forEach((q, i) => q.qNo = i + 1);
+    asgn.maxMarks = asgn.questions.reduce((sum, q) => sum + (parseFloat(q.maxMarks) || 0), 0);
+    DB.assessments.update(asgn);
+    renderQuestionConfig();
+    renderMarksSheet();
+  }
+
+  /* ── Render Interactive Marks Grid ── */
+  function renderMarksSheet() {
+    const asgn = getActiveAssess();
+    const head = document.getElementById('marks-sheet-head');
+    const body = document.getElementById('marks-sheet-body');
+    const infoBadge = document.getElementById('assess-info-badge');
+
+    if (!asgn) {
+      head.innerHTML = '';
+      body.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted);">No assessment selected.</td></tr>`;
+      return;
+    }
+
+    const maxMarksTotal = asgn.maxMarks || 20;
+    if (infoBadge) infoBadge.textContent = `Max: ${maxMarksTotal} Marks (${asgn.title || 'Exam'})`;
+
+    const allMarks = DB.marks.get(CID);
+    const searchQuery = (document.getElementById('search-student')?.value || '').toLowerCase().trim();
+    
+    let filteredStudents = enrolledStudents;
+    if (searchQuery) {
+      filteredStudents = enrolledStudents.filter(s => s.name.toLowerCase().includes(searchQuery) || s.prn.toLowerCase().includes(searchQuery));
+    }
+
+    if (!filteredStudents.length) {
+      head.innerHTML = `<tr><th>#</th><th>PRN Identifier</th><th>Student Full Name</th><th class="center">Marks</th><th class="center">Status</th></tr>`;
+      body.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-muted);">No students found matching your search.</td></tr>`;
+      return;
+    }
+
+    let columns = []; // [{ key, label, subLabel, maxMarks, qNo, coNo }]
+
+    if (currentEntryMode === 'co') {
+      // Direct CO Mode: Map applicable COs for this assessment
+      let targetCOs = activeCOs;
+      if (asgn.type === 'ia') {
+        if (asgn.no === 1) targetCOs = activeCOs.filter(c => c.no <= 2);
+        else if (asgn.no === 2) targetCOs = activeCOs.filter(c => c.no >= 3 && c.no <= 4);
+        else targetCOs = activeCOs.filter(c => c.no >= 5);
+        if (!targetCOs.length) targetCOs = activeCOs.slice(0, 2);
+      } else if (asgn.type === 'mse') {
+        targetCOs = activeCOs.filter(c => c.no <= 3);
+        if (!targetCOs.length) targetCOs = activeCOs.slice(0, 3);
+      }
+
+      const coMaxEach = Math.round(maxMarksTotal / (targetCOs.length || 1));
+      columns = targetCOs.map(co => ({
+        key: `co_${co.no}`,
+        label: co.code,
+        subLabel: `Max: ${coMaxEach}M`,
+        maxMarks: coMaxEach,
+        coNo: co.no,
+        qNo: co.no
+      }));
+    } else {
+      // Question Blueprint Mode
+      const questions = asgn.questions || [];
+      if (!questions.length) {
+        questions.push({ qNo: 1, desc: 'Q1', bloomsLevel: 'L3', coNo: 1, maxMarks: Math.round(maxMarksTotal / 2) });
+        questions.push({ qNo: 2, desc: 'Q2', bloomsLevel: 'L3', coNo: 2, maxMarks: Math.round(maxMarksTotal / 2) });
+        asgn.questions = questions;
+        DB.assessments.update(asgn);
+      }
+      columns = questions.map(q => ({
+        key: `q_${q.qNo}`,
+        label: `Q${q.qNo}`,
+        subLabel: `CO${q.coNo} (${q.maxMarks}M)`,
+        maxMarks: q.maxMarks,
+        coNo: q.coNo,
+        qNo: q.qNo
+      }));
+    }
+
+    // Build Table Header
+    let headHtml = `
+      <tr>
+        <th style="width:50px">#</th>
+        <th style="width:150px">PRN Identifier</th>
+        <th>Student Full Name</th>
+    `;
+    columns.forEach(col => {
+      headHtml += `
+        <th class="center" style="min-width:90px;">
+          <div style="color:var(--primary);font-weight:800;">${col.label}</div>
+          <div style="font-size:10px;color:var(--text-secondary);font-weight:600;">${col.subLabel}</div>
+        </th>
+      `;
+    });
+    headHtml += `
+        <th class="center" style="width:110px;">Total (${maxMarksTotal}M)</th>
+        <th class="center" style="width:80px;">% Score</th>
+        <th class="center" style="width:110px;">Attainment</th>
+      </tr>
+    `;
+    head.innerHTML = headHtml;
+
+    // Build Table Body
+    let bodyHtml = '';
+    let attainedCount = 0;
+    let totalScoreSum = 0;
+    let assessedCount = 0;
+
+    filteredStudents.forEach((student, sIdx) => {
+      let rowEarnedTotal = 0;
+      let rowHasMarks = false;
+
+      let rowInputs = '';
+      columns.forEach((col, cIdx) => {
+        const markRecord = allMarks.find(m => m.prn === student.prn && m.assessId === asgn.id && m.qNo === col.qNo);
+        const val = (markRecord && markRecord.marks !== null && markRecord.marks !== undefined) ? markRecord.marks : '';
+        if (val !== '') {
+          rowEarnedTotal += parseFloat(val) || 0;
+          rowHasMarks = true;
+        }
+
+        rowInputs += `
+          <td class="center">
+            <input type="number" 
+              class="marks-input" 
+              data-prn="${student.prn}" 
+              data-qno="${col.qNo}" 
+              data-max="${col.maxMarks}" 
+              data-row="${sIdx}" 
+              data-col="${cIdx}" 
+              min="0" 
+              max="${col.maxMarks}" 
+              step="0.5" 
+              value="${val}" 
+              placeholder="0–${col.maxMarks}"
+              oninput="handleMarkInput(this)"
+              onkeydown="handleGridKeyNav(event, this)">
+          </td>
+        `;
+      });
+
+      const pct = (rowHasMarks && maxMarksTotal > 0) ? Math.round((rowEarnedTotal / maxMarksTotal) * 100) : 0;
+      const isAttained = rowHasMarks && pct >= 60;
+
+      if (rowHasMarks) {
+        assessedCount++;
+        totalScoreSum += rowEarnedTotal;
+        if (isAttained) attainedCount++;
+      }
+
+      bodyHtml += `
+        <tr id="row-${student.prn}">
+          <td>${sIdx + 1}</td>
+          <td><span class="font-mono" style="font-weight:700;">${student.prn}</span></td>
+          <td style="font-weight:600;">${student.name}</td>
+          ${rowInputs}
+          <td class="center row-total font-mono" style="font-weight:800;font-size:13.5px;">${rowHasMarks ? rowEarnedTotal : '—'}</td>
+          <td class="center row-pct" style="font-weight:700;">${rowHasMarks ? pct + '%' : '—'}</td>
+          <td class="center row-badge">${rowHasMarks ? (isAttained ? '<span class="badge badge-success">Attained</span>' : '<span class="badge badge-danger">At-Risk</span>') : '<span class="badge badge-neutral">Pending</span>'}</td>
+        </tr>
+      `;
+    });
+
+    body.innerHTML = bodyHtml;
+
+    // Update Analytics Summary
+    const totalCount = enrolledStudents.length;
+    const attPct = assessedCount > 0 ? Math.round((attainedCount / assessedCount) * 100) : 0;
+    const avgScore = assessedCount > 0 ? (totalScoreSum / assessedCount).toFixed(1) : '0.0';
+    const atRiskCount = assessedCount - attainedCount;
+
+    const summaryEl = document.getElementById('stat-summary-content');
+    if (summaryEl) {
+      summaryEl.innerHTML = `
+        <span style="font-weight:700;color:var(--text-primary);">${totalCount} Enrolled</span> • 
+        <span style="color:var(--success);font-weight:700;">${attainedCount} Attained (≥60% · ${attPct}%)</span> • 
+        <span style="color:var(--danger);font-weight:700;">${atRiskCount} At-Risk</span> • 
+        <span>Class Avg: <strong style="color:var(--primary);">${avgScore} / ${maxMarksTotal}</strong></span>
+      `;
+    }
+  }
+
+  /* ── Real-Time Input Calculation ── */
+  window.handleMarkInput = function(input) {
+    const max = parseFloat(input.dataset.max) || 100;
+    const val = parseFloat(input.value);
+
+    // Validate max marks
+    if (!isNaN(val) && val > max) {
+      input.classList.add('invalid');
+      Toast.warning(`Marks (${val}) exceed maximum allowed (${max})`);
+    } else {
+      input.classList.remove('invalid');
+    }
+
+    const tr = input.closest('tr');
+    if (!tr) return;
+
+    const asgn = getActiveAssess();
+    const maxTotal = asgn?.maxMarks || 20;
+
+    let sum = 0, hasAny = false;
+    tr.querySelectorAll('.marks-input').forEach(inp => {
+      if (inp.value !== '') {
+        sum += parseFloat(inp.value) || 0;
+        hasAny = true;
+      }
+    });
+
+    const totEl = tr.querySelector('.row-total');
+    const pctEl = tr.querySelector('.row-pct');
+    const badgeEl = tr.querySelector('.row-badge');
+
+    if (totEl) totEl.textContent = hasAny ? sum : '—';
+    const pct = hasAny && maxTotal > 0 ? Math.round((sum / maxTotal) * 100) : 0;
+    if (pctEl) pctEl.textContent = hasAny ? `${pct}%` : '—';
+    if (badgeEl) {
+      badgeEl.innerHTML = hasAny ? (pct >= 60 ? '<span class="badge badge-success">Attained</span>' : '<span class="badge badge-danger">At-Risk</span>') : '<span class="badge badge-neutral">Pending</span>';
+    }
+  };
+
+  /* ── Keyboard Arrow Navigation ── */
+  window.handleGridKeyNav = function(e, input) {
+    const row = parseInt(input.dataset.row);
+    const col = parseInt(input.dataset.col);
+
+    let targetInput = null;
+    if (e.key === 'Enter' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      targetInput = document.querySelector(`.marks-input[data-row="${row + 1}"][data-col="${col}"]`);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      targetInput = document.querySelector(`.marks-input[data-row="${row - 1}"][data-col="${col}"]`);
+    } else if (e.key === 'ArrowRight' && input.selectionEnd === input.value.length) {
+      targetInput = document.querySelector(`.marks-input[data-row="${row}"][data-col="${col + 1}"]`);
+    } else if (e.key === 'ArrowLeft' && input.selectionStart === 0) {
+      targetInput = document.querySelector(`.marks-input[data-row="${row}"][data-col="${col - 1}"]`);
+    }
+
+    if (targetInput) {
+      targetInput.focus();
+      targetInput.select();
+    }
+  };
+
+  /* ── Save Active Marks to DB ── */
+  window.saveActiveMarks = function() {
+    const asgn = getActiveAssess();
+    if (!CID || !asgn) { Toast.warning('No active assessment.'); return; }
+
+    const allMarks = DB.marks.get(CID).filter(m => m.assessId !== asgn.id);
+    let count = 0;
+
+    document.querySelectorAll('#marks-sheet-body input.marks-input').forEach(inp => {
+      const prn = inp.dataset.prn;
+      const qNo = parseInt(inp.dataset.qno);
+      const val = inp.value !== '' ? parseFloat(inp.value) : null;
+      if (val !== null && !isNaN(val)) {
+        allMarks.push({
+          courseId: CID,
+          prn: prn,
+          assessId: asgn.id,
+          qNo: qNo,
+          marks: val
+        });
+        count++;
+      }
+    });
+
+    DB.marks.save(CID, allMarks);
+    Toast.success(`Saved marks for ${asgn.title || 'Assessment'} (${count} entries persisted)!`);
+    renderMarksSheet();
+  };
+
+  /* ── Quick Auto-Fill Realistic Marks for Demo/Testing ── */
+  window.quickFillSampleMarks = function() {
+    const asgn = getActiveAssess();
+    if (!asgn) return;
+
+    document.querySelectorAll('#marks-sheet-body input.marks-input').forEach(inp => {
+      const max = parseFloat(inp.dataset.max) || 10;
+      const ratio = 0.60 + Math.random() * 0.35;
+      const score = Math.min(max, Math.round(max * ratio * 2) / 2);
+      inp.value = score;
+      inp.classList.remove('invalid');
+    });
+
+    document.querySelectorAll('#marks-sheet-body tr').forEach(tr => {
+      const inp = tr.querySelector('.marks-input');
+      if (inp) handleMarkInput(inp);
+    });
+
+    Toast.info('Realistic sample scores populated across cohort. Click "Save Marks" to persist.');
+  };
+
+  /* ── Universal Excel / CSV File Handling ── */
+  function initDropzone() {
+    const dropzone = document.getElementById('marks-dropzone');
+    if (!dropzone) return;
+    ['dragenter', 'dragover'].forEach(name => {
+      dropzone.addEventListener(name, e => { e.preventDefault(); e.stopPropagation(); dropzone.classList.add('dragover'); }, false);
+    });
+    ['dragleave', 'drop'].forEach(name => {
+      dropzone.addEventListener(name, e => { e.preventDefault(); e.stopPropagation(); dropzone.classList.remove('dragover'); }, false);
+    });
+    dropzone.addEventListener('drop', e => {
+      const files = e.dataTransfer?.files;
+      if (files && files.length > 0) processSpreadsheet(files[0]);
+    }, false);
+  }
+
+  window.openUploadModal = function() {
+    currentParsedUpload = null;
+    document.getElementById('upload-preview-box').style.display = 'none';
+    document.getElementById('btn-apply-upload').disabled = true;
+    document.getElementById('upload-modal').classList.add('open');
+  };
+
+  window.closeUploadModal = function() {
+    document.getElementById('upload-modal').classList.remove('open');
+  };
+
+  window.handleMarksFileSelect = function(e) {
+    if (e.target.files && e.target.files.length > 0) {
+      processSpreadsheet(e.target.files[0]);
+    }
+  };
+
+  function processSpreadsheet(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '', raw: false });
+        parseUploadedRows(jsonRows, file.name);
+      } catch (err) {
+        console.warn('XLSX failed, falling back to text:', err);
+        const textReader = new FileReader();
+        textReader.onload = (ev) => {
+          const lines = ev.target.result.split('\n').map(l => l.split(/,|\t|;/).map(c => c.trim().replace(/^"|"$/g, '')));
+          parseUploadedRows(lines, file.name);
+        };
+        textReader.readAsText(file);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function parseUploadedRows(rows2d, fileName) {
+    const asgn = getActiveAssess();
+    const cleanRows = rows2d.filter(r => r.some(c => c !== ''));
+    if (!cleanRows.length) { Toast.error('Empty file.'); return; }
+
+    // Locate Header Row
+    let headerIdx = -1, prnCol = -1, nameCol = -1;
+    const scoreCols = [];
+
+    for (let r = 0; r < Math.min(12, cleanRows.length); r++) {
+      const row = cleanRows[r];
+      let p = -1, n = -1;
+      row.forEach((cell, cIdx) => {
+        const str = String(cell).toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (/prn|roll|id|registration|seat/i.test(str)) p = cIdx;
+        else if (/name|student|candidate|fullname/i.test(str)) n = cIdx;
+      });
+      if (p !== -1 || n !== -1) {
+        headerIdx = r; prnCol = p; nameCol = n; break;
+      }
+    }
+
+    if (headerIdx === -1) {
+      prnCol = 0; nameCol = 1; headerIdx = -1;
+    }
+
+    const headerRow = headerIdx >= 0 ? cleanRows[headerIdx] : [];
+    headerRow.forEach((cell, cIdx) => {
+      if (cIdx === prnCol || cIdx === nameCol) return;
+      const str = String(cell).trim();
+      const coMatch = str.match(/co\s*(\d+)/i);
+      const qMatch = str.match(/q\s*(\d+)/i);
+      if (coMatch) {
+        scoreCols.push({ colIdx: cIdx, label: `CO${coMatch[1]}`, coNo: parseInt(coMatch[1]), qNo: parseInt(coMatch[1]) });
+      } else if (qMatch) {
+        scoreCols.push({ colIdx: cIdx, label: `Q${qMatch[1]}`, qNo: parseInt(qMatch[1]), coNo: parseInt(qMatch[1]) });
+      } else if (/score|marks|total|grade/i.test(str)) {
+        scoreCols.push({ colIdx: cIdx, label: str, qNo: 1, coNo: 1 });
+      }
+    });
+
+    if (!scoreCols.length) {
+      const firstDataRow = cleanRows[headerIdx >= 0 ? headerIdx + 1 : 0] || [];
+      firstDataRow.forEach((cell, cIdx) => {
+        if (cIdx !== prnCol && cIdx !== nameCol) {
+          scoreCols.push({ colIdx: cIdx, label: `Marks ${cIdx}`, qNo: scoreCols.length + 1, coNo: scoreCols.length + 1 });
+        }
+      });
+    }
+
+    const startRow = headerIdx >= 0 ? headerIdx + 1 : 0;
+    const parsedStudents = [];
+
+    for (let r = startRow; r < cleanRows.length; r++) {
+      const row = cleanRows[r];
+      let prn = String(row[prnCol] || '').replace(/['"]/g, '').trim();
+      let name = String(row[nameCol] || '').replace(/['"]/g, '').trim();
+
+      if (/^\d+\.?\d*e\+\d+$/i.test(prn)) {
+        try { prn = String(BigInt(Math.round(Number(prn)))); } catch(e) {}
+      }
+
+      if (!prn && !name) continue;
+      if (/^(prn|student|roll|no|sr)$/i.test(prn)) continue;
+
+      const marksObj = {};
+      scoreCols.forEach(sc => {
+        const val = row[sc.colIdx];
+        if (val !== undefined && val !== '') {
+          const num = parseFloat(String(val).replace(/[^0-9.]/g, ''));
+          if (!isNaN(num)) marksObj[sc.qNo] = num;
+        }
+      });
+
+      parsedStudents.push({ prn: prn || name, name: name || prn, marks: marksObj });
+    }
+
+    currentParsedUpload = { scoreCols, students: parsedStudents };
+
+    document.getElementById('upload-preview-box').style.display = 'block';
+    document.getElementById('upload-file-name').textContent = fileName;
+    document.getElementById('upload-status-badge').textContent = `${parsedStudents.length} Student Rows Detected`;
+    document.getElementById('btn-apply-upload').disabled = false;
+
+    const pHead = document.getElementById('upload-preview-head');
+    const pBody = document.getElementById('upload-preview-body');
+
+    pHead.innerHTML = `<tr><th>#</th><th>PRN</th><th>Name</th>${scoreCols.map(c => `<th>${c.label}</th>`).join('')}</tr>`;
+    pBody.innerHTML = parsedStudents.slice(0, 5).map((s, idx) => `
+      <tr>
+        <td>${idx + 1}</td>
+        <td><span class="font-mono">${s.prn}</span></td>
+        <td>${s.name}</td>
+        ${scoreCols.map(c => `<td><strong>${s.marks[c.qNo] ?? '—'}</strong></td>`).join('')}
+      </tr>
+    `).join('');
+
+    Toast.success(`Spreadsheet parsed: ${parsedStudents.length} students matched.`);
+  }
+
+  window.applyUploadedMarks = function() {
+    if (!currentParsedUpload || !currentParsedUpload.students.length) return;
+
+    let appliedCount = 0;
+    currentParsedUpload.students.forEach(uploaded => {
+      const prn = String(uploaded.prn).trim();
+      Object.entries(uploaded.marks).forEach(([qNo, score]) => {
+        const input = document.querySelector(`#marks-sheet-body input.marks-input[data-prn="${prn}"][data-qno="${qNo}"]`);
+        if (input) {
+          input.value = score;
+          handleMarkInput(input);
+          appliedCount++;
+        }
+      });
+    });
+
+    closeUploadModal();
+    Toast.success(`Applied spreadsheet scores to ${appliedCount} marks inputs! Click "Save Marks" to persist.`);
+  };
+
+  /* ── Download Pre-Formatted Marks Template ── */
+  window.downloadMarksTemplate = function() {
+    const asgn = getActiveAssess();
+    if (!asgn) return;
+
+    let headers = ['PRN Identifier', 'Student Full Name'];
+    if (currentEntryMode === 'co') {
+      activeCOs.forEach(co => headers.push(`${co.code} [Max Marks]`));
+    } else {
+      (asgn.questions || []).forEach(q => headers.push(`Q${q.qNo} [CO${q.coNo}]`));
+    }
+
+    const rows = [headers];
+    enrolledStudents.forEach(s => {
+      rows.push([s.prn, s.name, ...new Array(headers.length - 2).fill('')]);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, `${asgn.title || 'Marks'}`);
+    XLSX.writeFile(wb, `${activeCourse.code || 'Course'}_${(asgn.title || 'Assessment').replace(/\s+/g, '_')}_Template.xlsx`);
+    Toast.info('Downloaded reference marks template.');
+  };
+
+  /* ── Course Exit Survey Sheet ── */
+  function renderSurveySheet() {
+    const head = document.getElementById('survey-sheet-head');
+    const body = document.getElementById('survey-sheet-body');
+    if (!head || !body) return;
+
+    let headHtml = `<tr><th style="width:50px">#</th><th style="width:150px">PRN Identifier</th><th>Student Full Name</th>`;
     activeCOs.forEach(co => {
-      const scores = students.map(s=>DB.survey.getScore(CID,s.prn,co.no)).filter(v=>v!==null&&v!==undefined&&v!=='');
-      const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : '—';
-      avgHtml += `<td style="text-align:center;font-weight:700;color:var(--primary)">${avg}</td>`;
+      headHtml += `<th class="center" style="min-width:85px;"><span class="badge badge-primary font-mono">${co.code}</span></th>`;
     });
-    avgHtml += '<td></td><td></td></tr>';
-    body.innerHTML += avgHtml;
+    headHtml += `</tr>`;
+    head.innerHTML = headHtml;
+
+    if (!enrolledStudents.length) {
+      body.innerHTML = `<tr><td colspan="${activeCOs.length + 3}" style="text-align:center;padding:32px;color:var(--text-muted);">No students enrolled.</td></tr>`;
+      return;
+    }
+
+    const allSurveys = DB.survey.byCourse(CID);
+    body.innerHTML = enrolledStudents.map((s, idx) => {
+      let coInputs = '';
+      activeCOs.forEach(co => {
+        const val = DB.survey.getScore(CID, s.prn, co.no) ?? '';
+        coInputs += `
+          <td class="center">
+            <input type="number" class="marks-input survey-inp" data-prn="${s.prn}" data-cono="${co.no}" min="1" max="5" value="${val}" placeholder="1–5">
+          </td>
+        `;
+      });
+      return `<tr><td>${idx+1}</td><td><span class="font-mono">${s.prn}</span></td><td style="font-weight:600;">${s.name}</td>${coInputs}</tr>`;
+    }).join('');
+  }
+
+  window.quickFillSurveyRatings = function() {
+    document.querySelectorAll('.survey-inp').forEach(inp => {
+      inp.value = Math.random() > 0.25 ? 4 : 5;
+    });
+    Toast.info('Populated high exit survey ratings (4–5). Click "Save Exit Survey" to persist.');
   };
 
-  // If students not loaded, fetch first
-  if (!students || students.length === 0) {
-    apiFetch(`/api/courses/${CID}/students`).then(sts => {
-      if (sts && sts.length > 0) {
-        mergeLocalStore('obe_students', sts, (a, b) => a.id === b.id || (a.courseId === b.courseId && a.prn === b.prn));
-        students = DB.students.byCourse(CID);
+  window.saveSurveyMatrix = function() {
+    if (!CID) return;
+    const list = [];
+    document.querySelectorAll('.survey-inp').forEach(inp => {
+      const prn = inp.dataset.prn;
+      const coNo = parseInt(inp.dataset.cono);
+      const val = parseInt(inp.value);
+      if (!isNaN(val) && val >= 1 && val <= 5) {
+        list.push({ courseId: CID, prn, co: coNo, score: val });
       }
-      renderSurvey();
-    }).catch(() => renderSurvey());
-  } else {
-    renderSurvey();
-  }
-}
+    });
+    DB.survey.saveAll(CID, list);
+    Toast.success(`Course Exit Survey saved for ${enrolledStudents.length} students!`);
+  };
 
+  /* ── Add Custom Assessment Modal ── */
+  window.openAddAssessModal = function() {
+    document.getElementById('add-assess-modal').classList.add('open');
+  };
 
-function updateSurveyRow(tr) {
-  const inputs = tr.querySelectorAll('.survey-input');
-  let sum=0, count=0;
-  inputs.forEach(inp => { const v=parseInt(inp.value); if(v) { sum+=v; count++; } });
-  const pct = count>0 ? Math.round((sum/(count*5))*100) : 0;
-  tr.querySelector('.surv-avg').textContent = count ? pct+'%' : '—';
-  tr.querySelector('.surv-att').innerHTML = count?(pct>=60?'<span style="color:var(--success);font-weight:700">✓ Yes</span>':'<span style="color:var(--danger);font-weight:700">✕ No</span>'):'—';
-}
+  window.closeAssessModal = function() {
+    document.getElementById('add-assess-modal').classList.remove('open');
+  };
 
-function saveSurvey(silent = false) {
-  if(!CID) return;
-  const list = [];
-  document.querySelectorAll('.survey-input').forEach(inp => {
-    const prn = inp.dataset.prn;
-    const co = parseInt(inp.dataset.co);
-    const val = parseInt(inp.value);
-    if(val >= 1 && val <= 5) {
-      list.push({ courseId: CID, prn, co, score: val });
-    }
-  });
-  if(list.length) DB.survey.saveAll(CID, list);
-  if(!silent) Toast.success('Exit survey data saved!');
-}
+  window.updateAssessModalDefaults = function() {
+    const type = document.getElementById('modal-assess-type').value;
+    const titleInp = document.getElementById('modal-assess-title');
+    const maxInp = document.getElementById('modal-assess-max');
 
-window.loadCourse = loadCourse;
-window.switchTab = switchTab;
-window.loadAssessment = loadAssessment;
-window.updateRowTotals = updateRowTotals;
-window.saveMarks = saveMarks;
-window.updateSurveyRow = updateSurveyRow;
-window.saveSurvey = saveSurvey;
+    if (type === 'ia') { titleInp.value = 'IA 3'; maxInp.value = 20; }
+    else if (type === 'mse') { titleInp.value = 'Mid-Semester Exam'; maxInp.value = 30; }
+    else if (type === 'ese') { titleInp.value = 'End-Semester Exam'; maxInp.value = 60; }
+    else { titleInp.value = 'Lab / Assignment 2'; maxInp.value = 25; }
+  };
 
-// Course selector initialization (run after all functions are defined)
-const sel = document.getElementById('course-select');
-DB.courses.byFaculty(user.id).forEach(c => { const o=document.createElement('option'); o.value=c.id; o.textContent=`${c.code} – ${c.name}`; sel.appendChild(o); });
-const stored = sessionStorage.getItem('selected_course_id');
-const facCourses = DB.courses.byFaculty(user.id);
-if(stored && facCourses.find(c=>c.id===stored)) { sel.value=stored; window.loadCourse(stored); }
-else if(facCourses.length) { sel.value=facCourses[0].id; window.loadCourse(facCourses[0].id); }
-sel.addEventListener('change', e => { if(e.target.value){ sessionStorage.setItem('selected_course_id',e.target.value); window.loadCourse(e.target.value); }});
+  window.saveNewAssessment = function() {
+    const type = document.getElementById('modal-assess-type').value;
+    const title = (document.getElementById('modal-assess-title').value || '').trim();
+    const no = parseInt(document.getElementById('modal-assess-no').value) || 1;
+    const maxMarks = parseFloat(document.getElementById('modal-assess-max').value) || 20;
 
+    if (!title) { Toast.warning('Please enter an assessment title.'); return; }
+
+    const newAssess = {
+      id: `asgn-${CID}-${type}-${Date.now()}`,
+      courseId: CID,
+      type: type,
+      no: no,
+      title: title,
+      maxMarks: maxMarks,
+      questions: [
+        { qNo: 1, desc: `${title} Q1`, bloomsLevel: 'L3', coNo: 1, maxMarks: Math.round(maxMarks / 2) },
+        { qNo: 2, desc: `${title} Q2`, bloomsLevel: 'L4', coNo: 2, maxMarks: Math.round(maxMarks / 2) }
+      ],
+      createdAt: new Date().toISOString()
+    };
+
+    DB.assessments.add(newAssess);
+    closeAssessModal();
+    courseAssessments = DB.assessments.byCourse(CID);
+    activeAssessId = newAssess.id;
+    renderAssessmentPills();
+    renderMarksSheet();
+    Toast.success(`Added assessment "${title}"!`);
+  };
+
+  window.selectAssessment = selectAssessment;
+  window.setEntryMode = setEntryMode;
+  window.switchMainTab = switchMainTab;
+  window.renderMarksSheet = renderMarksSheet;
 })();
-
-window.addEventListener('obe_data_synced', () => {
-  const selCid = document.getElementById('course-select')?.value;
-  if (selCid && typeof DB !== 'undefined' && DB.students) {
-    const freshSts = DB.students.byCourse(selCid);
-    if (freshSts.length > 0) {
-      if (typeof loadCourse === 'function') {
-        loadCourse(selCid);
-      }
-    }
-  }
-});
 </script>
-<script>
-window.openPasteModal = function() {
-  const modal = document.getElementById('paste-modal');
-  if (modal) {
-    modal.style.display = 'flex';
-    const area = document.getElementById('paste-area');
-    if (area) {
-      area.value = '';
-      setTimeout(() => area.focus(), 50);
-    }
-  }
-};
-
-window.closePasteModal = function() {
-  const modal = document.getElementById('paste-modal');
-  if (modal) modal.style.display = 'none';
-  const area = document.getElementById('paste-area');
-  if (area) area.value = '';
-};
-
-window.toggleQStruct = function() {
-  const container = document.getElementById('q-struct-container');
-  const btn = document.getElementById('btn-toggle-q');
-  if (!container) return;
-  if (container.style.display === 'none' || !container.style.display) {
-    container.style.display = 'block';
-    if (btn) btn.innerHTML = '🙈 Hide Structure';
-  } else {
-    container.style.display = 'none';
-    if (btn) btn.innerHTML = '👁️ Structure';
-  }
-};
-
-window.applyPaste = function() {
-  const text = document.getElementById('paste-area')?.value;
-  if (!text || !text.trim()) {
-    if (typeof Toast !== 'undefined') Toast.warning('No data to paste. Please copy cells from Excel and paste here.');
-    return;
-  }
-  const rows = text.trim().split(/\r?\n/).filter(r => r.trim());
-  if (!rows.length) {
-    if (typeof Toast !== 'undefined') Toast.warning('No valid rows found to paste.');
-    return;
-  }
-  const marksRows = document.querySelectorAll('#marks-body tr');
-  if (!marksRows.length || !marksRows[0].querySelector('.marks-input')) {
-    if (typeof Toast !== 'undefined') Toast.warning('No students displayed in table to apply marks to.');
-    return;
-  }
-
-  let appliedCount = 0;
-  rows.forEach((rowStr, ri) => {
-    let cols = rowStr.split('\t').map(c => c.replace(/["']/g, '').trim());
-    if (cols.length === 1 && rowStr.includes(',')) {
-      cols = rowStr.split(',').map(c => c.replace(/["']/g, '').trim());
-    }
-    if (cols.length === 1 && rowStr.includes(';')) {
-      cols = rowStr.split(';').map(c => c.replace(/["']/g, '').trim());
-    }
-
-    let targetRow = null;
-    let numericCols = [];
-
-    // Attempt PRN-based matching first (case-insensitive & whitespace-insensitive)
-    for (let ci = 0; ci < cols.length; ci++) {
-      const cellVal = String(cols[ci]).trim().toLowerCase();
-      const matchTr = Array.from(marksRows).find(tr => {
-        const inp = tr.querySelector('.marks-input');
-        return inp && String(inp.dataset.prn).trim().toLowerCase() === cellVal;
-      });
-      if (matchTr) {
-        targetRow = matchTr;
-        numericCols = cols.slice(ci + 1).filter((val, idx) => {
-          if (idx === 0 && isNaN(parseFloat(val))) return false;
-          return true;
-        });
-        break;
-      }
-    }
-
-    // Fall back to sequential row matching if PRN not found
-    if (!targetRow && ri < marksRows.length) {
-      targetRow = marksRows[ri];
-      const inputsCount = targetRow.querySelectorAll('.marks-input').length;
-      if (cols.length > inputsCount) {
-        let startIdx = 0;
-        while (startIdx < cols.length - inputsCount && isNaN(parseFloat(cols[startIdx]))) {
-          startIdx++;
-        }
-        numericCols = cols.slice(startIdx);
-      } else {
-        numericCols = cols;
-      }
-    }
-
-    if (targetRow) {
-      const inputs = targetRow.querySelectorAll('.marks-input');
-      let updatedAny = false;
-      let inIdx = 0;
-      numericCols.forEach(val => {
-        if (inIdx < inputs.length) {
-          const num = parseFloat(val);
-          if (!isNaN(num)) {
-            const maxVal = parseFloat(inputs[inIdx].getAttribute('max')) || 100;
-            inputs[inIdx].value = Math.min(Math.max(0, num), maxVal);
-            updatedAny = true;
-          }
-          inIdx++;
-        }
-      });
-      if (updatedAny) {
-        if (typeof window.updateRowTotals === 'function') {
-          window.updateRowTotals(targetRow);
-        }
-        targetRow.style.transition = 'background-color 0.5s ease';
-        targetRow.style.backgroundColor = 'rgba(16, 185, 129, 0.2)';
-        setTimeout(() => targetRow.style.backgroundColor = '', 1500);
-        appliedCount++;
-      }
-    }
-  });
-
-  window.closePasteModal();
-  if (appliedCount > 0) {
-    if (typeof window.saveMarks === 'function') window.saveMarks(true);
-    if (typeof Toast !== 'undefined') Toast.success(`✅ Successfully applied and saved marks for ${appliedCount} student(s) from clipboard!`);
-  } else {
-    if (typeof Toast !== 'undefined') Toast.warning('Could not match numeric marks to students. Please check your pasted columns.');
-  }
-};
-
-window.handleExcelUpload = function(e) {
-  const file = e.target.files?.[0];
-  if (!file) return;
-  if (typeof XLSX === 'undefined') {
-    if (typeof Toast !== 'undefined') Toast.error('Excel library is loading, please try again in a moment.');
-    return;
-  }
-  const reader = new FileReader();
-  reader.onload = function(evt) {
-    try {
-      const data = new Uint8Array(evt.target.result);
-      const workbook = XLSX.read(data, { type: 'array' });
-      const firstSheetName = workbook.SheetNames[0];
-      const ws = workbook.Sheets[firstSheetName];
-      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-
-      if (!rows || !rows.length) {
-        if (typeof Toast !== 'undefined') Toast.warning('The uploaded Excel sheet appears to be empty.');
-        return;
-      }
-
-      const marksRows = document.querySelectorAll('#marks-body tr');
-      if (!marksRows.length || !marksRows[0].querySelector('.marks-input')) {
-        if (typeof Toast !== 'undefined') Toast.warning('No students displayed in table to apply marks to.');
-        return;
-      }
-
-      // --- PASS 1: Extract COs & Bloom's Levels (RBT) from top rows ---
-      const asgn = typeof currentAssessId !== 'undefined' ? DB.assessments.byId(currentAssessId) : null;
-      let coFound = 0, bloomsFound = 0;
-      if (asgn && asgn.questions && asgn.questions.length > 0) {
-        rows.slice(0, 15).forEach(row => {
-          row.forEach((cell, colIdx) => {
-            const str = String(cell).trim();
-            const coMatch = str.match(/CO\s*([1-6])/i) || str.match(/^(CO[1-6])$/i);
-            const rbtMatch = str.match(/L\s*([1-6])/i) || str.match(/(Remember|Understand|Apply|Analyze|Evaluate|Create)/i);
-            const mmMatch = str.match(/^(\d+)$/);
-
-            let qIdx = -1;
-            if (colIdx >= 1 && colIdx - 1 < asgn.questions.length) qIdx = colIdx - 1;
-            else if (colIdx >= 2 && colIdx - 2 < asgn.questions.length) qIdx = colIdx - 2;
-
-            if (qIdx >= 0 && qIdx < asgn.questions.length) {
-              if (coMatch) {
-                asgn.questions[qIdx].coNo = parseInt(coMatch[1]);
-                coFound++;
-              }
-              if (rbtMatch) {
-                const rbtVal = rbtMatch[1] ? `L${rbtMatch[1]}` : (rbtMatch[0] ? rbtMatch[0].substring(0, 2).toUpperCase() : 'L3');
-                asgn.questions[qIdx].rbt = rbtVal;
-                bloomsFound++;
-              }
-              if (mmMatch && colIdx > 0 && String(row[0]).toLowerCase().includes('max')) {
-                asgn.questions[qIdx].marks = parseInt(mmMatch[1]);
-              }
-            }
-          });
-        });
-
-        if (coFound > 0 || bloomsFound > 0) {
-          DB.assessments.update(asgn);
-          if (typeof window.loadAssessment === 'function') {
-            window.loadAssessment();
-          }
-        }
-      }
-
-      // --- PASS 2: Match Student Rows by PRN or Name & Apply Marks ---
-      let appliedCount = 0;
-      rows.forEach((cols, ri) => {
-        let targetRow = null;
-        let numericCols = [];
-
-        for (let ci = 0; ci < cols.length; ci++) {
-          const cellVal = String(cols[ci]).trim().toLowerCase();
-          if (!cellVal) continue;
-
-          const matchTr = Array.from(marksRows).find(tr => {
-            const inp = tr.querySelector('.marks-input');
-            if (!inp) return false;
-            const prn = String(inp.dataset.prn).trim().toLowerCase();
-            const nameCell = tr.children[2];
-            const name = nameCell ? String(nameCell.textContent).trim().toLowerCase() : '';
-            return prn === cellVal || (name && name === cellVal);
-          });
-
-          if (matchTr) {
-            targetRow = matchTr;
-            numericCols = cols.slice(ci + 1).filter((val, idx) => {
-              if (idx === 0 && isNaN(parseFloat(val))) return false;
-              return true;
-            });
-            break;
-          }
-        }
-
-        if (targetRow) {
-          const inputs = targetRow.querySelectorAll('.marks-input');
-          let updatedAny = false;
-          let inIdx = 0;
-          numericCols.forEach(val => {
-            if (inIdx < inputs.length) {
-              const num = parseFloat(val);
-              if (!isNaN(num)) {
-                const maxVal = parseFloat(inputs[inIdx].getAttribute('max')) || 100;
-                inputs[inIdx].value = Math.min(Math.max(0, num), maxVal);
-                updatedAny = true;
-              }
-              inIdx++;
-            }
-          });
-          if (updatedAny) {
-            if (typeof window.updateRowTotals === 'function') {
-              window.updateRowTotals(targetRow);
-            }
-            targetRow.style.transition = 'background-color 0.5s ease';
-            targetRow.style.backgroundColor = 'rgba(16, 185, 129, 0.2)';
-            setTimeout(() => targetRow.style.backgroundColor = '', 1500);
-            appliedCount++;
-          }
-        }
-      });
-
-      // --- PASS 3: Finish & Auto-save ---
-      window.closePasteModal();
-      if (appliedCount > 0) {
-        if (typeof window.saveMarks === 'function') window.saveMarks(true);
-        let msg = `✅ Successfully extracted & saved Marks for ${appliedCount} student(s) from Excel!`;
-        if (coFound > 0 || bloomsFound > 0) {
-          msg += ` (Also detected & mapped ${coFound} COs and ${bloomsFound} Bloom's levels!)`;
-        }
-        if (typeof Toast !== 'undefined') Toast.success(msg);
-      } else {
-        if (typeof Toast !== 'undefined') Toast.warning('Could not match Student PRNs or Names in this Excel sheet. Please verify row names/numbers.');
-      }
-    } catch (err) {
-      console.error(err);
-      if (typeof Toast !== 'undefined') Toast.error('Error parsing Excel sheet: ' + (err.message || 'Unknown error'));
-    } finally {
-      e.target.value = '';
-    }
-  };
-  reader.readAsArrayBuffer(file);
-};
-
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape' && document.getElementById('paste-modal')?.style.display === 'flex') {
-    window.closePasteModal();
-  }
-});
-</script>
-<script src="../scripts/ai-mock.js"></script>
 </body>
 </html>

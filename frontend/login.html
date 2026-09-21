@@ -6,194 +6,178 @@
   <title>Sign In | OBE Management System – MITAOE</title>
   <meta name="description" content="Sign in to the OBE Management System – MIT Academy of Engineering, Alandi, Pune">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/main.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
       min-height: 100vh;
       display: flex;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      background: #F1F5F9;
+      background: var(--page-bg);
+      color: var(--text-primary);
     }
 
-    /* ── Left Panel ── */
+    /* ── Left Brand Showcase Panel ── */
     .left-panel {
-      width: 45%;
+      width: 44%;
       min-height: 100vh;
       background: #0F172A;
+      border-right: 1px solid #1E293B;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       padding: 48px;
       position: relative;
-      overflow: hidden;
-    }
-    .left-panel::before {
-      content: '';
-      position: absolute; inset: 0;
-      background: 
-        radial-gradient(circle at 20% 20%, rgba(37,99,235,0.3) 0%, transparent 50%),
-        radial-gradient(circle at 80% 80%, rgba(59,130,246,0.15) 0%, transparent 50%);
-      pointer-events: none;
     }
     .left-panel-content { position: relative; z-index: 1; }
 
-    /* Grid decoration */
-    .left-panel::after {
-      content: '';
-      position: absolute; inset: 0;
-      background-image:
-        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-      background-size: 48px 48px;
-      pointer-events: none;
-    }
-
-    .brand { display: flex; align-items: center; gap: 14px; margin-bottom: 64px; }
+    .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 56px; }
     .brand-icon {
-      width: 48px; height: 48px;
+      width: 40px; height: 40px;
       background: #2563EB;
-      border-radius: 12px;
+      border-radius: 8px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 18px; font-weight: 800; color: #fff;
+      font-size: 14px; font-weight: 800; color: #FFFFFF;
       letter-spacing: -0.5px;
-      box-shadow: 0 8px 24px rgba(37,99,235,0.4);
     }
-    .brand-text { color: #F8FAFC; font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
-    .brand-sub  { color: #64748B; font-size: 12px; font-weight: 500; margin-top: 2px; }
+    .brand-text { color: #F8FAFC; font-size: 16px; font-weight: 700; letter-spacing: -0.2px; }
+    .brand-sub  { color: #64748B; font-size: 12px; font-weight: 500; }
 
-    .left-headline { color: #F8FAFC; font-size: 34px; font-weight: 800; letter-spacing: -1px; line-height: 1.2; margin-bottom: 20px; }
+    .left-headline {
+      color: #F8FAFC;
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.8px;
+      line-height: 1.25;
+      margin-bottom: 16px;
+    }
     .left-headline span { color: #60A5FA; }
-    .left-desc { color: #94A3B8; font-size: 15px; line-height: 1.7; margin-bottom: 40px; font-weight: 400; }
+    .left-desc {
+      color: #94A3B8;
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 36px;
+    }
 
-    .feature-list { display: flex; flex-direction: column; gap: 16px; }
+    .feature-list { display: flex; flex-direction: column; gap: 14px; }
     .feature-item { display: flex; align-items: center; gap: 12px; }
     .feature-dot {
-      width: 32px; height: 32px; border-radius: 8px;
-      background: rgba(37,99,235,0.2);
-      border: 1px solid rgba(37,99,235,0.3);
+      width: 32px; height: 32px; border-radius: 6px;
+      background: #1E293B;
+      border: 1px solid #334155;
       display: flex; align-items: center; justify-content: center;
-      font-size: 15px; flex-shrink: 0;
+      color: #60A5FA; flex-shrink: 0;
     }
-    .feature-text { color: #CBD5E1; font-size: 13.5px; font-weight: 500; }
+    .feature-text { color: #CBD5E1; font-size: 13px; font-weight: 500; }
 
-    .left-footer { color: #475569; font-size: 12px; position: relative; z-index: 1; }
+    .left-footer {
+      color: #475569; font-size: 11.5px; font-weight: 500;
+      border-top: 1px solid #1E293B; padding-top: 20px;
+    }
 
-    /* ── Right Panel ── */
+    /* ── Right Form Panel ── */
     .right-panel {
       flex: 1;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 48px 64px;
-      background: #F1F5F9;
+      padding: 48px;
+      background: var(--page-bg);
     }
     .login-box {
-      width: 100%; max-width: 420px;
+      width: 100%; max-width: 400px;
     }
-    .login-header { margin-bottom: 36px; }
+    .login-header { margin-bottom: 28px; }
     .login-header h1 {
-      font-size: 26px; font-weight: 800;
-      color: #0F172A; letter-spacing: -0.5px;
-      margin-bottom: 8px;
+      font-size: 22px; font-weight: 800;
+      color: var(--text-primary); letter-spacing: -0.4px;
+      margin-bottom: 4px;
     }
-    .login-header p { font-size: 14px; color: #64748B; }
+    .login-header p { font-size: 13.5px; color: var(--text-secondary); }
 
-    .form-group { margin-bottom: 20px; }
+    .form-group { margin-bottom: 16px; }
     .form-label {
-      display: block; font-size: 13px; font-weight: 600;
-      color: #0F172A; margin-bottom: 7px;
+      display: block; font-size: 12.5px; font-weight: 600;
+      color: var(--text-primary); margin-bottom: 6px;
     }
     .form-control {
-      width: 100%; padding: 11px 14px;
-      background: #FFFFFF; border: 1.5px solid #E2E8F0;
-      border-radius: 10px; color: #0F172A; font-size: 14px;
-      transition: all 0.15s ease; outline: none;
+      width: 100%; padding: 9px 12px;
+      background: #FFFFFF; border: 1px solid var(--border);
+      border-radius: var(--r-md); color: var(--text-primary); font-size: 13.5px;
+      outline: none; transition: border-color var(--t-fast);
       font-family: inherit;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
     }
     .form-control:focus {
-      border-color: #2563EB;
-      box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+      border-color: var(--primary);
     }
-    .form-control::placeholder { color: #94A3B8; }
+    .form-control::placeholder { color: var(--text-muted); }
 
     .btn-login {
-      width: 100%; padding: 13px;
-      background: #2563EB;
-      border: none; border-radius: 10px;
-      color: #fff; font-size: 15px; font-weight: 700;
-      cursor: pointer; transition: all 0.15s ease;
-      box-shadow: 0 4px 14px rgba(37,99,235,0.3);
-      font-family: inherit;
-      letter-spacing: -0.2px;
-      margin-top: 4px;
+      width: 100%; padding: 10px 14px;
+      background: var(--primary); border: 1px solid var(--primary);
+      border-radius: var(--r-md);
+      color: #FFFFFF; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: background var(--t-fast);
+      font-family: inherit; margin-top: 4px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
     }
-    .btn-login:hover {
-      background: #1D4ED8;
-      transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(37,99,235,0.4);
-    }
-    .btn-login:active { transform: translateY(0); }
+    .btn-login:hover { background: var(--primary-dark); }
 
     .divider {
       display: flex; align-items: center; gap: 12px;
-      margin: 24px 0;
+      margin: 24px 0 16px;
     }
-    .divider-line { flex: 1; height: 1px; background: #E2E8F0; }
-    .divider-text { font-size: 12px; color: #94A3B8; font-weight: 600; white-space: nowrap; }
+    .divider-line { flex: 1; height: 1px; background: var(--border); }
+    .divider-text { font-size: 11.5px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
 
     .quick-logins {
-      background: #FFFFFF; border: 1px solid #E2E8F0;
-      border-radius: 12px; padding: 16px; 
-      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 12px;
     }
     .quick-logins-title {
-      font-size: 11px; font-weight: 700; color: #64748B;
-      text-transform: uppercase; letter-spacing: 0.08em;
-      margin-bottom: 12px;
+      font-size: 11px; font-weight: 700; color: var(--text-secondary);
+      text-transform: uppercase; letter-spacing: 0.06em;
+      margin-bottom: 8px; padding-left: 4px;
     }
     .demo-role {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 9px 12px; border-radius: 8px; cursor: pointer;
-      transition: background 0.15s ease;
+      padding: 7px 10px; border-radius: var(--r-md); cursor: pointer;
+      transition: background var(--t-fast);
       border: 1px solid transparent;
     }
     .demo-role:hover {
-      background: #EFF6FF; border-color: #BFDBFE;
+      background: var(--surface-2); border-color: var(--border);
     }
     .demo-role-left { display: flex; align-items: center; gap: 10px; }
     .demo-role-icon {
-      width: 30px; height: 30px; border-radius: 7px;
+      width: 26px; height: 26px; border-radius: 4px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 14px; font-weight: 700; color: #fff;
+      font-size: 11px; font-weight: 700; color: #FFFFFF;
     }
     .demo-role-icon.admin   { background: #0F172A; }
     .demo-role-icon.faculty { background: #2563EB; }
     .demo-role-icon.hod     { background: #059669; }
-    .demo-role-icon.student { background: #D97706; }
-    .demo-role-name { font-weight: 700; font-size: 13px; color: #0F172A; }
-    .demo-role-email{ font-size: 11.5px; color: #64748B; margin-top: 1px; }
+    .demo-role-icon.student { background: #475569; }
+    .demo-role-name { font-weight: 600; font-size: 12.5px; color: var(--text-primary); }
+    .demo-role-email{ font-size: 11px; color: var(--text-secondary); }
     .demo-role-btn {
-      font-size: 11px; padding: 4px 10px;
-      background: #EFF6FF; color: #2563EB;
-      border-radius: 6px; font-weight: 700;
-      transition: all 0.15s;
+      font-size: 11px; padding: 2px 8px;
+      background: var(--surface-2); color: var(--text-secondary);
+      border: 1px solid var(--border); border-radius: 4px; font-weight: 600;
     }
-    .demo-role:hover .demo-role-btn { background: #2563EB; color: #fff; }
+    .demo-role:hover .demo-role-btn { background: var(--primary); color: #FFFFFF; border-color: var(--primary); }
 
     #error-msg {
-      background: #FEF2F2; border: 1px solid #FECACA;
-      color: #DC2626; padding: 11px 14px; border-radius: 9px;
-      font-size: 13px; margin-bottom: 20px; display: none;
+      background: var(--danger-bg); border: 1px solid var(--danger-border);
+      color: var(--danger-text); padding: 9px 12px; border-radius: var(--r-md);
+      font-size: 12.5px; margin-bottom: 16px; display: none;
       font-weight: 500;
     }
 
     @media (max-width: 900px) {
       .left-panel { display: none; }
-      .right-panel { padding: 32px 24px; }
+      .right-panel { padding: 32px 20px; }
     }
   </style>
 </head>
@@ -211,34 +195,34 @@
 
       <div class="left-headline">
         Outcome-Based Education<br>
-        <span>Made Simple.</span>
+        <span>Accreditation Platform</span>
       </div>
       <div class="left-desc">
-        A comprehensive platform for faculty to manage Course Outcomes, track attainment, generate AI-powered assessments, and produce NAAC/NBA-ready reports.
+        Comprehensive academic governance system for Course Outcomes formulation, Bloom's Taxonomy validation, attainment analytics, and NBA compliance.
       </div>
 
       <div class="feature-list">
         <div class="feature-item">
-          <div class="feature-dot">🎯</div>
-          <div class="feature-text">CO & PO mapping with attainment tracking</div>
+          <div class="feature-dot" id="icon-f1"></div>
+          <div class="feature-text">Automated CO-PO correlation matrix computation</div>
         </div>
         <div class="feature-item">
-          <div class="feature-dot">🤖</div>
-          <div class="feature-text">AI-powered assignment generation & auto-grading</div>
+          <div class="feature-dot" id="icon-f2"></div>
+          <div class="feature-text">Two-pass AI rubric grading & cognitive level analysis</div>
         </div>
         <div class="feature-item">
-          <div class="feature-dot">📊</div>
-          <div class="feature-text">NAAC/NBA-ready reports with one click</div>
+          <div class="feature-dot" id="icon-f3"></div>
+          <div class="feature-text">Direct & indirect attainment with curriculum gap plans</div>
         </div>
         <div class="feature-item">
-          <div class="feature-dot">💡</div>
-          <div class="feature-text">Smart OBE advisor with actionable suggestions</div>
+          <div class="feature-dot" id="icon-f4"></div>
+          <div class="feature-text">NBA SAR-ready compliance reporting and export</div>
         </div>
       </div>
     </div>
 
     <div class="left-footer">
-      © 2025-26 MIT Academy of Engineering, Alandi (D), Pune – 412105
+      MIT Academy of Engineering &bull; Alandi (D), Pune &bull; Academic Year 2025-26
     </div>
   </div>
 
@@ -246,83 +230,93 @@
   <div class="right-panel">
     <div class="login-box">
       <div class="login-header">
-        <h1>Welcome back 👋</h1>
-        <p>Sign in to your OBE account to continue</p>
+        <h1>Sign In</h1>
+        <p>Enter your institutional credentials to access your portal</p>
       </div>
 
       <div id="error-msg"></div>
 
       <form id="login-form">
         <div class="form-group">
-          <label class="form-label">Email Address</label>
-          <input type="email" id="email" class="form-control" placeholder="you@mitaoe.ac.in" required autofocus>
+          <label class="form-label" for="email">Institutional Email</label>
+          <input type="email" id="email" class="form-control" placeholder="username@mitaoe.ac.in" required autofocus>
         </div>
         <div class="form-group">
-          <label class="form-label">Password</label>
-          <input type="password" id="password" class="form-control" placeholder="Enter your password" required>
+          <label class="form-label" for="password">Password</label>
+          <input type="password" id="password" class="form-control" placeholder="Enter password" required>
         </div>
-        <button type="submit" class="btn-login">Sign In →</button>
+        <button type="submit" class="btn-login" id="submit-btn">
+          <span>Sign In</span>
+          <span id="btn-icon"></span>
+        </button>
       </form>
 
       <div class="divider">
         <div class="divider-line"></div>
-        <div class="divider-text">Quick Login</div>
+        <div class="divider-text">Quick Profile Switcher</div>
         <div class="divider-line"></div>
       </div>
 
       <div class="quick-logins">
-        <div class="quick-logins-title">Quick Login Profiles — Click to fill</div>
+        <div class="quick-logins-title">Click a profile to autofill</div>
         <div class="demo-role" onclick="fill('admin@mitaoe.ac.in','admin123')">
           <div class="demo-role-left">
             <div class="demo-role-icon admin">A</div>
             <div>
-              <div class="demo-role-name">Admin</div>
+              <div class="demo-role-name">Administrator</div>
               <div class="demo-role-email">admin@mitaoe.ac.in</div>
             </div>
           </div>
-          <div class="demo-role-btn">Fill</div>
+          <div class="demo-role-btn">Use</div>
         </div>
         <div class="demo-role" onclick="fill('vwangikar@mitaoe.ac.in','faculty123')">
           <div class="demo-role-left">
-            <div class="demo-role-icon faculty">F</div>
+            <div class="demo-role-icon hod">H</div>
             <div>
-              <div class="demo-role-name">Faculty</div>
+              <div class="demo-role-name">HOD Data Science (Prof. Wangikar)</div>
               <div class="demo-role-email">vwangikar@mitaoe.ac.in</div>
             </div>
           </div>
-          <div class="demo-role-btn">Fill</div>
+          <div class="demo-role-btn">Use</div>
         </div>
-        <div class="demo-role" onclick="fill('hod.ds@mitaoe.ac.in','hod123')">
+        <div class="demo-role" onclick="fill('noiewn@gmail.com','faculty123')">
           <div class="demo-role-left">
-            <div class="demo-role-icon hod">H</div>
+            <div class="demo-role-icon faculty">F</div>
             <div>
-              <div class="demo-role-name">HOD</div>
-              <div class="demo-role-email">hod.ds@mitaoe.ac.in</div>
+              <div class="demo-role-name">Faculty Member</div>
+              <div class="demo-role-email">noiewn@gmail.com</div>
             </div>
           </div>
-          <div class="demo-role-btn">Fill</div>
+          <div class="demo-role-btn">Use</div>
         </div>
         <div class="demo-role" onclick="fill('om.sutar@mitaoe.ac.in','student123')">
           <div class="demo-role-left">
             <div class="demo-role-icon student">S</div>
             <div>
-              <div class="demo-role-name">Student</div>
+              <div class="demo-role-name">Student (Om Sutar)</div>
               <div class="demo-role-email">om.sutar@mitaoe.ac.in</div>
             </div>
           </div>
-          <div class="demo-role-btn">Fill</div>
+          <div class="demo-role-btn">Use</div>
         </div>
       </div>
     </div>
   </div>
 
+  <script src="scripts/icons.js"></script>
   <script src="scripts/data.js"></script>
-  <script src="scripts/api.js"></script>
   <script src="scripts/auth.js"></script>
   <script>
     if (Auth.getUser()) { Auth.redirectToDashboard(); }
 
-    const form   = document.getElementById('login-form');
+    // Render clean SVG icons
+    document.getElementById('icon-f1').innerHTML = OBEIcons.get('matrix', 16);
+    document.getElementById('icon-f2').innerHTML = OBEIcons.get('sparkles', 16);
+    document.getElementById('icon-f3').innerHTML = OBEIcons.get('attainment', 16);
+    document.getElementById('icon-f4').innerHTML = OBEIcons.get('reports', 16);
+    document.getElementById('btn-icon').innerHTML = OBEIcons.get('arrow-right', 15);
+
+    const form    = document.getElementById('login-form');
     const emailIn = document.getElementById('email');
     const passIn  = document.getElementById('password');
     const errDiv  = document.getElementById('error-msg');
@@ -334,7 +328,7 @@
       if (res.ok) {
         Auth.redirectToDashboard();
       } else {
-        errDiv.textContent = '⚠️ ' + res.error;
+        errDiv.textContent = res.error || 'Invalid email or password.';
         errDiv.style.display = 'block';
       }
     });

@@ -3,69 +3,94 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Students | OBE System – MITAOE</title>
+  <title>Students Roster | OBE System – MITAOE</title>
   <meta name="description" content="Manage student roster, pre-survey scores and learner types.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800" rel="stylesheet">
-  <link rel="stylesheet" href="../styles/main.css?v=6">
-  <link rel="stylesheet" href="../styles/components.css?v=6">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles/main.css">
+  <link rel="stylesheet" href="../styles/components.css">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     .dist-bar-wrap {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      height: 28px;
+      display: flex; align-items: center; gap: 4px; height: 16px;
+      background: var(--surface-2); border-radius: 4px; overflow: hidden;
+      border: 1px solid var(--border);
     }
     .dist-bar-seg {
-      height: 100%;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: 700;
-      color: #fff;
-      transition: flex 0.4s ease;
-      white-space: nowrap;
-      overflow: hidden;
-      min-width: 0;
+      height: 100%; display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; color: #FFFFFF;
+      transition: width 0.3s ease;
     }
     .dist-bar-seg.slow     { background: var(--danger); }
     .dist-bar-seg.average  { background: var(--warning); }
     .dist-bar-seg.advanced { background: var(--success); }
 
     .survey-score-bar {
-      width: 60px;
-      height: 6px;
-      background: var(--surface);
-      border-radius: 99px;
-      overflow: hidden;
-      display: inline-block;
-      vertical-align: middle;
-      margin-right: 6px;
+      width: 50px; height: 6px; background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 99px; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 6px;
     }
-    .survey-score-fill {
-      height: 100%;
-      border-radius: 99px;
-      background: var(--primary);
-    }
+    .survey-score-fill { height: 100%; border-radius: 99px; background: var(--primary); }
+
     .import-area {
-      width: 100%;
-      min-height: 120px;
-      background: var(--surface);
-      border: 1px dashed var(--border);
-      border-radius: var(--r-md);
-      padding: 12px;
-      color: var(--text-primary);
-      font-family: monospace;
-      font-size: 12px;
-      resize: vertical;
-      outline: none;
+      width: 100%; min-height: 120px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: var(--r-md);
+      padding: 10px; color: var(--text-primary); font-family: ui-monospace, monospace;
+      font-size: 12px; resize: vertical; outline: none;
     }
     .import-area:focus { border-color: var(--primary); }
-    .learner-dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      display: inline-block; margin-right: 4px;
+
+    .course-selector-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 12px 18px; margin-bottom: var(--sp-lg);
+      flex-wrap: wrap; gap: 12px;
+    }
+
+    .csv-dropzone {
+      border: 2px dashed var(--border);
+      border-radius: var(--r-lg);
+      padding: 24px;
+      text-align: center;
+      background: var(--surface-2);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .csv-dropzone:hover, .csv-dropzone.dragover {
+      border-color: var(--primary);
+      background: rgba(37, 99, 235, 0.04);
+    }
+    .csv-preview-container {
+      max-height: 240px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      margin-top: 12px;
+    }
+    .csv-preview-table {
+      width: 100%;
+      font-size: 12px;
+      border-collapse: collapse;
+    }
+    .csv-preview-table th {
+      background: var(--surface-2);
+      padding: 6px 10px;
+      text-align: left;
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .csv-preview-table td {
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .template-link {
+      color: var(--primary);
+      text-decoration: underline;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
     }
   </style>
 </head>
@@ -80,29 +105,31 @@
     </div>
     <nav class="sidebar-nav">
       <p class="nav-section-label">Overview</p>
-      <a class="nav-item" href="dashboard.html">📊 Dashboard</a>
-      <a class="nav-item" href="courses.html">📚 My Courses</a>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon" data-icon="dashboard"></span><span>Dashboard</span></a>
+      <a class="nav-item" href="courses.html"><span class="nav-icon" data-icon="courses"></span><span>My Courses</span></a>
+      
       <p class="nav-section-label">Course Management</p>
-      <a class="nav-item" href="syllabus.html">📖 Syllabus Setup</a>
-      <a class="nav-item" href="outcomes.html">🎯 CO & PO Setup</a>
-      <a class="nav-item" href="co-po-map.html">🗺️ CO-PO Mapping</a>
-      <a class="nav-item" href="6a-matrix.html">📋 6A Indicator Mapping</a>
-      <a class="nav-item" href="students.html">👥 Students</a>
+      <a class="nav-item" href="syllabus.html"><span class="nav-icon" data-icon="syllabus"></span><span>Syllabus Setup</span></a>
+      <a class="nav-item" href="outcomes.html"><span class="nav-icon" data-icon="outcomes"></span><span>CO & PO Setup</span></a>
+      <a class="nav-item" href="co-po-map.html"><span class="nav-icon" data-icon="map"></span><span>CO-PO Mapping</span></a>
+      <a class="nav-item" href="6a-matrix.html"><span class="nav-icon" data-icon="matrix"></span><span>6A Indicator Matrix</span></a>
+      <a class="nav-item active" href="students.html"><span class="nav-icon" data-icon="students"></span><span>Students</span></a>
+      
       <p class="nav-section-label">Assessment</p>
-      <a class="nav-item" href="marks.html">📝 Marks Entry</a>
-      <a class="nav-item" href="attainment.html">📈 Attainment</a>
-      <a class="nav-item" href="assignments.html">🤖 Assignments & AI</a>
-      <a class="nav-item" href="auto-grade.html">✅ Auto-Grading</a>
-      <a class="nav-item" href="question-paper.html">📄 Question Paper</a>
-      <a class="nav-item" href="reports.html">📄 Reports & Export</a>
+      <a class="nav-item" href="marks.html"><span class="nav-icon" data-icon="marks"></span><span>Marks Entry</span></a>
+      <a class="nav-item" href="attainment.html"><span class="nav-icon" data-icon="attainment"></span><span>Attainment</span></a>
+      <a class="nav-item" href="assignments.html"><span class="nav-icon" data-icon="assignments"></span><span>Assignments & AI</span></a>
+      <a class="nav-item" href="auto-grade.html"><span class="nav-icon" data-icon="grade"></span><span>Auto-Grading</span></a>
+      <a class="nav-item" href="question-paper.html"><span class="nav-icon" data-icon="paper"></span><span>Question Paper</span></a>
+      <a class="nav-item" href="reports.html"><span class="nav-icon" data-icon="reports"></span><span>Reports & Export</span></a>
     </nav>
     <div class="sidebar-footer">
-      <div class="user-card">
+      <div class="user-card" onclick="Auth.logout()">
         <div class="user-avatar"></div>
         <div><div class="user-name"></div><div class="user-role"></div></div>
       </div>
-      <button class="btn btn-ghost btn-sm w-full" data-action="logout" style="margin-top:8px">
-        🚪 Logout
+      <button class="btn btn-secondary btn-sm w-full" data-action="logout" style="margin-top:8px; width:100%;">
+        <span data-icon="logout"></span><span>Sign Out</span>
       </button>
     </div>
   </aside>
@@ -111,108 +138,109 @@
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
-        <h1 class="topbar-title">👥 Students</h1>
-        <div class="topbar-breadcrumb">
-          <span>Faculty</span><span>›</span><span>Students</span>
-        </div>
+        <h1 class="topbar-title">Student Cohort Roster</h1>
+        <div class="topbar-breadcrumb">Students <span>›</span> Enrolled Roster & Pre-Survey Classification</div>
       </div>
-      <div class="topbar-right">
-        <select class="form-control" id="course-select" style="width:260px">
-          <option value="">— Select Course —</option>
-        </select>
-        <button class="btn btn-secondary btn-sm" id="btn-import-students" onclick="openImportModal()">📥 Import Excel</button>
-        <button class="btn btn-primary btn-sm" id="btn-add-student" onclick="openAddModal()">+ Add Student</button>
+      <div class="topbar-right" style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-primary btn-sm" onclick="openCsvExtractModal()" style="font-weight:600;">
+          <span data-icon="upload"></span><span>Extract from CSV</span>
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="openImportModal()">
+          <span data-icon="edit"></span><span>Bulk Paste from Excel</span>
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="exportStudents()">
+          <span data-icon="download"></span><span>Export CSV</span>
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="openAddModal()">
+          <span data-icon="plus"></span><span>Add Student</span>
+        </button>
       </div>
     </header>
 
     <div class="page-content">
 
-      <!-- Stat cards -->
-      <div class="grid-4 mb-lg" id="stats-row" style="display:none">
-        <div class="stat-card">
-          <div class="stat-icon" style="background:rgba(37,99,235,0.15);font-size:28px">👥</div>
-          <div class="stat-value" id="stat-total">0</div>
-          <div class="stat-label">Total Students</div>
+      <!-- Course Selector Bar -->
+      <div class="course-selector-bar">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span style="font-size:13px;font-weight:600;color:var(--text-secondary);">Active Course:</span>
+          <select class="form-select" id="course-select" style="min-width:280px;"></select>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background:rgba(239,68,68,0.15);font-size:28px">🔴</div>
-          <div class="stat-value" id="stat-slow" style="color:var(--danger)">0</div>
-          <div class="stat-label">Slow Learners</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background:rgba(245,158,11,0.15);font-size:28px">🟡</div>
-          <div class="stat-value" id="stat-avg" style="color:var(--warning)">0</div>
-          <div class="stat-label">Average Learners</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background:rgba(16,185,129,0.15);font-size:28px">🟢</div>
-          <div class="stat-value" id="stat-adv" style="color:var(--success)">0</div>
-          <div class="stat-label">Advanced Learners</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span id="student-count-badge" class="badge badge-primary">0 Students Enrolled</span>
         </div>
       </div>
 
-      <!-- Distribution bar + chart -->
-      <div class="card mb-lg" id="dist-card" style="display:none">
-        <div class="flex-between mb-md">
-          <div>
-            <div class="card-title">📊 Learner Distribution</div>
-            <div class="card-subtitle">Pre-survey score based classification</div>
+      <!-- Cohort Analytics Bar -->
+      <div class="stats-grid" style="margin-bottom:var(--sp-md);">
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-label">Total Cohort</span>
+            <span class="stat-card-icon" data-icon="students"></span>
           </div>
-          <div style="font-size:12px;color:var(--text-muted)">
-            <span class="learner-dot" style="background:var(--danger)"></span>Slow (≤4) &nbsp;
-            <span class="learner-dot" style="background:var(--warning)"></span>Average (5–6) &nbsp;
-            <span class="learner-dot" style="background:var(--success)"></span>Advanced (≥7)
+          <div class="stat-card-val" id="stat-total">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-label">Slow Learners</span>
+            <span class="badge badge-danger">Score &le; 4</span>
           </div>
+          <div class="stat-card-val" id="stat-slow" style="color:var(--danger)">0</div>
         </div>
-        <div class="dist-bar-wrap" id="dist-bar" style="width:100%;border-radius:8px;overflow:hidden">
-          <div class="dist-bar-seg slow"     id="seg-slow"    style="flex:0"></div>
-          <div class="dist-bar-seg average"  id="seg-avg"     style="flex:0"></div>
-          <div class="dist-bar-seg advanced" id="seg-adv"     style="flex:0"></div>
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-label">Average Learners</span>
+            <span class="badge badge-warning">Score 5–7</span>
+          </div>
+          <div class="stat-card-val" id="stat-avg" style="color:var(--warning)">0</div>
         </div>
-        <div style="display:flex;gap:32px;margin-top:12px;font-size:13px">
-          <span id="pct-slow"  style="color:var(--danger)"></span>
-          <span id="pct-avg"   style="color:var(--warning)"></span>
-          <span id="pct-adv"   style="color:var(--success)"></span>
-        </div>
-      </div>
-
-      <!-- Empty state -->
-      <div class="card" id="empty-state">
-        <div class="empty-state">
-          <div class="empty-icon">👥</div>
-          <h3>Select a Course</h3>
-          <p>Choose a course from the dropdown above to view and manage its student roster.</p>
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-label">Advanced Learners</span>
+            <span class="badge badge-success">Score &ge; 8</span>
+          </div>
+          <div class="stat-card-val" id="stat-adv" style="color:var(--success)">0</div>
         </div>
       </div>
 
-      <!-- Student table -->
-      <div class="card hidden" id="student-card">
+      <!-- Learner Distribution Visualizer -->
+      <div class="card" style="margin-bottom:var(--sp-md);padding:14px 18px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;">Learner Profile Distribution</span>
+          <span id="dist-summary-text" style="font-size:12px;color:var(--text-secondary);font-weight:600;">—</span>
+        </div>
+        <div class="dist-bar-wrap" id="dist-bar">
+          <div class="dist-bar-seg slow" id="seg-slow" style="width:0%"></div>
+          <div class="dist-bar-seg average" id="seg-avg" style="width:0%"></div>
+          <div class="dist-bar-seg advanced" id="seg-adv" style="width:0%"></div>
+        </div>
+      </div>
+
+      <!-- Students Table -->
+      <div class="card">
         <div class="card-header">
-          <div>
-            <div class="card-title">Student Roster</div>
-            <div class="card-subtitle" id="table-subtitle">Loading...</div>
-          </div>
-          <div class="flex gap-sm">
-            <div class="search-box" style="width:220px">
-              <span class="search-icon">🔍</span>
-              <input type="text" id="search-input" placeholder="Search name or PRN…">
-            </div>
-            <button class="btn btn-secondary btn-sm" onclick="exportStudents()">📤 Export CSV</button>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <input type="text" class="form-input" id="search-input" placeholder="Search by name or PRN…" style="width:240px;padding:6px 10px;font-size:12.5px;" oninput="renderTable()">
+            <select class="form-select" id="filter-type" style="width:160px;padding:6px 10px;font-size:12.5px;" onchange="renderTable()">
+              <option value="all">All Learner Types</option>
+              <option value="slow">Slow Learners</option>
+              <option value="average">Average Learners</option>
+              <option value="advanced">Advanced Learners</option>
+            </select>
           </div>
         </div>
-        <div class="table-wrapper">
-          <table id="students-table">
+        <div class="table-responsive">
+          <table class="table" id="students-table">
             <thead>
               <tr>
-                <th style="width:50px">Sr.No</th>
-                <th>PRN</th>
-                <th>Student Name</th>
+                <th style="width:50px">#</th>
+                <th style="width:160px">PRN Identifier</th>
+                <th>Student Full Name</th>
                 <th style="width:140px">Pre-Survey Score</th>
-                <th style="width:130px">Learner Type</th>
-                <th style="width:120px">Actions</th>
+                <th style="width:150px">Learner Classification</th>
+                <th style="width:80px;text-align:right;">Actions</th>
               </tr>
             </thead>
-            <tbody id="students-tbody"></tbody>
+            <tbody id="students-body"></tbody>
           </table>
         </div>
       </div>
@@ -221,219 +249,181 @@
   </main>
 </div>
 
-<div id="toast-container"></div>
-
-<!-- ── ADD/EDIT STUDENT MODAL (injected via JS) ── -->
-
-<script src="../scripts/data.js?v=101"></script>
-<script src="../scripts/api.js?v=101"></script>
-<script src="../scripts/auth.js?v=3"></script>
+<script src="../scripts/icons.js"></script>
+<script src="../scripts/data.js"></script>
+<script src="../scripts/api.js"></script>
+<script src="../scripts/auth.js"></script>
 <script src="../scripts/utils.js"></script>
+<script src="../scripts/ai-chat.js"></script>
 <script>
-  /* ── Auth ── */
+(async () => {
+  await (window._apiReady || Promise.resolve());
   const user = Auth.requireAuth(['faculty', 'hod']);
-  if (!user) throw new Error('Not authorized');
-  Auth.populateSidebar(user);
-
-  if (user.role !== 'hod') {
-    document.getElementById('btn-import-students').style.display = 'none';
-    document.getElementById('btn-add-student').style.display = 'none';
-  }
+  if(!user) throw 0;
 
   let currentCourseId = null;
-  let studentsCache   = [];
-  let editingStudent  = null;
+  let studentsCache = [];
+  let editingStudent = null;
 
-  /* ── Populate courses ── */
-  function populateCourses() {
-    const sel = document.getElementById('course-select');
-    let courses = [];
-    if (user.role === 'hod') {
-      const allC = DB.courses.all ? DB.courses.all() : JSON.parse(localStorage.getItem('obe_courses') || '[]');
-      courses = allC.filter(c => c.deptId === user.deptId);
-    } else {
-      courses = DB.courses.byFaculty(user.id);
-    }
-    
-    courses.forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = c.id;
-      opt.textContent = `${c.code} – ${c.name}`;
-      sel.appendChild(opt);
-    });
-    const stored = sessionStorage.getItem('selected_course_id');
-    if (stored && courses.find(c => c.id === stored)) {
-      sel.value = stored;
-      loadStudents(stored);
-    } else if (courses.length > 0) {
-      sel.value = courses[0].id;
-      loadStudents(courses[0].id);
-    }
-  }
+  const sel = document.getElementById('course-select');
+  const courses = DB.courses.byFaculty(user.id);
+  sel.innerHTML = courses.map(c => `<option value="${c.id}">${c.code} – ${c.name}</option>`).join('');
 
-  document.getElementById('course-select').addEventListener('change', e => {
+  const stored = sessionStorage.getItem('selected_course_id');
+  if (stored && courses.find(c => c.id === stored)) { sel.value = stored; loadCourse(stored); }
+  else if (courses.length) { sel.value = courses[0].id; loadCourse(courses[0].id); }
+
+  sel.addEventListener('change', e => {
     if (e.target.value) {
       sessionStorage.setItem('selected_course_id', e.target.value);
-      loadStudents(e.target.value);
+      loadCourse(e.target.value);
     }
   });
+  renderAllIcons();
 
-  /* ── Load students for course ── */
-  function loadStudents(courseId) {
-    currentCourseId = courseId;
-    studentsCache   = DB.students.byCourse(courseId);
-
-    document.getElementById('empty-state').classList.add('hidden');
-    document.getElementById('student-card').classList.remove('hidden');
-    document.getElementById('stats-row').style.display = '';
-    document.getElementById('dist-card').style.display = '';
-
+  function loadCourse(cid) {
+    currentCourseId = cid;
+    studentsCache = DB.students.byCourse(cid);
     renderStats();
     renderDistribution();
     renderTable();
-    filterTable('search-input', 'students-table');
-
-    const course = DB.courses.byId(courseId);
-    document.getElementById('table-subtitle').textContent =
-      course ? `${course.code} – ${course.name} | ${studentsCache.length} students` : '';
+    renderAllIcons();
   }
 
-  /* ── Render stat cards ── */
   function renderStats() {
-    const slow = studentsCache.filter(s => s.learnerType === 'slow').length;
-    const avg  = studentsCache.filter(s => s.learnerType === 'average').length;
-    const adv  = studentsCache.filter(s => s.learnerType === 'advanced').length;
-    document.getElementById('stat-total').textContent = studentsCache.length;
-    document.getElementById('stat-slow').textContent  = slow;
-    document.getElementById('stat-avg').textContent   = avg;
-    document.getElementById('stat-adv').textContent   = adv;
-  }
-
-  /* ── Render distribution bar ── */
-  function renderDistribution() {
-    const total = studentsCache.length || 1;
+    const total = studentsCache.length;
     const slow  = studentsCache.filter(s => s.learnerType === 'slow').length;
     const avg   = studentsCache.filter(s => s.learnerType === 'average').length;
     const adv   = studentsCache.filter(s => s.learnerType === 'advanced').length;
 
-    document.getElementById('seg-slow').style.flex   = slow;
-    document.getElementById('seg-avg').style.flex    = avg;
-    document.getElementById('seg-adv').style.flex    = adv;
-
-    document.getElementById('seg-slow').textContent  = slow > 0  ? `${slow}`  : '';
-    document.getElementById('seg-avg').textContent   = avg  > 0  ? `${avg}`   : '';
-    document.getElementById('seg-adv').textContent   = adv  > 0  ? `${adv}`   : '';
-
-    const p = n => `${((n/total)*100).toFixed(1)}%`;
-    document.getElementById('pct-slow').textContent  = `🔴 Slow: ${slow} (${p(slow)})`;
-    document.getElementById('pct-avg').textContent   = `🟡 Average: ${avg} (${p(avg)})`;
-    document.getElementById('pct-adv').textContent   = `🟢 Advanced: ${adv} (${p(adv)})`;
+    document.getElementById('stat-total').textContent = total;
+    document.getElementById('stat-slow').textContent  = slow;
+    document.getElementById('stat-avg').textContent   = avg;
+    document.getElementById('stat-adv').textContent   = adv;
+    document.getElementById('student-count-badge').textContent = `${total} Students Enrolled`;
   }
 
-  /* ── Render student table ── */
-  function renderTable() {
-    const tbody = document.getElementById('students-tbody');
-    tbody.innerHTML = '';
+  function renderDistribution() {
+    const total = studentsCache.length;
+    if (total === 0) {
+      document.getElementById('seg-slow').style.width = '0%';
+      document.getElementById('seg-avg').style.width = '0%';
+      document.getElementById('seg-adv').style.width = '0%';
+      document.getElementById('dist-summary-text').textContent = 'No student records';
+      return;
+    }
+    const slow  = studentsCache.filter(s => s.learnerType === 'slow').length;
+    const avg   = studentsCache.filter(s => s.learnerType === 'average').length;
+    const adv   = studentsCache.filter(s => s.learnerType === 'advanced').length;
 
-    if (studentsCache.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" class="text-center" style="padding:32px;color:var(--text-muted)">
-        No students found. Add students or import from Excel.
-      </td></tr>`;
+    const slowPct = Math.round((slow / total) * 100);
+    const avgPct  = Math.round((avg / total) * 100);
+    const advPct  = Math.round((adv / total) * 100);
+
+    document.getElementById('seg-slow').style.width = slowPct + '%';
+    document.getElementById('seg-avg').style.width  = avgPct + '%';
+    document.getElementById('seg-adv').style.width  = advPct + '%';
+    document.getElementById('dist-summary-text').textContent = `Slow: ${slowPct}% | Avg: ${avgPct}% | Adv: ${advPct}%`;
+  }
+
+  function classifyLearner(score) {
+    if (score <= 4) return 'slow';
+    if (score >= 8) return 'advanced';
+    return 'average';
+  }
+
+  function renderTable() {
+    const body = document.getElementById('students-body');
+    const q = (document.getElementById('search-input').value || '').toLowerCase().trim();
+    const filter = document.getElementById('filter-type').value;
+
+    let list = studentsCache;
+    if (filter !== 'all') list = list.filter(s => s.learnerType === filter);
+    if (q) list = list.filter(s => s.name.toLowerCase().includes(q) || s.prn.toLowerCase().includes(q));
+
+    if (list.length === 0) {
+      body.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-muted);">No student records found.</td></tr>`;
       return;
     }
 
-    studentsCache.forEach((s, i) => {
-      const score = s.preSurveyScore ?? 0;
-      const pct   = (score / 10) * 100;
-      const tr    = document.createElement('tr');
-      let actions = '';
-      if (user.role === 'hod') {
-        actions = `
-          <div class="flex gap-sm">
-            <button class="btn btn-secondary btn-sm" onclick="openEditModal('${s.id}')">✏️ Edit</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteStudent('${s.id}')">🗑</button>
-          </div>
-        `;
-      } else {
-        actions = `<span style="font-size:11px;color:var(--text-muted)">View Only</span>`;
-      }
+    body.innerHTML = list.map((s, i) => {
+      const score = s.preSurveyScore !== undefined && s.preSurveyScore !== null ? s.preSurveyScore : '—';
+      const scorePct = typeof score === 'number' ? score * 10 : 0;
+      
+      let badgeClass = 'badge-neutral';
+      let badgeLabel = 'Average';
+      if (s.learnerType === 'slow') { badgeClass = 'badge-danger'; badgeLabel = 'Slow Learner'; }
+      else if (s.learnerType === 'advanced') { badgeClass = 'badge-success'; badgeLabel = 'Advanced Learner'; }
+      else { badgeClass = 'badge-warning'; badgeLabel = 'Average Learner'; }
 
-      tr.innerHTML = `
-        <td class="td-muted">${i + 1}</td>
-        <td><code style="font-size:12px;color:var(--primary)">${s.prn}</code></td>
-        <td>
-          <div style="display:flex;align-items:center;gap:10px">
-            <div style="width:32px;height:32px;border-radius:50%;background:var(--primary);
-                        display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0">
-              ${Fmt.initials(s.name)}
-            </div>
-            <div>
-              <div style="font-weight:600;font-size:13px">${s.name}</div>
-            </div>
-          </div>
-        </td>
-        <td>
-          <div style="display:flex;align-items:center;gap:8px">
-            <div class="survey-score-bar"><div class="survey-score-fill" style="width:${pct}%"></div></div>
-            <span style="font-weight:700;font-size:14px">${score}<span style="font-size:10px;color:var(--text-muted)">/10</span></span>
-          </div>
-        </td>
-        <td>${learnerBadge(s.learnerType)}</td>
-        <td>
-          ${actions}
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
+      return `
+        <tr>
+          <td>${i + 1}</td>
+          <td><span class="font-mono" style="font-weight:700;">${s.prn}</span></td>
+          <td style="font-weight:600;color:var(--text-primary);">${s.name}</td>
+          <td>
+            ${typeof score === 'number' ? `
+              <div class="survey-score-bar"><div class="survey-score-fill" style="width:${scorePct}%"></div></div>
+              <span style="font-weight:700;font-size:12px;">${score}/10</span>
+            ` : '—'}
+          </td>
+          <td><span class="badge ${badgeClass}">${badgeLabel}</span></td>
+          <td style="text-align:right;">
+            <button class="btn btn-secondary btn-sm btn-icon" onclick="openEditModal('${s.id}')"><span data-icon="edit"></span></button>
+            <button class="btn btn-danger btn-sm btn-icon" onclick="deleteStudent('${s.id}')"><span data-icon="trash"></span></button>
+          </td>
+        </tr>`;
+    }).join('');
+    renderAllIcons(body);
   }
 
-  /* ── Determine learner type from score ── */
-  function classifyLearner(score) {
-    if (score <= 4) return 'slow';
-    if (score <= 6) return 'average';
-    return 'advanced';
-  }
-
-  /* ── ADD STUDENT MODAL ── */
   function openAddModal() {
-    if (!currentCourseId) { Toast.warning('Please select a course first.'); return; }
+    if (!currentCourseId) { Toast.warning('Select a course first.'); return; }
     editingStudent = null;
     const html = `
       <div class="modal-header">
-        <h3 class="modal-title">➕ Add Student</h3>
-        <button class="modal-close" onclick="Modal.close()">✕</button>
+        <h3 class="modal-title">Add Student</h3>
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="Modal.close()"><span data-icon="close"></span></button>
       </div>
-      <div class="form-row">
+      <div class="modal-body">
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);padding:10px 14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-weight:600;font-size:12.5px;color:var(--text-primary);">Adding the entire class?</div>
+            <div style="font-size:11.5px;color:var(--text-secondary);">Extract multiple students automatically from a CSV file.</div>
+          </div>
+          <button class="btn btn-primary btn-sm" style="font-size:11.5px;padding:4px 10px;" onclick="Modal.close(); openCsvExtractModal();">
+            <span data-icon="upload"></span> Extract from CSV
+          </button>
+        </div>
         <div class="form-group">
           <label class="form-label">PRN Number *</label>
-          <input class="form-control" id="f-prn" placeholder="e.g. 202201040001" maxlength="20">
+          <input class="form-input" id="f-prn" placeholder="e.g. 202201040001" maxlength="20">
         </div>
         <div class="form-group">
           <label class="form-label">Full Name *</label>
-          <input class="form-control" id="f-name" placeholder="Last First Middle">
+          <input class="form-input" id="f-name" placeholder="Last First Middle">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-group">
+            <label class="form-label">Pre-Survey Score (0–10)</label>
+            <input class="form-input" id="f-score" type="number" min="0" max="10" placeholder="e.g. 7" oninput="updateLearnerPreview()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Learner Classification</label>
+            <select class="form-select" id="f-learner">
+              <option value="slow">Slow Learner</option>
+              <option value="average" selected>Average Learner</option>
+              <option value="advanced">Advanced Learner</option>
+            </select>
+          </div>
         </div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Pre-Survey Score (0–10)</label>
-          <input class="form-control" id="f-score" type="number" min="0" max="10" placeholder="e.g. 7" oninput="updateLearnerPreview()">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Learner Type</label>
-          <select class="form-control" id="f-learner">
-            <option value="slow">🔴 Slow</option>
-            <option value="average" selected>🟡 Average</option>
-            <option value="advanced">🟢 Advanced</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-hint" id="learner-preview"></div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
-        <button class="btn btn-primary" onclick="saveStudent()">Save Student</button>
+        <button class="btn btn-primary" onclick="saveStudent()">Add Student</button>
       </div>`;
     Modal.open(html);
-    document.getElementById('f-score').addEventListener('input', updateLearnerPreview);
+    renderAllIcons();
   }
 
   function openEditModal(id) {
@@ -442,38 +432,39 @@
     editingStudent = s;
     const html = `
       <div class="modal-header">
-        <h3 class="modal-title">✏️ Edit Student</h3>
-        <button class="modal-close" onclick="Modal.close()">✕</button>
+        <h3 class="modal-title">Edit Student</h3>
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="Modal.close()"><span data-icon="close"></span></button>
       </div>
-      <div class="form-row">
+      <div class="modal-body">
         <div class="form-group">
           <label class="form-label">PRN Number *</label>
-          <input class="form-control" id="f-prn" value="${s.prn}" maxlength="20">
+          <input class="form-input" id="f-prn" value="${s.prn}" maxlength="20">
         </div>
         <div class="form-group">
           <label class="form-label">Full Name *</label>
-          <input class="form-control" id="f-name" value="${s.name}">
+          <input class="form-input" id="f-name" value="${s.name}">
         </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Pre-Survey Score (0–10)</label>
-          <input class="form-control" id="f-score" type="number" min="0" max="10" value="${s.preSurveyScore ?? ''}">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Learner Type</label>
-          <select class="form-control" id="f-learner">
-            <option value="slow"     ${s.learnerType==='slow'?'selected':''}>🔴 Slow</option>
-            <option value="average"  ${s.learnerType==='average'?'selected':''}>🟡 Average</option>
-            <option value="advanced" ${s.learnerType==='advanced'?'selected':''}>🟢 Advanced</option>
-          </select>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-group">
+            <label class="form-label">Pre-Survey Score (0–10)</label>
+            <input class="form-input" id="f-score" type="number" min="0" max="10" value="${s.preSurveyScore ?? ''}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Learner Classification</label>
+            <select class="form-select" id="f-learner">
+              <option value="slow"     ${s.learnerType==='slow'?'selected':''}>Slow Learner</option>
+              <option value="average"  ${s.learnerType==='average'?'selected':''}>Average Learner</option>
+              <option value="advanced" ${s.learnerType==='advanced'?'selected':''}>Advanced Learner</option>
+            </select>
+          </div>
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
-        <button class="btn btn-primary" onclick="saveStudent()">Update Student</button>
+        <button class="btn btn-primary" onclick="saveStudent()">Save Changes</button>
       </div>`;
     Modal.open(html);
+    renderAllIcons();
   }
 
   function updateLearnerPreview() {
@@ -482,8 +473,6 @@
     const lt = classifyLearner(score);
     const sel = document.getElementById('f-learner');
     if (sel) sel.value = lt;
-    const prev = document.getElementById('learner-preview');
-    if (prev) prev.textContent = `Auto-classified as: ${lt.charAt(0).toUpperCase()+lt.slice(1)} Learner`;
   }
 
   function saveStudent() {
@@ -494,7 +483,6 @@
 
     if (!prn || !name) { Toast.error('PRN and Name are required.'); return; }
 
-    // Check duplicate PRN
     const existing = DB.students.byPRN(currentCourseId, prn);
     if (existing && (!editingStudent || existing.id !== editingStudent.id)) {
       Toast.error('A student with this PRN already exists in this course.');
@@ -504,10 +492,10 @@
     if (editingStudent) {
       const updated = { ...editingStudent, prn, name, preSurveyScore: score, learnerType: lt };
       DB.students.update(updated);
-      Toast.success('Student updated successfully!');
+      Toast.success('Student record updated.');
     } else {
       DB.students.add({ courseId: currentCourseId, prn, name, preSurveyScore: score, learnerType: lt });
-      Toast.success('Student added successfully!');
+      Toast.success('Student enrolled successfully.');
     }
 
     Modal.close();
@@ -517,78 +505,505 @@
     renderTable();
   }
 
-  /* ── DELETE ── */
   function deleteStudent(id) {
     const s = studentsCache.find(x => x.id === id);
     if (!s) return;
-    confirmDelete(s.name, () => {
+    Modal.confirm('Delete Student', `Remove student ${s.name} (${s.prn}) from this course?`, () => {
       DB.students.delete(id);
       studentsCache = DB.students.byCourse(currentCourseId);
       renderStats();
       renderDistribution();
       renderTable();
-      Toast.success('Student deleted.');
-    });
+      Toast.success('Student removed.');
+    }, 'Delete', true);
   }
 
-  /* ── IMPORT FROM EXCEL MODAL ── */
-  function openImportModal() {
-    if (!currentCourseId) { Toast.warning('Please select a course first.'); return; }
+  let extractedCsvStudents = [];
+
+  function openCsvExtractModal() {
+    if (!currentCourseId) { Toast.warning('Select a course first.'); return; }
+    extractedCsvStudents = [];
     const html = `
       <div class="modal-header">
-        <h3 class="modal-title">📥 Import Students from Excel</h3>
-        <button class="modal-close" onclick="Modal.close()">✕</button>
+        <h3 class="modal-title">Extract & Import Students from Excel / CSV</h3>
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="Modal.close()"><span data-icon="close"></span></button>
       </div>
-      <div class="alert alert-info mb-md" style="font-size:13px">
-        ℹ️ Copy rows from Excel and paste below. Expected columns (tab-separated):<br>
-        <strong>PRN &nbsp;|&nbsp; Name &nbsp;|&nbsp; Pre-Survey Score &nbsp;|&nbsp; Learner Type</strong><br>
-        Learner Type: <code>slow</code> / <code>average</code> / <code>advanced</code> (optional, auto-classified from score)
+      <div class="modal-body">
+        <div class="alert alert-info" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+          <span>Upload any student roster spreadsheet (<strong>.xlsx, .xls, or .csv</strong>) with student PRNs and Names.</span>
+          <a class="template-link" onclick="downloadCsvTemplate()">
+            <span data-icon="download"></span> Download Sample Template
+          </a>
+        </div>
+
+        <div class="csv-dropzone" id="csv-dropzone" onclick="document.getElementById('csv-file-input').click()">
+          <input type="file" id="csv-file-input" accept=".xlsx,.xls,.csv,.tsv,.txt" style="display:none" onchange="handleCsvFileInput(event)">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+            <span data-icon="upload" style="font-size:24px;color:var(--primary);"></span>
+            <div style="font-weight:600;font-size:14px;color:var(--text-primary);">Click to Browse or Drag & Drop Excel (.xlsx, .xls) / CSV File</div>
+            <div style="font-size:12px;color:var(--text-secondary);">Universal support: automatically detects headers, PRNs, Names, and Scores in any layout</div>
+          </div>
+        </div>
+
+        <div id="csv-file-info" style="display:none;margin-top:12px;padding:8px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);justify-content:space-between;align-items:center;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="badge badge-primary" id="csv-file-name">file.xlsx</span>
+            <span style="font-size:12px;color:var(--text-secondary);" id="csv-file-rows">0 records extracted</span>
+          </div>
+          <button class="btn btn-secondary btn-sm" style="font-size:11px;padding:2px 8px;" onclick="document.getElementById('csv-file-input').click()">Change File</button>
+        </div>
+
+        <div id="csv-preview-section" style="display:none;margin-top:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <label class="form-label" style="margin-bottom:0;font-weight:700;">Extraction Preview</label>
+            <span id="csv-valid-badge" class="badge badge-success">0 Ready</span>
+          </div>
+          <div class="csv-preview-container">
+            <table class="csv-preview-table">
+              <thead>
+                <tr>
+                  <th style="width:40px">#</th>
+                  <th style="width:150px">PRN Identifier</th>
+                  <th>Student Full Name</th>
+                  <th style="width:100px">Survey Score</th>
+                  <th style="width:130px">Learner Classification</th>
+                </tr>
+              </thead>
+              <tbody id="csv-preview-body"></tbody>
+            </table>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;padding:10px;background:var(--surface-2);border-radius:var(--r-md);">
+            <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer;">
+              <input type="checkbox" id="csv-opt-classify" checked>
+              <span>Auto-classify learner types based on pre-survey score (&le;4: Slow, 5&ndash;7: Average, &ge;8: Advanced)</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer;">
+              <input type="checkbox" id="csv-opt-overwrite" checked>
+              <span>Update existing student details if PRN already exists in this course</span>
+            </label>
+          </div>
+        </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Paste Data</label>
-        <textarea class="import-area" id="import-data" placeholder="202201040001&#9;Rakshe Veer Tushar&#9;3&#9;slow
-202201040002&#9;Narote Sanket Satish&#9;8&#9;advanced"></textarea>
-      </div>
-      <div id="import-preview" class="mt-md" style="font-size:12px;color:var(--text-secondary)"></div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
-        <button class="btn btn-secondary" onclick="previewImport()">👁 Preview</button>
-        <button class="btn btn-primary" onclick="doImport()">📥 Import</button>
+        <button class="btn btn-primary" id="btn-save-csv" onclick="saveExtractedStudents()" disabled>
+          <span data-icon="plus"></span> Extract & Save Roster
+        </button>
       </div>`;
+
     Modal.open(html, { wide: true });
-    document.getElementById('import-data').addEventListener('paste', () => setTimeout(previewImport, 100));
+    renderAllIcons();
+    initCsvDropzone();
   }
 
-  function previewImport() {
-    const raw  = document.getElementById('import-data').value;
-    const rows = parsePaste(raw).filter(r => r.length >= 2 && r[0]);
-    const prev = document.getElementById('import-preview');
-    if (!prev) return;
-    prev.innerHTML = `<strong style="color:var(--text-primary)">${rows.length} rows detected</strong>. Preview:<br><br>`;
-    rows.slice(0,5).forEach(r => {
-      const prn   = r[0];
-      const name  = r[1] || '?';
-      const score = parseInt(r[2]) || 0;
-      let lt    = r[3] || classifyLearner(score);
-      if (lt.toLowerCase() === 'medium') lt = 'average';
-      prev.innerHTML += `<span style="color:var(--text-primary)">${prn}</span> – ${name} – Score:${score} – ${lt}<br>`;
+  function initCsvDropzone() {
+    const dropzone = document.getElementById('csv-dropzone');
+    if (!dropzone) return;
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropzone.addEventListener(eventName, e => {
+        e.preventDefault(); e.stopPropagation();
+        dropzone.classList.add('dragover');
+      }, false);
     });
-    if (rows.length > 5) prev.innerHTML += `…and ${rows.length-5} more rows`;
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropzone.addEventListener(eventName, e => {
+        e.preventDefault(); e.stopPropagation();
+        dropzone.classList.remove('dragover');
+      }, false);
+    });
+    dropzone.addEventListener('drop', e => {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files && files.length > 0) {
+        processCsvFile(files[0]);
+      }
+    }, false);
+  }
+
+  function handleCsvFileInput(e) {
+    if (e.target.files && e.target.files.length > 0) {
+      processCsvFile(e.target.files[0]);
+    }
+  }
+
+  function processCsvFile(file) {
+    if (!file) return;
+    const fileName = (file.name || '').toLowerCase();
+    
+    // If SheetJS is loaded, use it for all Excel and CSV formats
+    if (typeof XLSX !== 'undefined') {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          // raw: false ensures large numeric IDs/PRNs remain as formatted strings
+          const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '', raw: false });
+          processUniversalSpreadsheetData(jsonRows, file.name);
+        } catch (err) {
+          console.warn('XLSX parsing failed, falling back to text reader:', err);
+          readAsTextFallback(file);
+        }
+      };
+      reader.onerror = () => Toast.error('Failed to read file.');
+      reader.readAsArrayBuffer(file);
+    } else {
+      readAsTextFallback(file);
+    }
+  }
+
+  function readAsTextFallback(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target.result;
+      const rows = parseCSVRows(text);
+      processUniversalSpreadsheetData(rows, file.name);
+    };
+    reader.onerror = () => Toast.error('Failed to read file.');
+    reader.readAsText(file);
+  }
+
+  function parseCSVRows(text) {
+    const lines = [];
+    let currentLine = [];
+    let currentCell = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+      const nextChar = text[i + 1];
+      
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') {
+          currentCell += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if ((char === ',' || char === '\t' || char === ';') && !inQuotes) {
+        currentLine.push(currentCell.trim());
+        currentCell = '';
+      } else if ((char === '\r' || char === '\n') && !inQuotes) {
+        if (char === '\r' && nextChar === '\n') i++;
+        currentLine.push(currentCell.trim());
+        if (currentLine.some(c => c !== '')) lines.push(currentLine);
+        currentLine = [];
+        currentCell = '';
+      } else {
+        currentCell += char;
+      }
+    }
+    if (currentCell || currentLine.length > 0) {
+      currentLine.push(currentCell.trim());
+      if (currentLine.some(c => c !== '')) lines.push(currentLine);
+    }
+    return lines;
+  }
+
+  function processUniversalSpreadsheetData(rows2d, fileName) {
+    if (!rows2d || !rows2d.length) {
+      Toast.error('The selected file has no data.');
+      return;
+    }
+
+    // Clean up empty rows and cells
+    const cleanRows = rows2d
+      .map(row => (Array.isArray(row) ? row : Object.values(row)).map(cell => (cell !== null && cell !== undefined) ? String(cell).trim() : ''))
+      .filter(row => row.some(cell => cell !== ''));
+
+    if (!cleanRows.length) {
+      Toast.error('No readable rows found in sheet.');
+      return;
+    }
+
+    // 1. Identify Header Row (within first 15 rows)
+    let headerRowIdx = -1;
+    let prnCol = -1, nameCol = -1, scoreCol = -1, learnerCol = -1;
+
+    for (let r = 0; r < Math.min(15, cleanRows.length); r++) {
+      const row = cleanRows[r];
+      let p = -1, n = -1, s = -1, l = -1;
+      row.forEach((cell, cIdx) => {
+        const lower = cell.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (/prn|roll|id|registration|enrollment|urn|seat|candidateno/i.test(lower)) p = cIdx;
+        else if (/name|student|candidate|fullname|studentname/i.test(lower)) n = cIdx;
+        else if (/score|survey|marks|presurvey|pretest|surveyrate/i.test(lower)) s = cIdx;
+        else if (/learner|classification|type|category/i.test(lower)) l = cIdx;
+      });
+
+      if (p !== -1 || n !== -1) {
+        headerRowIdx = r;
+        prnCol = p;
+        nameCol = n;
+        scoreCol = s;
+        learnerCol = l;
+        break;
+      }
+    }
+
+    // 2. Fallback Heuristics: If no header found, inspect column contents
+    if (headerRowIdx === -1) {
+      const sample = cleanRows.slice(0, Math.min(20, cleanRows.length));
+      const colCount = Math.max(...sample.map(r => r.length));
+      
+      let bestPrnCol = -1, bestNameCol = -1, bestScoreCol = -1;
+      let maxDigitRatio = -1, maxWordRatio = -1;
+
+      for (let c = 0; c < colCount; c++) {
+        let digitCount = 0, wordCount = 0, total = 0;
+        sample.forEach(r => {
+          const val = r[c] || '';
+          if (val) {
+            total++;
+            // PRNs are usually 4-16 alphanumeric or numeric digits
+            if (/^\d{4,}$/.test(val) || /^[A-Z0-9]{5,}$/i.test(val)) digitCount++;
+            // Names have 2+ letters and spaces or multiple words
+            if (/[a-zA-Z]{3,}/.test(val) && !/^\d+$/.test(val) && !/^(slow|average|advanced)$/i.test(val)) wordCount++;
+          }
+        });
+        if (total > 0) {
+          const dRatio = digitCount / total;
+          const wRatio = wordCount / total;
+          if (dRatio > maxDigitRatio && dRatio >= 0.3) {
+            maxDigitRatio = dRatio;
+            bestPrnCol = c;
+          }
+          if (wRatio > maxWordRatio && wRatio >= 0.3) {
+            maxWordRatio = wRatio;
+            bestNameCol = c;
+          }
+        }
+      }
+
+      prnCol = bestPrnCol !== -1 ? bestPrnCol : 0;
+      nameCol = bestNameCol !== -1 && bestNameCol !== prnCol ? bestNameCol : (prnCol === 0 ? 1 : 0);
+
+      // Find score col among remaining columns
+      for (let c = 0; c < colCount; c++) {
+        if (c !== prnCol && c !== nameCol) {
+          const numericMatches = sample.filter(r => {
+            const num = parseFloat(r[c]);
+            return !isNaN(num) && num >= 0 && num <= 100;
+          }).length;
+          if (numericMatches >= sample.length * 0.4) {
+            bestScoreCol = c;
+            break;
+          }
+        }
+      }
+      scoreCol = bestScoreCol;
+    }
+
+    const startIdx = headerRowIdx >= 0 ? headerRowIdx + 1 : 0;
+    extractedCsvStudents = [];
+
+    for (let r = startIdx; r < cleanRows.length; r++) {
+      const row = cleanRows[r];
+      let prn = (prnCol >= 0 && prnCol < row.length ? row[prnCol] : row[0]) || '';
+      let name = (nameCol >= 0 && nameCol < row.length ? row[nameCol] : row[1]) || '';
+
+      // Clean Excel scientific notation if present (e.g. 2.02201E+11)
+      if (/^\d+\.?\d*e\+\d+$/i.test(prn)) {
+        try { prn = String(BigInt(Math.round(Number(prn)))); } catch(e) {}
+      }
+
+      prn = prn.replace(/['"]/g, '').trim();
+      name = name.replace(/['"]/g, '').trim();
+
+      // Skip invalid header duplicates or empty rows
+      if (!prn && !name) continue;
+      if (/^(prn|student\s*name|roll\s*no|sr\s*no|no\.|sr)$/i.test(prn)) continue;
+      if (/^(student\s*name|full\s*name|name\s*of\s*student)$/i.test(name)) continue;
+      if (prn.toLowerCase().includes('total') || name.toLowerCase().includes('total')) continue;
+
+      // If PRN was numeric and name was in PRN or swapped
+      if (!name && prn) {
+        name = prn;
+        prn = `STU_${extractedCsvStudents.length + 1}`;
+      } else if (!prn && name) {
+        prn = `STU_${extractedCsvStudents.length + 1}`;
+      }
+
+      let scoreVal = null;
+      if (scoreCol >= 0 && row[scoreCol] !== undefined && row[scoreCol] !== '') {
+        const num = parseFloat(String(row[scoreCol]).replace(/[^0-9.]/g, ''));
+        if (!isNaN(num)) {
+          scoreVal = num > 10 ? Math.round(num / 10) : Math.round(num);
+          if (scoreVal > 10) scoreVal = 10;
+          if (scoreVal < 0) scoreVal = 0;
+        }
+      }
+
+      let learnerVal = 'average';
+      if (learnerCol >= 0 && row[learnerCol]) {
+        const rawLt = row[learnerCol].toLowerCase();
+        if (rawLt.includes('slow')) learnerVal = 'slow';
+        else if (rawLt.includes('adv')) learnerVal = 'advanced';
+        else learnerVal = 'average';
+      } else if (scoreVal !== null) {
+        learnerVal = classifyLearner(scoreVal);
+      }
+
+      extractedCsvStudents.push({
+        prn: prn,
+        name: name,
+        preSurveyScore: scoreVal,
+        learnerType: learnerVal
+      });
+    }
+
+    if (!extractedCsvStudents.length) {
+      Toast.error('Could not extract any student records. Please verify the spreadsheet format.');
+      return;
+    }
+
+    const fileInfo = document.getElementById('csv-file-info');
+    const previewSection = document.getElementById('csv-preview-section');
+    const fileNameEl = document.getElementById('csv-file-name');
+    const fileRowsEl = document.getElementById('csv-file-rows');
+    const validBadge = document.getElementById('csv-valid-badge');
+    const previewBody = document.getElementById('csv-preview-body');
+    const saveBtn = document.getElementById('btn-save-csv');
+
+    if (fileInfo) fileInfo.style.display = 'flex';
+    if (previewSection) previewSection.style.display = 'block';
+    if (fileNameEl) fileNameEl.textContent = fileName || 'Spreadsheet';
+    if (fileRowsEl) fileRowsEl.textContent = `${extractedCsvStudents.length} students extracted`;
+    if (validBadge) validBadge.textContent = `${extractedCsvStudents.length} Students Ready`;
+
+    if (previewBody) {
+      previewBody.innerHTML = extractedCsvStudents.map((s, idx) => {
+        let badgeClass = s.learnerType === 'slow' ? 'badge-danger' : (s.learnerType === 'advanced' ? 'badge-success' : 'badge-warning');
+        return `
+          <tr>
+            <td>${idx + 1}</td>
+            <td><strong class="font-mono" style="color:var(--primary);">${s.prn}</strong></td>
+            <td style="font-weight:600;">${s.name}</td>
+            <td>${s.preSurveyScore !== null ? s.preSurveyScore + '/10' : '—'}</td>
+            <td><span class="badge ${badgeClass}" style="font-size:10px;padding:2px 6px;">${s.learnerType}</span></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = `<span data-icon="check"></span> Extract & Save All (${extractedCsvStudents.length} Students)`;
+      renderAllIcons(saveBtn);
+    }
+    renderAllIcons(previewSection);
+    Toast.success(`Successfully extracted ${extractedCsvStudents.length} students!`);
+  }
+
+  function saveExtractedStudents() {
+    if (!currentCourseId) { Toast.warning('Select a course first.'); return; }
+    if (!extractedCsvStudents || !extractedCsvStudents.length) {
+      Toast.warning('No students extracted to save.');
+      return;
+    }
+
+    const autoClassify = document.getElementById('csv-opt-classify')?.checked ?? true;
+    const overwrite = document.getElementById('csv-opt-overwrite')?.checked ?? true;
+
+    const currentList = DB.students.byCourse(currentCourseId);
+    const existingMap = new Map();
+    currentList.forEach(s => existingMap.set(String(s.prn).trim(), { ...s }));
+
+    let addedCount = 0;
+    let updatedCount = 0;
+
+    extractedCsvStudents.forEach(item => {
+      const prnKey = String(item.prn).trim();
+      const score = item.preSurveyScore !== null ? item.preSurveyScore : 0;
+      const lt = autoClassify ? classifyLearner(score) : (item.learnerType || 'average');
+
+      if (existingMap.has(prnKey)) {
+        if (overwrite) {
+          const existing = existingMap.get(prnKey);
+          existing.name = item.name;
+          if (item.preSurveyScore !== null) existing.preSurveyScore = score;
+          existing.learnerType = lt;
+          updatedCount++;
+        }
+      } else {
+        const newStud = {
+          id: DB.uid(),
+          courseId: currentCourseId,
+          prn: item.prn,
+          name: item.name,
+          preSurveyScore: score,
+          learnerType: lt
+        };
+        existingMap.set(prnKey, newStud);
+        addedCount++;
+      }
+    });
+
+    const updatedRoster = Array.from(existingMap.values());
+    DB.students.saveAll(currentCourseId, updatedRoster);
+
+    Modal.close();
+    studentsCache = DB.students.byCourse(currentCourseId);
+    renderStats();
+    renderDistribution();
+    renderTable();
+    Toast.success(`Roster updated! ${addedCount} students added, ${updatedCount} updated.`);
+  }
+
+  function downloadCsvTemplate() {
+    const templateContent = "PRN,Student Full Name,Pre-Survey Score,Learner Classification\n202201040001,Rakshe Veer Tushar,7,Average\n202201040002,Narote Sanket Satish,9,Advanced\n202201040003,Kulkarni Aditi Vijay,4,Slow\n202201040004,Deshmukh Rohan Anil,8,Advanced\n202201040005,Patil Shreya Sanjay,6,Average\n";
+    const blob = new Blob([templateContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = "students_roster_template.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+    Toast.info('Sample CSV template downloaded.');
+  }
+
+  function openImportModal() {
+    if (!currentCourseId) { Toast.warning('Select a course first.'); return; }
+    const html = `
+      <div class="modal-header">
+        <h3 class="modal-title">Bulk Import Students from Excel</h3>
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="Modal.close()"><span data-icon="close"></span></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info">
+          Copy tab-separated columns from Excel: <strong>PRN &nbsp;|&nbsp; Name &nbsp;|&nbsp; Pre-Survey Score (optional)</strong>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Paste Excel Data</label>
+          <textarea class="import-area" id="import-data" placeholder="202201040001	Rakshe Veer Tushar	7&#10;202201040002	Narote Sanket Satish	9"></textarea>
+        </div>
+        <div id="import-preview" style="font-size:12px;color:var(--text-secondary);margin-top:6px;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+        <button class="btn btn-primary" onclick="doImport()">Import Students</button>
+      </div>`;
+    Modal.open(html, { wide: true });
+    renderAllIcons();
   }
 
   function doImport() {
-    const raw  = document.getElementById('import-data').value;
-    const rows = parsePaste(raw).filter(r => r.length >= 2 && r[0]);
-    if (rows.length === 0) { Toast.warning('No valid data to import.'); return; }
+    const raw = document.getElementById('import-data').value;
+    const lines = raw.split('\n').map(l => l.trim()).filter(l => l);
+    if (!lines.length) { Toast.warning('No data to import.'); return; }
 
     let added = 0, skipped = 0;
-    rows.forEach(r => {
-      const prn   = (r[0]||'').trim();
-      const name  = (r[1]||'').trim();
-      const score = parseInt(r[2]) || 0;
-      let lt    = r[3] ? r[3].trim().toLowerCase() : classifyLearner(score);
-      if (lt === 'medium') lt = 'average';
-      if (!prn || !name) { skipped++; return; }
+    lines.forEach(line => {
+      const parts = line.split('\t').map(p => p.trim());
+      if (parts.length < 2) { skipped++; return; }
+      const prn = parts[0];
+      const name = parts[1];
+      const score = parseInt(parts[2]) || 0;
+      const lt = classifyLearner(score);
+
       if (DB.students.byPRN(currentCourseId, prn)) { skipped++; return; }
       DB.students.add({ courseId: currentCourseId, prn, name, preSurveyScore: score, learnerType: lt });
       added++;
@@ -599,17 +1014,39 @@
     renderStats();
     renderDistribution();
     renderTable();
-    Toast.success(`Imported ${added} students. ${skipped > 0 ? skipped + ' skipped (duplicates/invalid).' : ''}`);
+    Toast.success(`Imported ${added} students. (${skipped} skipped)`);
   }
 
-  /* ── Export CSV ── */
   function exportStudents() {
-    exportTableCSV('students-table', `students_${currentCourseId}.csv`);
-    Toast.info('Exported to CSV');
+    if (!studentsCache.length) { Toast.warning('No student data to export.'); return; }
+    let csv = 'PRN,Name,PreSurveyScore,LearnerType\n';
+    studentsCache.forEach(s => {
+      csv += `"${s.prn}","${s.name}",${s.preSurveyScore || 0},"${s.learnerType || 'average'}"\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `students_${currentCourseId}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    Toast.success('Exported student roster.');
   }
 
-  /* ── Init ── */
-  populateCourses();
+  window.openAddModal = openAddModal;
+  window.openEditModal = openEditModal;
+  window.deleteStudent = deleteStudent;
+  window.saveStudent = saveStudent;
+  window.updateLearnerPreview = updateLearnerPreview;
+  window.openImportModal = openImportModal;
+  window.openCsvExtractModal = openCsvExtractModal;
+  window.handleCsvFileInput = handleCsvFileInput;
+  window.saveExtractedStudents = saveExtractedStudents;
+  window.downloadCsvTemplate = downloadCsvTemplate;
+  window.doImport = doImport;
+  window.exportStudents = exportStudents;
+  window.renderTable = renderTable;
+})();
 </script>
 </body>
 </html>

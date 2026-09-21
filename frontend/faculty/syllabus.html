@@ -4,49 +4,32 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Syllabus Setup | OBE System – MITAOE</title>
-  <meta name="description" content="Configure course syllabus">
+  <meta name="description" content="Configure course syllabus and curriculum units">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800" rel="stylesheet">
-  <link rel="stylesheet" href="../styles/main.css?v=6">
-  <link rel="stylesheet" href="../styles/components.css?v=6">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles/main.css">
+  <link rel="stylesheet" href="../styles/components.css">
   <style>
-    .section-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--r-lg); padding: var(--sp-xl);
-      margin-bottom: var(--sp-lg);
-    }
-    .section-card-title {
-      font-size: 16px; font-weight: 700; margin-bottom: var(--sp-lg);
-      padding-bottom: var(--sp-md); border-bottom: 1px solid var(--border);
+    .course-selector-bar {
       display: flex; align-items: center; justify-content: space-between;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 12px 18px; margin-bottom: var(--sp-lg);
+      flex-wrap: wrap; gap: 12px;
     }
     .module-card {
-      background: rgba(37,99,235,0.05); border: 1px solid rgba(37,99,235,0.1);
-      border-radius: var(--r-md); padding: var(--sp-lg); margin-bottom: var(--sp-md);
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-md); padding: 16px; margin-bottom: 12px;
       position: relative;
     }
-    .module-card:hover { border-color: rgba(37,99,235,0.3); }
-    .module-header { display: flex; gap: 10px; align-items: flex-start; margin-bottom: var(--sp-md); padding-right: 30px; }
-    .module-no { font-weight: 700; font-size: 14px; background: var(--primary); color: white; padding: 4px 10px; border-radius: var(--r-sm); }
-    .remove-btn { position: absolute; top: var(--sp-md); right: var(--sp-md); color: var(--danger); background: transparent; border: none; cursor: pointer; }
-    .course-selector-row {
-      display: flex; align-items: center; gap: var(--sp-md);
-      background: rgba(37,99,235,0.15); border: 1px solid rgba(37,99,235,0.15);
-      border-radius: var(--r-md); padding: var(--sp-md) var(--sp-lg);
-      margin-bottom: var(--sp-xl);
+    .module-card:hover { border-color: var(--primary); }
+    .module-header { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; padding-right: 36px; }
+    .module-badge {
+      font-weight: 700; font-size: 12px; background: var(--primary); color: #FFFFFF;
+      padding: 3px 8px; border-radius: var(--r-sm); white-space: nowrap;
     }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th { text-align: left; background: rgba(37,99,235,0.15); padding: 8px; border-radius: 4px 4px 0 0; font-weight: 600; }
-    td { padding: 8px; border-bottom: 1px solid var(--border); }
-    td input, td select { width: 100%; background: transparent; border: none; outline: none; color: var(--text-primary); font-size: 13px; font-family: inherit; }
-    td input:focus, td select:focus { color: var(--primary); }
-    .add-row-btn {
-      margin-top: 10px; font-size: 13px; color: var(--primary);
-      background: none; border: 1px dashed rgba(37,99,235,0.15);
-      border-radius: var(--r-md); padding: 8px 16px; cursor: pointer;
-      transition: all var(--t-fast); width: 100%; text-align: center;
+    .remove-module-btn {
+      position: absolute; top: 14px; right: 14px;
     }
-    .add-row-btn:hover { background: rgba(37,99,235,0.15); border-color: var(--primary); }
   </style>
 </head>
 <body>
@@ -60,28 +43,32 @@
     </div>
     <nav class="sidebar-nav">
       <p class="nav-section-label">Overview</p>
-      <a class="nav-item" href="dashboard.html">📊 Dashboard</a>
-      <a class="nav-item" href="courses.html">📚 My Courses</a>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon" data-icon="dashboard"></span><span>Dashboard</span></a>
+      <a class="nav-item" href="courses.html"><span class="nav-icon" data-icon="courses"></span><span>My Courses</span></a>
+      
       <p class="nav-section-label">Course Management</p>
-      <a class="nav-item" href="syllabus.html">📖 Syllabus Setup</a>
-      <a class="nav-item" href="outcomes.html">🎯 CO & PO Setup</a>
-      <a class="nav-item" href="co-po-map.html">🗺️ CO-PO Mapping</a>
-      <a class="nav-item" href="6a-matrix.html">📋 6A Indicator Mapping</a>
-      <a class="nav-item" href="students.html">👥 Students</a>
+      <a class="nav-item active" href="syllabus.html"><span class="nav-icon" data-icon="syllabus"></span><span>Syllabus Setup</span></a>
+      <a class="nav-item" href="outcomes.html"><span class="nav-icon" data-icon="outcomes"></span><span>CO & PO Setup</span></a>
+      <a class="nav-item" href="co-po-map.html"><span class="nav-icon" data-icon="map"></span><span>CO-PO Mapping</span></a>
+      <a class="nav-item" href="6a-matrix.html"><span class="nav-icon" data-icon="matrix"></span><span>6A Indicator Matrix</span></a>
+      <a class="nav-item" href="students.html"><span class="nav-icon" data-icon="students"></span><span>Students</span></a>
+      
       <p class="nav-section-label">Assessment</p>
-      <a class="nav-item" href="marks.html">📝 Marks Entry</a>
-      <a class="nav-item" href="attainment.html">📈 Attainment</a>
-      <a class="nav-item" href="assignments.html">🤖 Assignments & AI</a>
-      <a class="nav-item" href="auto-grade.html">✅ Auto-Grading</a>
-      <a class="nav-item" href="question-paper.html">📄 Question Paper</a>
-      <a class="nav-item" href="reports.html">📄 Reports & Export</a>
+      <a class="nav-item" href="marks.html"><span class="nav-icon" data-icon="marks"></span><span>Marks Entry</span></a>
+      <a class="nav-item" href="attainment.html"><span class="nav-icon" data-icon="attainment"></span><span>Attainment</span></a>
+      <a class="nav-item" href="assignments.html"><span class="nav-icon" data-icon="assignments"></span><span>Assignments & AI</span></a>
+      <a class="nav-item" href="auto-grade.html"><span class="nav-icon" data-icon="grade"></span><span>Auto-Grading</span></a>
+      <a class="nav-item" href="question-paper.html"><span class="nav-icon" data-icon="paper"></span><span>Question Paper</span></a>
+      <a class="nav-item" href="reports.html"><span class="nav-icon" data-icon="reports"></span><span>Reports & Export</span></a>
     </nav>
     <div class="sidebar-footer">
-      <div class="user-card">
+      <div class="user-card" onclick="Auth.logout()">
         <div class="user-avatar"></div>
         <div><div class="user-name"></div><div class="user-role"></div></div>
       </div>
-      <button class="btn btn-ghost btn-sm w-full" data-action="logout" style="margin-top:8px">🚪 Logout</button>
+      <button class="btn btn-secondary btn-sm w-full" data-action="logout" style="margin-top:8px; width:100%;">
+        <span data-icon="logout"></span><span>Sign Out</span>
+      </button>
     </div>
   </aside>
 
@@ -89,85 +76,96 @@
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
-        <h1 class="topbar-title">📖 Syllabus Setup</h1>
-        <div class="topbar-breadcrumb">
-          <a href="courses.html">My Courses</a>
-          <span>›</span>
-          <span id="breadcrumb-course">Loading…</span>
-        </div>
+        <h1 class="topbar-title">Syllabus & Curriculum Units</h1>
+        <div class="topbar-breadcrumb">Course Management <span>›</span> Syllabus &bull; <span id="breadcrumb-course" style="font-weight:600;color:var(--text-primary);">Course</span></div>
       </div>
       <div class="topbar-right">
         <input type="file" id="pdf-upload" accept="application/pdf" style="display:none" onchange="handlePdfUpload(event)">
-        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('pdf-upload').click()" id="btn-autofill">✨ Auto-Fill from PDF</button>
-        <button class="btn btn-secondary btn-sm" onclick="history.back()">← Back</button>
-        <button class="btn btn-primary" onclick="saveAll()">💾 Save All Changes</button>
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('pdf-upload').click()" id="btn-autofill">
+          <span data-icon="upload"></span><span>Extract from PDF</span>
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="saveAll()">
+          <span data-icon="check"></span><span>Save Changes</span>
+        </button>
       </div>
     </header>
 
     <div class="page-content">
 
       <!-- Course Selector -->
-      <div class="course-selector-row">
-        <span style="font-size:13px;font-weight:600;color:var(--text-secondary);">📚 Course:</span>
-        <select class="form-control" id="course-select" style="max-width:320px" onchange="switchCourse(this.value)"></select>
-        <span class="badge badge-info" id="course-status-badge">Loading</span>
+      <div class="course-selector-bar">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span style="font-size:13px;font-weight:600;color:var(--text-secondary);">Active Course:</span>
+          <select class="form-select" id="course-select" style="min-width:280px" onchange="switchCourse(this.value)"></select>
+        </div>
+        <span class="badge badge-success" id="course-status-badge">Active</span>
       </div>
 
       <!-- Modules Section -->
-      <div class="section-card">
-        <div class="section-card-title">
-          <span>📚 Modules / Units</span>
-          <button class="btn btn-sm" style="background:var(--primary);color:white;" onclick="addModule()">➕ Add Module</button>
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title"><span data-icon="syllabus"></span><span>Curriculum Modules & Teaching Hours</span></div>
+            <div class="card-subtitle">Map each module to its target Course Outcome and allocated lecture hours</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="addModule()">
+            <span data-icon="plus"></span><span>Add Module</span>
+          </button>
         </div>
-        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--sp-lg)">
-          Define the modules for this course. Map each module to the relevant Course Outcome (CO) and assign the number of teaching hours.
-        </p>
         <div id="modules-container">
           <!-- Modules rendered here -->
         </div>
       </div>
 
       <!-- Textbooks & Resources Section -->
-      <div class="section-card">
-        <div class="section-card-title">📖 Books & Resources</div>
-        <table id="books-table">
-          <thead>
-            <tr>
-              <th>Type</th>
-              <th>Title</th>
-              <th>Author / Publisher</th>
-              <th style="width:40px"></th>
-            </tr>
-          </thead>
-          <tbody id="books-tbody">
-            <!-- Books rendered here -->
-          </tbody>
-        </table>
-        <button class="add-row-btn" onclick="addBook()">➕ Add Resource</button>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span data-icon="courses"></span><span>Recommended Textbooks & References</span></div>
+          <button class="btn btn-secondary btn-sm" onclick="addBook()">
+            <span data-icon="plus"></span><span>Add Resource</span>
+          </button>
+        </div>
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th style="width:180px">Resource Type</th>
+                <th>Title / Edition</th>
+                <th>Author / Publisher</th>
+                <th style="width:60px">Action</th>
+              </tr>
+            </thead>
+            <tbody id="books-tbody">
+              <!-- Books rendered here -->
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <!-- Save Button -->
-      <div style="display:flex;justify-content:flex-end;gap:var(--sp-md);padding-top:var(--sp-md);">
-        <button class="btn btn-primary btn-lg" onclick="saveAll()">💾 Save All Changes</button>
+      <!-- Footer Action -->
+      <div style="display:flex;justify-content:flex-end;gap:12px;margin-bottom:32px;">
+        <button class="btn btn-primary" onclick="saveAll()">
+          <span data-icon="check"></span><span>Save All Changes</span>
+        </button>
       </div>
 
     </div>
   </main>
 </div>
 
-<div id="toast-container"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-<script src="../scripts/data.js?v=101"></script>
-<script src="../scripts/api.js?v=101"></script>
-<script src="../scripts/auth.js?v=3"></script>
-<script src="../scripts/ai-mock.js?v=2"></script>
+<script src="../scripts/icons.js"></script>
+<script src="../scripts/data.js"></script>
+<script src="../scripts/api.js"></script>
+<script src="../scripts/auth.js"></script>
+<script src="../scripts/ai-mock.js"></script>
 <script src="../scripts/utils.js"></script>
+<script src="../scripts/ai-chat.js"></script>
 <script>
 (async () => {
   await (window._apiReady || Promise.resolve());
   const user = Auth.requireAuth(['faculty', 'hod']);
   if (!user) throw new Error('Not authorized');
-  Auth.populateSidebar(user);
 
   let currentCourse = null;
   let courseList = [];
@@ -175,6 +173,7 @@
   let courseCos = [];
 
   loadCourseSelector();
+  renderAllIcons();
 
   function loadCourseSelector() {
     courseList = DB.courses.byFaculty(user.id);
@@ -199,18 +198,18 @@
     if (!currentCourse) return;
     
     document.getElementById('breadcrumb-course').textContent = currentCourse.name;
-    document.getElementById('course-status-badge').textContent = currentCourse.status || 'active';
-    document.getElementById('course-status-badge').className = `badge ${(currentCourse.status||'active')==='active' ? 'badge-success' : 'badge-muted'}`;
+    document.getElementById('course-status-badge').textContent = currentCourse.status || 'Active';
+    document.getElementById('course-status-badge').className = `badge ${(currentCourse.status||'active')==='active' ? 'badge-success' : 'badge-neutral'}`;
 
     courseCos = DB.cos.byCourse(cid).filter(c => c.text);
     
-    // Get Syllabus
     syllabusData = DB.syllabus.byCourse(cid) || { courseId: cid, modules: [], books: [] };
     if (!syllabusData.modules) syllabusData.modules = [];
     if (!syllabusData.books) syllabusData.books = [];
 
     renderModules();
     renderBooks();
+    renderAllIcons();
   }
 
   function getCoOptions(selectedCoNo) {
@@ -225,46 +224,48 @@
   function renderModules() {
     const container = document.getElementById('modules-container');
     if (syllabusData.modules.length === 0) {
-      container.innerHTML = '<p style="text-align:center;padding:20px;color:var(--text-muted)">No modules added yet. Click "Add Module" to start.</p>';
+      container.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px;">No modules defined. Click "Add Module" or "Extract from PDF" above.</div>';
       return;
     }
     
     container.innerHTML = syllabusData.modules.map((mod, i) => `
       <div class="module-card" data-index="${i}">
-        <button class="remove-btn" onclick="removeModule(${i})">🗑️</button>
+        <button class="btn btn-danger btn-sm btn-icon remove-module-btn" onclick="removeModule(${i})"><span data-icon="trash"></span></button>
         <div class="module-header">
-          <div class="module-no">Module ${i+1}</div>
-          <input class="form-control" style="flex:1" placeholder="Module Title (e.g., Introduction to Machine Learning)" value="${mod.title || ''}" onchange="updateModule(${i}, 'title', this.value)">
+          <span class="module-badge">Module ${i+1}</span>
+          <input class="form-input" style="font-weight:600;" placeholder="Module Title (e.g. Exploratory Data Preprocessing)" value="${mod.title || ''}" onchange="updateModule(${i}, 'title', this.value)">
         </div>
-        <div class="form-row" style="margin-bottom:var(--sp-sm)">
-          <div class="form-group" style="flex:2">
-            <label class="form-label" style="font-size:12px;margin-bottom:2px">Course Outcome Mapping</label>
-            <select class="form-control" style="padding:6px;font-size:13px" onchange="updateModule(${i}, 'coNo', parseInt(this.value) || null)">
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:10px;">
+          <div>
+            <label class="form-label" style="font-size:11.5px;">Target CO Mapping</label>
+            <select class="form-select" style="font-size:12.5px;" onchange="updateModule(${i}, 'coNo', parseInt(this.value) || null)">
               ${getCoOptions(mod.coNo)}
             </select>
           </div>
-          <div class="form-group" style="flex:1">
-            <label class="form-label" style="font-size:12px;margin-bottom:2px">Teaching Hours</label>
-            <input class="form-control" type="number" min="1" max="20" placeholder="e.g. 6" value="${mod.hours || ''}" onchange="updateModule(${i}, 'hours', parseInt(this.value) || 0)">
+          <div>
+            <label class="form-label" style="font-size:11.5px;">Teaching Hours</label>
+            <input class="form-input" type="number" min="1" max="50" placeholder="e.g. 6" value="${mod.hours || ''}" onchange="updateModule(${i}, 'hours', parseInt(this.value) || 0)">
           </div>
         </div>
         <div class="form-group" style="margin-bottom:0">
-          <textarea class="form-control" rows="3" placeholder="List topics covered in this module..." onchange="updateModule(${i}, 'description', this.value)">${mod.description || ''}</textarea>
+          <label class="form-label" style="font-size:11.5px;">Detailed Topics</label>
+          <textarea class="form-textarea" rows="2" placeholder="List topics, concepts, and case studies covered in this module…" onchange="updateModule(${i}, 'description', this.value)">${mod.description || ''}</textarea>
         </div>
       </div>
     `).join('');
+    renderAllIcons(container);
   }
 
   function addModule() {
-    syllabusData.modules.push({ title: '', description: '', hours: 0, coNo: null });
+    syllabusData.modules.push({ title: '', description: '', hours: 6, coNo: null });
     renderModules();
   }
 
   function removeModule(index) {
-    if (confirm('Are you sure you want to remove this module?')) {
+    Modal.confirm('Remove Module', 'Are you sure you want to remove this module?', () => {
       syllabusData.modules.splice(index, 1);
       renderModules();
-    }
+    }, 'Remove', true);
   }
 
   function updateModule(index, field, value) {
@@ -274,24 +275,25 @@
   function renderBooks() {
     const tbody = document.getElementById('books-tbody');
     if (syllabusData.books.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:24px">No resources added yet. Click "Add Resource" below.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:16px;">No resources listed. Click "Add Resource".</td></tr>';
       return;
     }
 
     tbody.innerHTML = syllabusData.books.map((b, i) => `
       <tr data-index="${i}">
         <td>
-          <select onchange="updateBook(${i}, 'type', this.value)">
+          <select class="form-select" style="font-size:12.5px;padding:4px 8px;" onchange="updateBook(${i}, 'type', this.value)">
             <option value="Textbook" ${b.type==='Textbook'?'selected':''}>Textbook</option>
             <option value="Reference Book" ${b.type==='Reference Book'?'selected':''}>Reference Book</option>
             <option value="Other Resource" ${b.type==='Other Resource'?'selected':''}>Other Resource</option>
           </select>
         </td>
-        <td><input value="${b.title || ''}" placeholder="Book Title" onchange="updateBook(${i}, 'title', this.value)"></td>
-        <td><input value="${b.author || ''}" placeholder="Author / Publisher" onchange="updateBook(${i}, 'author', this.value)"></td>
-        <td><button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="removeBook(${i})">🗑️</button></td>
+        <td><input class="form-input" style="padding:4px 8px;font-size:13px;" value="${b.title || ''}" placeholder="Book / Resource Title" onchange="updateBook(${i}, 'title', this.value)"></td>
+        <td><input class="form-input" style="padding:4px 8px;font-size:13px;" value="${b.author || ''}" placeholder="Author / Publisher / Edition" onchange="updateBook(${i}, 'author', this.value)"></td>
+        <td><button class="btn btn-danger btn-sm btn-icon" onclick="removeBook(${i})"><span data-icon="trash"></span></button></td>
       </tr>
     `).join('');
+    renderAllIcons(tbody);
   }
 
   function addBook() {
@@ -311,7 +313,7 @@
   function saveAll() {
     if (!currentCourse) { Toast.error('No course selected.'); return; }
     DB.syllabus.save(currentCourse.id, syllabusData);
-    Toast.success('Syllabus saved successfully!');
+    Toast.success('Syllabus updated successfully.');
   }
 
   async function handlePdfUpload(event) {
@@ -326,11 +328,10 @@
 
     const btn = document.getElementById('btn-autofill');
     const originalText = btn.innerHTML;
-    btn.innerHTML = '⏳ Extracting with AI...';
+    btn.innerHTML = 'Extracting…';
     btn.disabled = true;
 
     try {
-      // Read PDF text via pdfjs
       const arrayBuffer = await file.arrayBuffer();
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
       const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
@@ -341,16 +342,12 @@
         fullText += textContent.items.map(item => item.str).join(' ') + '\n';
       }
 
-      if (!fullText.trim()) throw new Error('Could not extract any text from this PDF. Make sure it is not a scanned image PDF.');
+      if (!fullText.trim()) throw new Error('Could not extract text from this PDF (scanned or protected).');
 
-      // Call REAL backend Gemini API
       const res = await apiFetch('/api/extract-syllabus', { method: 'POST', body: { text: fullText } });
-
-      if (!res || !res.data) throw new Error('No data returned from AI.');
+      if (!res || !res.data) throw new Error('No data returned from AI engine.');
 
       const extractedData = res.data;
-
-      // Merge into existing syllabusData
       if (extractedData.modules && extractedData.modules.length > 0) {
         syllabusData.modules = syllabusData.modules.concat(extractedData.modules);
       }
@@ -360,18 +357,18 @@
 
       renderModules();
       renderBooks();
-      Toast.success(`✅ Extracted ${extractedData.modules?.length || 0} modules and ${extractedData.books?.length || 0} books from PDF!`);
+      Toast.success(`Extracted ${extractedData.modules?.length || 0} modules and ${extractedData.books?.length || 0} books.`);
     } catch (error) {
       console.error(error);
       Toast.error('Auto-fill failed: ' + error.message);
     } finally {
       btn.innerHTML = originalText;
       btn.disabled = false;
+      renderAllIcons(btn);
       event.target.value = '';
     }
   }
 
-  // Expose all functions used by inline onclick attributes
   window.switchCourse  = switchCourse;
   window.addModule     = addModule;
   window.removeModule  = removeModule;

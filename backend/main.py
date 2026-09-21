@@ -22,20 +22,6 @@ from agents.ai_logic import (
 load_dotenv()
 models.Base.metadata.create_all(bind=engine)
 
-from sqlalchemy import text
-def migrate_db():
-    with engine.connect() as conn:
-        for col in ["target INTEGER DEFAULT 60", "l1 INTEGER DEFAULT 65", "l2 INTEGER DEFAULT 75", "l3 INTEGER DEFAULT 85", "surveyQ VARCHAR"]:
-            try:
-                conn.execute(text(f"ALTER TABLE course_outcomes ADD COLUMN {col}"))
-            except Exception:
-                pass
-        try:
-            conn.commit()
-        except:
-            pass
-migrate_db()
-
 app = FastAPI(title="AI OBE System", version="2.0.0")
 
 from fastapi import Request
@@ -46,8 +32,7 @@ import traceback
 async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=500,
-        content={"message": str(exc), "traceback": traceback.format_exc()},
-        headers={"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Private-Network": "true"}
+        content={"message": str(exc), "traceback": traceback.format_exc()}
     )
 
 @app.middleware("http")
@@ -97,9 +82,6 @@ def co_to_dict(co: models.CourseOutcome) -> dict:
         "id": co.id, "courseId": co.courseId, "no": co.no, "code": co.code,
         "text": co.text or "", "bloomsLevel": co.bloomsLevel or "",
         "assessedThrough": (co.assessedThrough or "").split(",") if co.assessedThrough else [],
-        "studentThreshold": co.target,
-        "levels": {"1": co.l1, "2": co.l2, "3": co.l3},
-        "surveyQuestion": co.surveyQ or ""
     }
 
 def user_to_dict(u: models.User) -> dict:
@@ -117,6 +99,15 @@ def student_to_dict(s: models.Student) -> dict:
 def uid():
     import time, random, string
     return str(int(time.time() * 1000)) + "".join(random.choices(string.ascii_lowercase, k=5))
+
+def _ensure_course(db: Session, course_id: str):
+    if not course_id:
+        return
+    c = db.query(models.Course).filter(models.Course.id == course_id).first()
+    if not c:
+        c = models.Course(id=course_id, code=course_id, name=course_id, status="active")
+        db.add(c)
+        db.commit()
 
 
 # ─────────────────────────────────────────────
@@ -170,30 +161,14 @@ async def migrate_db(request: Request, db: Session = Depends(get_db)):
 @app.post("/api/auth/login")
 def login(req: LoginRequest, db: Session = Depends(get_db)):
     email_clean = req.email.strip().lower()
-    user = db.query(models.User).filter(models.User.email == req.email).first()
+    user = db.query(models.User).filter(models.User.email == req.email.strip()).first()
     if not user:
-        # Check by lowercase email
         user = db.query(models.User).filter(models.User.email.ilike(email_clean)).first()
     if not user:
-        if email_clean == "admin@mitaoe.ac.in":
-            # Auto-provision admin user if it doesn't exist (critical for Render ephemeral SQLite)
-            user = models.User(
-                id=f"usr-{uid()}",
-                name="System Administrator",
-                email="admin@mitaoe.ac.in",
-                password=req.password, # Use the password they provide as the new admin password
-                role="admin",
-                deptId=None,
-                avatar="A"
-            )
-            db.add(user)
-            db.commit()
-            db.refresh(user)
-        else:
-            return {"success": False, "error": "User not found. Please check your email."}
-    if user.password != req.password:
-        return {"success": False, "error": "Invalid password."}
-    
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
+    if user.password and user.password != req.password:
+        # Fallback check or invalid password
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
     return {"success": True, "user": user_to_dict(user)}
 
 # ─────────────────────────────────────────────
@@ -321,18 +296,12 @@ def add_user(body: UserBody, db: Session = Depends(get_db)):
 @app.put("/api/users/{user_id}")
 def update_user(user_id: str, body: UserBody, db: Session = Depends(get_db)):
     u = db.query(models.User).filter(models.User.id == user_id).first()
-    is_new = False
-    if not u:
-        is_new = True
-        u = models.User(id=user_id, email=body.email, password=body.password, role=body.role)
+    if not u: raise HTTPException(404)
     for f in ["name","email","role","deptId","avatar"]:
         val = getattr(body, f, None)
         if val is not None: setattr(u, f, val)
     if body.password: u.password = body.password
-    if is_new:
-        db.add(u)
     db.commit()
-    db.refresh(u)
     return user_to_dict(u)
 
 @app.delete("/api/users/{user_id}")
@@ -402,7 +371,24 @@ def add_course(body: CourseBody, db: Session = Depends(get_db)):
 @app.put("/api/courses/{course_id}")
 def update_course(course_id: str, body: CourseBody, db: Session = Depends(get_db)):
     c = db.query(models.Course).filter(models.Course.id == course_id).first()
-    if not c: raise HTTPException(404)
+    es = body.examScheme or ExamScheme()
+    if not c:
+        c = models.Course(
+            id=course_id, code=body.code or course_id, name=body.name or course_id,
+            shortName=body.shortName or body.code or course_id, deptId=body.deptId,
+            facultyId=body.facultyId, semester=body.semester, year=body.year,
+            division=body.division, batch=body.batch, klass=body.klass,
+            champion=body.champion, champDate=body.champDate,
+            lecturesPerWeek=body.lecturesPerWeek or 3, totalStudents=body.totalStudents or 0,
+            teachingPhilosophy=body.teachingPhilosophy, status=body.status or "active",
+            ia=es.ia, mse=es.mse, ese=es.ese,
+            directWeight=body.directWeight or 80, indirectWeight=body.indirectWeight or 20
+        )
+        db.add(c)
+        db.commit()
+        db.refresh(c)
+        return course_to_dict(c)
+
     for f in ["code","name","shortName","deptId","facultyId","semester","year","division","batch",
               "champion","champDate","lecturesPerWeek","totalStudents","teachingPhilosophy","status",
               "directWeight","indirectWeight","coThreshold"]:
@@ -437,21 +423,19 @@ class COBody(BaseModel):
     id: Optional[str] = None; courseId: str; no: int; code: str
     text: Optional[str] = ""; bloomsLevel: Optional[str] = ""
     assessedThrough: Optional[list] = []
-    studentThreshold: Optional[int] = 60
-    levels: Optional[dict] = {"1": 65, "2": 75, "3": 85}
-    surveyQuestion: Optional[str] = ""
 
 @app.post("/api/cos")
 def add_co(body: COBody, db: Session = Depends(get_db)):
+    # Ensure course exists
+    c = db.query(models.Course).filter(models.Course.id == body.courseId).first()
+    if not c:
+        c = models.Course(id=body.courseId, code=body.courseId, name=body.courseId, status="active")
+        db.add(c); db.commit()
+
     co = models.CourseOutcome(
         id=body.id or uid(), courseId=body.courseId, no=body.no, code=body.code,
         text=body.text, bloomsLevel=body.bloomsLevel,
-        assessedThrough=",".join(body.assessedThrough) if body.assessedThrough else "",
-        target=body.studentThreshold,
-        l1=body.levels.get("1", 65) if body.levels else 65,
-        l2=body.levels.get("2", 75) if body.levels else 75,
-        l3=body.levels.get("3", 85) if body.levels else 85,
-        surveyQ=body.surveyQuestion
+        assessedThrough=",".join(body.assessedThrough) if body.assessedThrough else ""
     )
     db.add(co); db.commit(); db.refresh(co)
     return co_to_dict(co)
@@ -462,19 +446,30 @@ class COSaveAll(BaseModel):
 
 @app.post("/api/cos/saveall")
 def save_all_cos(body: COSaveAll, db: Session = Depends(get_db)):
+    # Ensure course exists in PostgreSQL
+    c = db.query(models.Course).filter(models.Course.id == body.courseId).first()
+    if not c:
+        c = models.Course(
+            id=body.courseId,
+            code=body.courseId,
+            name=body.courseId,
+            status="active"
+        )
+        db.add(c)
+        db.commit()
+
     db.query(models.CourseOutcome).filter(models.CourseOutcome.courseId == body.courseId).delete()
     for item in body.cos:
-        levels = item.get("levels", {}) or {}
+        if not item.get("text") and not item.get("code"):
+            continue
         co = models.CourseOutcome(
-            id=item.get("id") or uid(), courseId=body.courseId,
-            no=item.get("no",1), code=item.get("code",""),
-            text=item.get("text") or "", bloomsLevel=item.get("bloomsLevel") or "",
-            assessedThrough=",".join(item.get("assessedThrough",[])) if item.get("assessedThrough") else "",
-            target=item.get("studentThreshold") or 60,
-            l1=levels.get("1") or 65,
-            l2=levels.get("2") or 75,
-            l3=levels.get("3") or 85,
-            surveyQ=item.get("surveyQuestion") or ""
+            id=item.get("id") or uid(),
+            courseId=body.courseId,
+            no=item.get("no", 1),
+            code=item.get("code", f"CO{item.get('no', 1)}"),
+            text=item.get("text", ""),
+            bloomsLevel=item.get("bloomsLevel", "L3"),
+            assessedThrough=",".join(item.get("assessedThrough", [])) if item.get("assessedThrough") else "ia,mse,ese"
         )
         db.add(co)
     db.commit()
@@ -486,11 +481,6 @@ def update_co(co_id: str, body: COBody, db: Session = Depends(get_db)):
     if not co: raise HTTPException(404)
     co.text = body.text; co.bloomsLevel = body.bloomsLevel
     co.assessedThrough = ",".join(body.assessedThrough) if body.assessedThrough else ""
-    co.target = body.studentThreshold
-    co.l1 = body.levels.get("1", 65) if body.levels else 65
-    co.l2 = body.levels.get("2", 75) if body.levels else 75
-    co.l3 = body.levels.get("3", 85) if body.levels else 85
-    co.surveyQ = body.surveyQuestion
     db.commit()
     return co_to_dict(co)
 
@@ -514,6 +504,7 @@ class POMapSave(BaseModel):
 
 @app.post("/api/pomapping/save")
 def save_pomapping(body: POMapSave, db: Session = Depends(get_db)):
+    _ensure_course(db, body.courseId)
     db.query(models.PoMapping).filter(models.PoMapping.courseId == body.courseId).delete()
     for item in body.matrix:
         db.add(models.PoMapping(courseId=body.courseId, coNo=item["coNo"], po=item["po"], val=item["val"], justification=item.get("justification", "")))
@@ -537,6 +528,7 @@ class StudentsSaveAll(BaseModel):
 
 @app.post("/api/students/saveall")
 def save_all_students(body: StudentsSaveAll, db: Session = Depends(get_db)):
+    _ensure_course(db, body.courseId)
     db.query(models.Student).filter(models.Student.courseId == body.courseId).delete()
     for item in body.students:
         db.add(models.Student(
@@ -586,6 +578,7 @@ class MarksSaveIA(BaseModel):
 
 @app.post("/api/marks/ia/save")
 def save_marks_ia(body: MarksSaveIA, db: Session = Depends(get_db)):
+    _ensure_course(db, body.courseId)
     db.query(models.MarksIA).filter(models.MarksIA.courseId == body.courseId).delete()
     for m in body.marks:
         db.add(models.MarksIA(courseId=body.courseId, prn=m["prn"],
@@ -607,6 +600,7 @@ class MarksSaveMSE(BaseModel):
 
 @app.post("/api/marks/mse/save")
 def save_marks_mse(body: MarksSaveMSE, db: Session = Depends(get_db)):
+    _ensure_course(db, body.courseId)
     db.query(models.MarksMSE).filter(models.MarksMSE.courseId == body.courseId).delete()
     for m in body.marks:
         db.add(models.MarksMSE(courseId=body.courseId, prn=m["prn"], qNo=m["qNo"], marks=m.get("marks",0)))
@@ -627,6 +621,7 @@ class MarksSaveESE(BaseModel):
 
 @app.post("/api/marks/ese/save")
 def save_marks_ese(body: MarksSaveESE, db: Session = Depends(get_db)):
+    _ensure_course(db, body.courseId)
     db.query(models.MarksESE).filter(models.MarksESE.courseId == body.courseId).delete()
     for m in body.marks:
         db.add(models.MarksESE(courseId=body.courseId, prn=m["prn"], qNo=m["qNo"], marks=m.get("marks",0)))
@@ -656,6 +651,7 @@ class IAQSaveAll(BaseModel):
 
 @app.post("/api/ia-questions/save")
 def save_ia_questions(body: IAQSaveAll, db: Session = Depends(get_db)):
+    _ensure_course(db, body.courseId)
     db.query(models.IAQuestion).filter(
         models.IAQuestion.courseId == body.courseId,
         models.IAQuestion.assessmentType == body.assessmentType,
@@ -695,6 +691,7 @@ class SurveySaveAll(BaseModel):
 
 @app.post("/api/survey/save")
 def save_survey(body: SurveySaveAll, db: Session = Depends(get_db)):
+    _ensure_course(db, body.courseId)
     db.query(models.Survey).filter(models.Survey.courseId == body.courseId).delete()
     items = body.survey if body.survey is not None else (body.data or [])
     for s in items:
@@ -810,6 +807,7 @@ class SyllabusBody(BaseModel):
 
 @app.post("/api/syllabus/save")
 def save_syllabus(body: SyllabusBody, db: Session = Depends(get_db)):
+    _ensure_course(db, body.courseId)
     s = db.query(models.Syllabus).filter(models.Syllabus.courseId == body.courseId).first()
     if s:
         s.modules = json.dumps(body.modules); s.books = json.dumps(body.books)
@@ -839,6 +837,7 @@ class IndicatorMappingBody(BaseModel):
 
 @app.post("/api/indicatormapping/save")
 def save_indicator_mapping(body: IndicatorMappingBody, db: Session = Depends(get_db)):
+    _ensure_course(db, body.courseId)
     m = db.query(models.IndicatorMapping).filter(models.IndicatorMapping.courseId == body.courseId).first()
     # In SQLAlchemy JSON columns, we can just assign the dict directly.
     # But just in case, we'll store the dict and let SQLAlchemy serialize it.
@@ -873,12 +872,7 @@ class SyllabusRequest(BaseModel):
 
 @app.post("/api/extract-syllabus")
 def api_extract_syllabus(req: SyllabusRequest):
-    try:
-        return {"success": True, "data": extract_syllabus(req.text)}
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return {"success": False, "error": f"AI Extraction Failed (check API Key in Configuration): {str(e)}"}
+    return {"success": True, "data": extract_syllabus(req.text)}
 
 class PhilosophyRequest(BaseModel):
     courseName: str; deptVision: str; deptMission: str
@@ -1299,10 +1293,6 @@ if os.path.isdir(FRONTEND_DIR):
     app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
 
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True)
-
 @app.get('/api/courses/{course_id}/pomapping')
 def get_pomapping(course_id: str, db: Session = Depends(get_db)):
     rows = db.query(models.PoMapping).filter(models.PoMapping.courseId == course_id).all()
@@ -1401,3 +1391,8 @@ def save_action_plan(body: ActionPlanBody, db: Session = Depends(get_db)):
         db.add(plan)
     db.commit()
     return {"success": True, "id": plan.id}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True)

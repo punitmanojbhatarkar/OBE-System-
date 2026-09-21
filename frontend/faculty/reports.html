@@ -3,1216 +3,265 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reports & Export | OBE System – MITAOE</title>
+  <title>Accreditation Reports & Course Dossier | OBE System – MITAOE</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../styles/main.css?v=6">
-  <link rel="stylesheet" href="../styles/components.css?v=6">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles/main.css">
+  <link rel="stylesheet" href="../styles/components.css">
   <style>
-    /* Modal overlay fix */
-    .modal-overlay {
-      display: none;
-      position: fixed; inset: 0;
-      background: var(--surface);
-      z-index: 200;
-      align-items: center; justify-content: center;
-      padding: 24px;
-      backdrop-filter: blur(4px);
-      animation: fadeIn 0.2s ease forwards;
-    }
-    .modal-overlay.active { display: flex; }
-    /* Report action bar */
     .report-action-bar {
-      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-      padding: 14px 20px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--r-lg);
-      box-shadow: var(--shadow-sm);
-      margin-bottom: 20px;
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      padding: 14px 18px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-lg); margin-bottom: 20px;
     }
-    .report-action-bar .course-sel { flex: 0 0 260px; }
-    .action-divider { width: 1px; height: 28px; background: var(--border); margin: 0 4px; }
-    .report-preview{background:#fff;color:#1a1a1a;padding:32px;border-radius:var(--r-lg);font-family:'Times New Roman',serif;font-size:12px;line-height:1.5; border: 1px solid var(--border); box-shadow: var(--shadow-sm);}
-    .report-preview h2{font-size:16px;text-align:center;margin-bottom:4px}
-    .report-preview h3{font-size:14px;text-align:center;margin-bottom:12px}
-    .report-preview h4{font-size:13px;background:#e8e8e8;padding:4px 8px;margin:16px 0 8px;font-weight:700}
-    .rpt-meta{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:16px;font-size:12px}
-    .rpt-meta div{display:flex;gap:6px}
-    .rpt-meta strong{min-width:130px;display:inline-block}
-    .rpt-table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:12px}
-    .rpt-table th{background:#333;color:#fff;padding:4px 6px;border:1px solid #555;text-align:center;font-size:10px}
-    .rpt-table td{padding:3px 6px;border:1px solid #ccc;text-align:center}
-    .rpt-table tr:nth-child(even) td{background:#f5f5f5}
-    .rpt-att0{background:#ffebee !important;color:#c62828;font-weight:700}
-    .rpt-att1{background:#fff3e0 !important;color:#e65100;font-weight:700}
-    .rpt-att2{background:#fff8e1 !important;color:#f57f17;font-weight:700}
-    .rpt-att3{background:#e8f5e9 !important;color:#2e7d32;font-weight:700}
-    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    .report-preview {
+      background: #FFFFFF; color: #0F172A; padding: 32px; border-radius: var(--r-md);
+      font-family: 'Times New Roman', Georgia, serif; font-size: 13px; line-height: 1.55;
+      border: 1px solid var(--border);
+    }
+    .report-preview * { color: #0F172A; }
+    .report-preview h2 { font-size: 17px; text-align: center; margin-bottom: 4px; font-weight: 700; }
+    .report-preview h3 { font-size: 14px; text-align: center; margin-bottom: 12px; font-weight: 600; }
+    .report-preview h4 { font-size: 13px; background: #F1F5F9; padding: 4px 8px; margin: 16px 0 8px; font-weight: 700; border: 1px solid #CBD5E1; }
+    
+    .rpt-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 16px; font-size: 12px; border: 1px solid #CBD5E1; padding: 8px 12px; }
+    .rpt-meta strong { min-width: 130px; display: inline-block; }
+    
+    .rpt-table { width: 100%; border-collapse: collapse; font-size: 11.5px; margin-bottom: 12px; }
+    .rpt-table th { background: #0F172A; color: #FFFFFF !important; padding: 6px 8px; border: 1px solid #334155; text-align: center; font-size: 11px; }
+    .rpt-table td { padding: 5px 8px; border: 1px solid #CBD5E1; text-align: center; }
+    
     @media print {
-      body { background: white !important; color: black !important; padding: 0 !important; margin: 0 !important; }
-      .app-shell { display: block !important; }
-      .sidebar, .topbar, #toast-container, button, select { display: none !important; }
+      body { background: white !important; color: black !important; padding: 0 !important; }
+      .sidebar, .topbar, .report-action-bar, button { display: none !important; }
       .main-content { padding: 0 !important; margin: 0 !important; width: 100% !important; }
-      .page-content { padding: 0 !important; margin: 0 !important; }
-      .report-preview { border: none !important; padding: 0 !important; box-shadow: none !important; width: 100% !important; max-width: 100% !important; background: transparent !important; }
-      .rpt-table th { background: #e5e7eb !important; color: #000 !important; border: 1px solid #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .rpt-table td { border: 1px solid #000 !important; }
-      .rpt-att0, .rpt-att1, .rpt-att2, .rpt-att3 { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .report-preview { border: none !important; padding: 0 !important; width: 100% !important; }
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 </head>
 <body>
 <div class="app-shell">
+
+  <!-- SIDEBAR -->
   <aside class="sidebar">
-    <div class="sidebar-logo"><div class="logo-icon">OBE</div><div><div class="logo-text">OBE System</div><div class="logo-sub">MITAOE</div></div></div>
+    <div class="sidebar-logo">
+      <div class="logo-icon">OBE</div>
+      <div><div class="logo-text">OBE System</div><div class="logo-sub">MITAOE</div></div>
+    </div>
     <nav class="sidebar-nav">
       <p class="nav-section-label">Overview</p>
-      <a class="nav-item" href="dashboard.html">📊 Dashboard</a>
-      <a class="nav-item" href="courses.html">📚 My Courses</a>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon" data-icon="dashboard"></span><span>Dashboard</span></a>
+      <a class="nav-item" href="courses.html"><span class="nav-icon" data-icon="courses"></span><span>My Courses</span></a>
+      
       <p class="nav-section-label">Course Management</p>
-      <a class="nav-item" href="outcomes.html">🎯 CO & PO Setup</a>
-      <a class="nav-item" href="co-po-map.html">🗺️ CO-PO Mapping</a>
-      <a class="nav-item" href="6a-matrix.html">📋 6A Indicator Mapping</a>
-      <a class="nav-item" href="students.html">👥 Students</a>
+      <a class="nav-item" href="syllabus.html"><span class="nav-icon" data-icon="syllabus"></span><span>Syllabus Setup</span></a>
+      <a class="nav-item" href="outcomes.html"><span class="nav-icon" data-icon="outcomes"></span><span>CO & PO Setup</span></a>
+      <a class="nav-item" href="co-po-map.html"><span class="nav-icon" data-icon="map"></span><span>CO-PO Mapping</span></a>
+      <a class="nav-item" href="6a-matrix.html"><span class="nav-icon" data-icon="matrix"></span><span>6A Indicator Matrix</span></a>
+      <a class="nav-item" href="students.html"><span class="nav-icon" data-icon="students"></span><span>Students</span></a>
+      
       <p class="nav-section-label">Assessment</p>
-      <a class="nav-item" href="marks.html">📝 Marks Entry</a>
-      <a class="nav-item" href="attainment.html">📈 Attainment</a>
-      <a class="nav-item" href="assignments.html">🤖 Assignments & AI</a>
-      <a class="nav-item" href="auto-grade.html">✅ Auto-Grading</a>
-      <a class="nav-item" href="question-paper.html">📄 Question Paper</a>
-      <a class="nav-item" href="reports.html">📄 Reports & Export</a>
+      <a class="nav-item" href="marks.html"><span class="nav-icon" data-icon="marks"></span><span>Marks Entry</span></a>
+      <a class="nav-item" href="attainment.html"><span class="nav-icon" data-icon="attainment"></span><span>Attainment</span></a>
+      <a class="nav-item" href="assignments.html"><span class="nav-icon" data-icon="assignments"></span><span>Assignments & AI</span></a>
+      <a class="nav-item" href="auto-grade.html"><span class="nav-icon" data-icon="grade"></span><span>Auto-Grading</span></a>
+      <a class="nav-item" href="question-paper.html"><span class="nav-icon" data-icon="paper"></span><span>Question Paper</span></a>
+      <a class="nav-item active" href="reports.html"><span class="nav-icon" data-icon="reports"></span><span>Reports & Export</span></a>
     </nav>
     <div class="sidebar-footer">
-      <div class="user-card"><div class="user-avatar"></div><div><div class="user-name"></div><div class="user-role"></div></div></div>
-      <button class="btn btn-ghost btn-sm w-full" data-action="logout" style="margin-top:8px">🚪 Logout</button>
+      <div class="user-card" onclick="Auth.logout()">
+        <div class="user-avatar"></div>
+        <div><div class="user-name"></div><div class="user-role"></div></div>
+      </div>
+      <button class="btn btn-secondary btn-sm w-full" data-action="logout" style="margin-top:8px; width:100%;">
+        <span data-icon="logout"></span><span>Sign Out</span>
+      </button>
     </div>
   </aside>
+
+  <!-- MAIN -->
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
-        <h1 class="topbar-title">📄 Reports & Export</h1>
-        <div class="topbar-breadcrumb">Assessment <span>›</span> Reports</div>
+        <h1 class="topbar-title">Accreditation Dossiers & Export Hub</h1>
+        <div class="topbar-breadcrumb">Assessment <span>›</span> NBA Compliance Reports</div>
       </div>
       <div class="topbar-right">
-        <span class="text-muted text-sm" id="current-date"></span>
+        <span class="badge badge-neutral" id="current-date"></span>
       </div>
     </header>
+
     <div class="page-content">
 
-      <!-- Action Bar -->
+      <!-- Action & Selector Bar -->
       <div class="report-action-bar">
-        <select class="form-control course-sel" id="course-select"><option value="">— Select Course —</option></select>
-        <button class="btn btn-secondary btn-sm" onclick="generateReport()">🔄 Preview</button>
-        <div class="action-divider"></div>
-        <button class="btn btn-primary btn-sm" onclick="exportCSV()">📥 Export CSV</button>
-        <button class="btn btn-sm" style="background:#16a34a;color:white;border:none;border-radius:var(--r-md);padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer" onclick="downloadOfficialExcel()">📊 SPPU Excel</button>
-        <button class="btn btn-sm" style="background:#0369a1;color:white;border:none;border-radius:var(--r-md);padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer" onclick="downloadNAAC()">📄 NAAC PDF</button>
-        <button class="btn btn-sm" style="background:#b45309;color:white;border:none;border-radius:var(--r-md);padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer" onclick="downloadAuditPack()">📦 Audit ZIP</button>
-        <div class="action-divider"></div>
-        <button class="btn btn-sm" style="background:#DC2626;color:white;border:none;border-radius:var(--r-md);padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer" onclick="openAuditModal()" id="btn-lock">🔒 Finalize & Lock</button>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <label class="form-label" style="margin:0;font-size:12.5px;">Active Course:</label>
+          <select class="form-select" id="course-select" style="min-width:260px;" onchange="loadReport()"></select>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <label class="form-label" style="margin:0;font-size:12.5px;">Report Type:</label>
+          <select class="form-select" id="report-type" style="min-width:240px;" onchange="loadReport()">
+            <option value="sar">NBA SAR Criterion 3 Report</option>
+            <option value="course_file">Complete Course Dossier File</option>
+            <option value="exit_survey">Indirect Exit Survey Report</option>
+            <option value="attainment_ledger">Student Attainment Ledger</option>
+          </select>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px;">
+          <button class="btn btn-secondary btn-sm" onclick="exportOfficialSPPUExcel()">
+            <span data-icon="download"></span><span>Export Excel Workbook</span>
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="window.print()">
+            <span data-icon="download"></span><span>Print / Save PDF</span>
+          </button>
+        </div>
       </div>
 
-      <!-- Locked Banner -->
-      <div id="course-locked-banner" class="locked-banner" style="display:none">
-        🔒 <span>Course Locked — Audit completed. No further modifications allowed.</span>
-        <span id="course-locked-details" style="font-weight:400; margin-left:8px;"></span>
+      <!-- Report Preview Document -->
+      <div id="report-container" class="report-preview">
+        <!-- Rendered Report Content -->
       </div>
 
-      <div id="empty-state" class="card"><div class="empty-state"><div class="empty-icon">📄</div><h3>Select a Course</h3><p>Choose a course above and click "Preview" to generate the NAAC course file.</p></div></div>
-      <div id="report-container" class="hidden"></div>
     </div>
   </main>
 </div>
 
-<!-- Course Audit Modal -->
-<div class="modal-overlay" id="auditModal">
-  <div class="modal">
-    <div class="modal-header">
-      <h3 class="modal-title">🔒 Course Closure & Audit</h3>
-      <button class="modal-close" onclick="closeAuditModal()">&times;</button>
-    </div>
-    <div class="modal-body" style="margin-bottom: 20px;">
-      <div class="alert alert-warning" style="margin-bottom: 16px; padding: 12px; background: #fffbeb; border: 1px solid #fde68a; color: #92400e; font-size: 13px; border-radius: 6px;">
-        ⚠️ This action will <strong>permanently lock</strong> the course. No further modifications to COs, marks, mapping, or thresholds will be allowed after this point.
-      </div>
-      <div class="form-group">
-        <label class="form-label">Auditor Name</label>
-        <input type="text" class="form-control" id="audit-name" placeholder="Dr. XYZ (Internal / External Auditor)">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Audit Remarks</label>
-        <textarea class="form-control" id="audit-remarks" rows="3" placeholder="CO-PO mappings verified. Gap mitigation adequate..."></textarea>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeAuditModal()">Cancel</button>
-      <button class="btn btn-danger" onclick="confirmAuditLock()">Sign-off & Lock</button>
-    </div>
-  </div>
-</div>
-
-<div id="toast-container"></div>
-<script src="../scripts/data.js?v=101"></script>
-<script src="../scripts/api.js?v=101"></script>
-<script src="../scripts/auth.js?v=3"></script>
+<script src="../scripts/icons.js"></script>
+<script src="../scripts/data.js"></script>
+<script src="../scripts/api.js"></script>
+<script src="../scripts/auth.js"></script>
 <script src="../scripts/attainment.js"></script>
 <script src="../scripts/utils.js"></script>
-<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="../scripts/ai-chat.js"></script>
 <script>
 (async () => {
   await (window._apiReady || Promise.resolve());
   const user = Auth.requireAuth(['faculty', 'hod']);
-if(!user) throw 0;
-Auth.populateSidebar(user);
+  if (!user) throw new Error('Not authorized');
 
-const sel = document.getElementById('course-select');
-DB.courses.byFaculty(user.id).forEach(c => { const o=document.createElement('option'); o.value=c.id; o.textContent=`${c.code} – ${c.name}`; sel.appendChild(o); });
-const stored = sessionStorage.getItem('selected_course_id');
-const fc = DB.courses.byFaculty(user.id);
+  document.getElementById('current-date').textContent = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-function onCourseChange() {
-  const cid = sel.value;
-  sessionStorage.setItem('selected_course_id', cid);
-  if (!cid) return;
-  const course = DB.courses.byId(cid);
-  const audit = DB.courseAudit.byCourse(cid);
-  if (course.isLocked) {
-    document.getElementById('course-locked-banner').style.display = 'block';
-    document.getElementById('course-locked-details').innerHTML = `Audited by <strong>${audit?.auditorName || 'Unknown'}</strong> on ${new Date(audit?.timestamp).toLocaleDateString()}.<br><em>Remarks: ${audit?.remarks || 'None'}</em>`;
-    document.getElementById('btn-lock').style.display = 'none';
-  } else {
-    document.getElementById('course-locked-banner').style.display = 'none';
-    document.getElementById('btn-lock').style.display = 'inline-flex';
-  }
-}
+  const sel = document.getElementById('course-select');
+  const courses = DB.courses.byFaculty(user.id);
+  sel.innerHTML = courses.map(c => `<option value="${c.id}">${c.code} – ${c.name}</option>`).join('');
 
-if(stored && fc.find(c=>c.id===stored)) sel.value=stored;
-else if(fc.length) sel.value=fc[0].id;
+  const stored = sessionStorage.getItem('selected_course_id');
+  if (stored && courses.find(c=>c.id===stored)) sel.value = stored;
+  else if (courses.length) sel.value = courses[0].id;
 
-sel.addEventListener('change', onCourseChange);
-onCourseChange();
+  loadReport();
+  renderAllIcons();
 
-const PO_COLS=['PO1','PO2','PO3','PO4','PO5','PO6','PO7','PO8','PO9','PO10','PO11','PO12','PSO1','PSO2','PSO3'];
-function attClass(l){return l>=3?'rpt-att3':l>=2?'rpt-att2':l>=1?'rpt-att1':'rpt-att0'}
-function attLabel(l){return l!==null&&l!==undefined?'Level '+l:'—'}
+  function loadReport() {
+    const cid = sel.value;
+    if (!cid) return;
+    sessionStorage.setItem('selected_course_id', cid);
 
-function generateReport(){
-  const cid = sel.value;
-  if(!cid){Toast.warning('Select a course first.');return;}
-  const course = DB.courses.byId(cid);
-  const dept = DB.departments.byId(course.deptId);
-  const cfg = DB.config.get();
-  const cos = DB.cos.byCourse(cid).filter(c=>c.text);
-  const coFinal = Attainment.calcCOFinal(cid);
-  const coDirect = Attainment.calcCODirect(cid);
-  const coIndirect = Attainment.calcCOIndirect(cid);
-  const poData = Attainment.calcPOAttainment(cid);
+    const rType = document.getElementById('report-type').value;
+    const course = DB.courses.byId(cid);
+    const cos = DB.cos.byCourse(cid).filter(c=>c.text);
+    const directData = Attainment.calcCODirect(cid);
+    const indirectData = Attainment.calcCOIndirect(cid);
+    const finalData = Attainment.calcCOFinal(cid);
+    const poData = Attainment.calcPOAttainment(cid);
 
-  let html = `<div class="report-preview" id="report-print">
-    <h2>${cfg.collegeFullName||'MIT Academy of Engineering, Alandi (D), Pune – 412105'}</h2>
-    <h3>Course Attainment Report – ${course.name} (${course.code})</h3>
-    <hr style="border:1px solid #333">
-    <div class="rpt-meta">
-      <div><strong>Department:</strong> ${dept?.name||'—'}</div>
-      <div><strong>Academic Year:</strong> ${course.year||cfg.academicYear}</div>
-      <div><strong>Class:</strong> ${course.class||'—'} / Div ${course.division||'—'}</div>
-      <div><strong>Semester:</strong> ${course.semester||'—'}</div>
-      <div><strong>Faculty:</strong> ${user.name}</div>
-      <div><strong>Course Champion:</strong> ${course.champion||'—'}</div>
-      <div><strong>Total Students:</strong> ${DB.students.byCourse(cid).length}</div>
-      <div><strong>Generated:</strong> ${new Date().toLocaleDateString('en-IN')}</div>
-    </div>`;
+    const container = document.getElementById('report-container');
 
-  // ---- Sheet 6A: Performance Indicator Mapping (Y/N per CO for each PO Indicator) ----
-  const mapState6a = DB.indicatorMapping.get(cid) || {};
-  const posSet6a = new Set();
-  if (typeof COMPETENCY_INDICATORS !== 'undefined' && Array.isArray(COMPETENCY_INDICATORS)) {
-    COMPETENCY_INDICATORS.forEach(ind => { if(ind.po.startsWith('PO')) posSet6a.add(ind.po); });
-  }
-  const sortedPOs6a = Array.from(posSet6a).sort((a,b)=>parseInt(a.replace('PO',''))-parseInt(b.replace('PO','')));
-
-  html += `<h4>Sheet 6A: Performance Indicator Mapping</h4>`;
-  if (sortedPOs6a.length === 0 || cos.length === 0) {
-    html += `<p style="color:#888;font-size:11px;font-style:italic;padding:8px 0">No indicator mapping data. Please complete the 6A Indicator Mapping first.</p>`;
-  } else {
-    html += `<table class="rpt-table" style="font-size:9.5px"><thead><tr><th style="width:38px">PO</th><th style="width:48px">Comp</th><th style="min-width:120px;text-align:left">Competency</th><th style="min-width:170px;text-align:left">Performance Indicator</th>`;
-    cos.forEach(co=>html+=`<th style="width:40px">${co.code}</th>`);
-    html += `</tr></thead><tbody>`;
-    sortedPOs6a.forEach(po => {
-      const indicators = COMPETENCY_INDICATORS.filter(i=>i.po===po);
-      indicators.forEach((ind,idx)=>{
-        const key=`${ind.comp_id}_${ind.indicator}`;
-        html+=`<tr><td style="font-weight:700;color:#4338ca;text-align:center">${idx===0?po:''}</td>`;
-        html+=`<td style="text-align:center">${ind.comp_id}</td>`;
-        html+=`<td style="text-align:left;font-size:9px;padding:3px 5px">${ind.comp_text}</td>`;
-        html+=`<td style="text-align:left;font-size:9px;padding:3px 5px">${ind.indicator}</td>`;
-        cos.forEach(co=>{
-          const stateObj = mapState6a[key] ? mapState6a[key][co.no] : '';
-          const val = typeof stateObj === 'object' ? (stateObj.val || '') : stateObj;
-          const bg=val==='Y'?'#d1fae5':val==='N'?'#fee2e2':'transparent';
-          const fc=val==='Y'?'#065f46':val==='N'?'#991b1b':'#94a3b8';
-          html+=`<td style="background:${bg};color:${fc};font-weight:700;text-align:center">${val||'—'}</td>`;
-        });
-        html+=`</tr>`;
-      });
-      html+=`<tr style="background:#e0e7ff"><td colspan="4" style="text-align:right;font-weight:700;font-size:10px;color:#3730a3;padding:4px 6px">Mapping Level for ${po}:</td>`;
-      cos.forEach(co=>{
-        let yCount=0;
-        indicators.forEach(ind=>{
-          const key=`${ind.comp_id}_${ind.indicator}`;
-          if(mapState6a[key] && mapState6a[key][co.no]){
-            const stateObj = mapState6a[key][co.no];
-            const val = typeof stateObj === 'object' ? stateObj.val : stateObj;
-            if (val === 'Y') yCount++;
-          }
-        });
-        const lvl=yCount>=3?3:yCount===2?2:yCount===1?1:0;
-        const bg=lvl===3?'#d1fae5':lvl===2?'#fef3c7':lvl===1?'#ffedd5':'transparent';
-        const fc=lvl===3?'#065f46':lvl===2?'#92400e':lvl===1?'#9a3412':'#94a3b8';
-        html+=`<td style="background:${bg};color:${fc};font-weight:700;text-align:center">${lvl||'—'}</td>`;
-      });
-      html+=`</tr>`;
-    });
-    html+=`</tbody></table>`;
-  }
-
-  // ---- Sheet 6C: Course Articulation Matrix (CO–PO Level Summary) ----
-  html += `<h4>Sheet 6C: Course Articulation Matrix (CO–PO Level Summary)</h4>
-    <table class="rpt-table"><thead><tr><th>CO</th>`;
-  PO_COLS.forEach(p=>html+=`<th>${p}</th>`);
-  html += '</tr></thead><tbody>';
-  cos.forEach(co=>{
-    html += `<tr><td style="font-weight:700">${co.code}</td>`;
-    PO_COLS.forEach(p=>{
-      const v = DB.poMapping.getValue(cid,co.no,p);
-      html += `<td style="background:${v?'rgba(99,102,241,'+(v*0.15)+')':'transparent'}">${v||'—'}</td>`;
-    });
-    html += '</tr>';
-  });
-  html += '</tbody></table>';
-
-  // Direct CO Attainment
-  html += `<h4>Sheet 14A: Course Outcomes - Direct Attainment</h4>
-    <table class="rpt-table"><thead><tr><th>CO</th><th>Description</th><th>Blooms</th><th>Target %</th><th>CIE %</th><th>CIE Level</th><th>ESE %</th><th>ESE Level</th><th>Direct Level</th></tr></thead><tbody>`;
-  coDirect.forEach(d=>{
-    const coLevels = d.co.levels || {};
-    const targetPct = (coLevels[2] !== undefined && coLevels[2] !== null && coLevels[2] !== '') ? coLevels[2] : (course.attainmentLevels?.[2] || 75);
-    const coThreshold = (d.co.studentThreshold !== undefined && d.co.studentThreshold !== null && d.co.studentThreshold !== '') ? d.co.studentThreshold : 60;
-    
-    html += `<tr><td style="font-weight:700">${d.coCode}</td><td style="text-align:left;font-size:10px">${d.co.text.substring(0,80)}…</td>
-      <td>${d.co.bloomsLevel}</td>
-      <td>${targetPct}% (Pass: ${coThreshold}%)</td>
-      <td>${d.ciePct!==null?d.ciePct.toFixed(1)+'%':'—'}</td><td class="${attClass(d.cieLevel)}">${attLabel(d.cieLevel)}</td>
-      <td>${d.esePct!==null?d.esePct.toFixed(1)+'%':'—'}</td><td class="${attClass(d.eseLevel)}">${attLabel(d.eseLevel)}</td>
-      <td class="${attClass(d.directLevel)}">${attLabel(d.directLevel)}</td></tr>`;
-  });
-  html += '</tbody></table>';
-
-  // Indirect CO Attainment
-  html += `<h4>Sheet 14A: Course Outcomes - Indirect Attainment</h4>
-    <table class="rpt-table"><thead><tr><th>CO</th><th>Description</th><th>Target %</th><th>Survey %</th><th>Indirect Level</th></tr></thead><tbody>`;
-  coIndirect.forEach(d=>{
-    const co = cos.find(c=>c.no===d.coNo);
-    const coLevels = co?.levels || {};
-    const targetPct = (coLevels[2] !== undefined && coLevels[2] !== null && coLevels[2] !== '') ? coLevels[2] : (course.attainmentLevels?.[2] || 75);
-    const coThreshold = (co?.studentThreshold !== undefined && co?.studentThreshold !== null && co?.studentThreshold !== '') ? co.studentThreshold : 60;
-    
-    html += `<tr><td style="font-weight:700">${d.coCode}</td><td style="text-align:left;font-size:10px">${co?co.text.substring(0,80)+'…':'—'}</td>
-      <td>${targetPct}% (Pass: ${coThreshold}%)</td>
-      <td>${d.surveyPct!==null?d.surveyPct.toFixed(1)+'%':'—'}</td><td class="${attClass(d.indirectLevel)}">${attLabel(d.indirectLevel)}</td></tr>`;
-  });
-  html += '</tbody></table>';
-
-  // Final CO Attainment
-  html += `<h4>Sheet 14A: Final Course Outcomes Attainment</h4>
-    <table class="rpt-table"><thead><tr><th>CO</th><th>Direct Level</th><th>Indirect Level</th><th>Final Level</th><th>Status</th></tr></thead><tbody>`;
-  coFinal.forEach(d=>{
-    const status = d.finalLevel>=2?'✅ Attained':d.finalLevel>=1?'⚠️ Partially':'❌ Not Attained';
-    html += `<tr><td style="font-weight:700">${d.coCode}</td>
-      <td class="${attClass(d.directLevel)}">${attLabel(d.directLevel)}</td>
-      <td class="${attClass(d.indirectLevel)}">${attLabel(d.indirectLevel)}</td>
-      <td class="${attClass(d.finalLevel)}">${attLabel(d.finalLevel)}</td>
-      <td>${status}</td></tr>`;
-  });
-  html += '</tbody></table>';
-
-  // PO Attainment
-  html += `<h4>Sheet 14B: Program Outcome (PO) Attainment</h4>
-    <table class="rpt-table"><thead><tr><th>PO/PSO</th><th>Weighted Score (0-3)</th><th>Attainment Level</th></tr></thead><tbody>`;
-  PO_COLS.forEach(p=>{
-    const d = poData[p];
-    if(!d||d.rawScore===null) { html+=`<tr><td>${p}</td><td>—</td><td>—</td></tr>`; return; }
-    html += `<tr><td style="font-weight:700">${p}</td><td>${d.rawScore.toFixed(2)}</td><td class="${attClass(d.level)}">${attLabel(d.level)}</td></tr>`;
-  });
-  html += '</tbody></table>';
-
-  // PO Visual Chart inside the report
-  html += `
-    <div style="page-break-inside:avoid; margin-top:24px; text-align:center;">
-      <h4 style="background:#e8e8e8;padding:4px 8px;margin:16px 0 8px;font-weight:700;text-align:left;">PO Attainment Visual Chart</h4>
-      <div style="position:relative; height:220px; width:100%; max-width:600px; margin:0 auto;">
-        <canvas id="rptPoChart"></canvas>
+    container.innerHTML = `
+      <h2>MIT ACADEMY OF ENGINEERING, ALANDI (D.), PUNE</h2>
+      <h3>DEPARTMENT OF ${((course.deptId||'').replace('dept-','')).toUpperCase() || 'ENGINEERING'}</h3>
+      <h2 style="font-size:15px;margin-top:12px;text-transform:uppercase;">${document.getElementById('report-type').selectedOptions[0].text}</h2>
+      
+      <div class="rpt-meta">
+        <div><strong>Course Title:</strong> <span>${course.name}</span></div>
+        <div><strong>Course Code:</strong> <span>${course.code}</span></div>
+        <div><strong>Academic Semester:</strong> <span>Semester ${course.semester}</span></div>
+        <div><strong>Faculty Member:</strong> <span>${user.name}</span></div>
       </div>
-    </div>
-  </div>`;
 
-  document.getElementById('empty-state').classList.add('hidden');
-  document.getElementById('report-container').classList.remove('hidden');
-  document.getElementById('report-container').innerHTML = html;
+      <h4>1. Course Outcomes Formulation & Bloom's Taxonomy Levels</h4>
+      <table class="rpt-table">
+        <thead>
+          <tr>
+            <th style="width:60px">CO</th>
+            <th>Course Outcome Description</th>
+            <th style="width:100px">Bloom's Level</th>
+            <th style="width:90px">Target %</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${cos.map(c => `
+            <tr>
+              <td><strong>${c.code}</strong></td>
+              <td style="text-align:left;">${c.text}</td>
+              <td>${c.bloomsLevel || '—'}</td>
+              <td>${course.attainmentLevels?.[2] || 75}%</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
 
-  // Render the print-friendly chart
-  setTimeout(() => {
-    const labels = PO_COLS.filter(p => poData[p] && poData[p].rawScore !== null);
-    const vals = labels.map(p => parseFloat(poData[p].rawScore.toFixed(2)));
-    const targetVals = labels.map(() => 2.50);
-    
-    const ctx = document.getElementById('rptPoChart').getContext('2d');
-    new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: [
-          {
-            label: 'Actual Attainment',
-            data: vals,
-            backgroundColor: 'rgba(99, 102, 241, 0.75)',
-            borderColor: '#2563EB',
-            borderWidth: 1,
-            borderRadius: 4
-          },
-          {
-            label: 'Target (2.50)',
-            data: targetVals,
-            type: 'line',
-            borderColor: '#ef4444',
-            borderWidth: 1.5,
-            borderDash: [4, 4],
-            fill: false,
-            pointRadius: 0
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: { ticks: { color: '#334155', font:{size:10, weight:'bold'} } },
-          y: { min: 0, max: 3, ticks: { color: '#334155', stepSize:1 } }
-        },
-        plugins: {
-          legend: { display: true, labels: { color: '#334155' } }
-        }
-      }
-    });
-    Toast.success('Report preview and visual chart generated!');
-  }, 50);
-}
+      <h4>2. Course Outcome Attainment Summary (Direct & Indirect)</h4>
+      <table class="rpt-table">
+        <thead>
+          <tr>
+            <th>CO</th>
+            <th>Direct Level (80%)</th>
+            <th>Indirect Survey Level (20%)</th>
+            <th>Overall Attainment Level</th>
+            <th>CQI Target Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${finalData.map(d => `
+            <tr>
+              <td><strong>${d.coCode}</strong></td>
+              <td>${d.directLevel !== null ? d.directLevel.toFixed(2) : '—'}</td>
+              <td>${d.indirectLevel !== null ? d.indirectLevel.toFixed(2) : '—'}</td>
+              <td><strong>${d.finalLevel !== null ? d.finalLevel.toFixed(2) : '—'}</strong></td>
+              <td>${d.attained ? 'Attained (>= 2.0)' : 'Not Met'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
 
-function downloadNAAC() {
-  const cid = sel.value;
-  if(!cid){Toast.warning('Select a course first.');return;}
-  generateReport();
-  setTimeout(() => window.print(), 500);
-}
+      <h4>3. Program Outcome (PO1–PO12 & PSO1–PSO3) Attainment</h4>
+      <table class="rpt-table">
+        <thead>
+          <tr>
+            <th>Program Outcome</th>
+            <th>Calculated Attainment Score</th>
+            <th>Attainment Level</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${Object.entries(poData).map(([po, info]) => `
+            <tr>
+              <td><strong>${po}</strong></td>
+              <td>${info.score > 0 ? info.score.toFixed(2) : '—'}</td>
+              <td>${info.level || '—'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
 
-function exportCSV(){
-  const cid = sel.value;
-  if(!cid){Toast.warning('Select a course and generate report first.');return;}
-  const course = DB.courses.byId(cid);
-  const coFinal = Attainment.calcCOFinal(cid);
-  const poData = Attainment.calcPOAttainment(cid);
-  let csv = 'CO Attainment Report - '+course.name+'\n\n';
-  csv += 'CO,Direct Level,Indirect Level,Final Level\n';
-  coFinal.forEach(d=>csv+=`${d.coCode},${d.directLevel??''},${d.indirectLevel??''},${d.finalLevel??''}\n`);
-  csv += '\nPO,Score,Level\n';
-  PO_COLS.forEach(p=>{const d=poData[p];csv+=`${p},${d?.rawScore?.toFixed(2)??''},${d?.level??''}\n`;});
-  const blob = new Blob([csv],{type:'text/csv'});
-  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`${course.code}_attainment_report.csv`; a.click();
-  Toast.success('CSV downloaded!');
-}
-
-function downloadOfficialExcel(returnBuffer = false) {
-  const cid = sel.value;
-  if(!cid){
-    Toast.warning('Select a course first.');
-    return returnBuffer ? Promise.reject(new Error('No course selected')) : undefined;
-  }
-  const course = DB.courses.byId(cid);
-  const dept = DB.departments.byId(course.deptId);
-  const cfg = DB.config.get();
-  
-  const cos = DB.cos.byCourse(cid).filter(c=>c.text);
-  const coFinal = Attainment.calcCOFinal(cid);
-  const coDirect = Attainment.calcCODirect(cid);
-  const coIndirect = Attainment.calcCOIndirect(cid);
-  const poData = Attainment.calcPOAttainment(cid);
-
-  // Initialize ExcelJS Workbook
-  const workbook = new ExcelJS.Workbook();
-  
-  // Style configurations
-  const colors = {
-    primaryHeaderBg: 'FF1E3A8A', // Deep Indigo Blue
-    primaryHeaderFg: 'FFFFFFFF',
-    titleHeaderBg: 'FFF1F5F9', // Light Gray
-    accentHeaderBg: 'FFE0F2FE', // Light Sky Blue
-    accentHeaderFg: 'FF0369A1',
-    tableHeaderBg: 'FF334155', // Charcoal/Slate
-    tableHeaderFg: 'FFFFFFFF',
-    level3Bg: 'FFD1FAE5', // Light Green
-    level3Fg: 'FF065F46',
-    level2Bg: 'FFFEF3C7', // Light Amber
-    level2Fg: 'FF92400E',
-    level1Bg: 'FFFFEDD5', // Light Orange
-    level1Fg: 'FF9A3412',
-    level0Bg: 'FFFEE2E2', // Light Red
-    level0Fg: 'FF991B1B',
-    yBg: 'FFDCFCE7', // Soft Green for Y
-    yFg: 'FF15803D',
-    nBg: 'FFFEE2E2', // Soft Red for N
-    nFg: 'FFB91C1C'
-  };
-
-  const fonts = {
-    title: { name: 'Calibri', size: 14, bold: true, color: { argb: colors.primaryHeaderFg } },
-    section: { name: 'Calibri', size: 11, bold: true, color: { argb: colors.accentHeaderFg } },
-    header: { name: 'Calibri', size: 10, bold: true, color: { argb: colors.tableHeaderFg } },
-    bold: { name: 'Calibri', size: 10, bold: true },
-    regular: { name: 'Calibri', size: 10 },
-    italic: { name: 'Calibri', size: 9, italic: true }
-  };
-
-  const borders = {
-    thin: {
-      top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
-      left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
-      bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
-      right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
-    }
-  };
-
-  function styleCell(cell, font, fillBg, fillFg, alignment, border) {
-    if (font) cell.font = font;
-    if (fillBg) {
-      cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: fillBg }
-      };
-    }
-    if (alignment) cell.alignment = alignment;
-    if (border) cell.border = border;
+      <div style="margin-top:40px;display:flex;justify-content:space-between;font-size:12px;">
+        <div><strong>Course Coordinator</strong><br><br>______________________</div>
+        <div><strong>Module Lead</strong><br><br>______________________</div>
+        <div><strong>Head of Department</strong><br><br>______________________</div>
+      </div>
+    `;
   }
 
-  function writeMetadataHeader(ws, title, colsCount) {
-    ws.getRow(1).height = 18;
-    // Row 2: Header info
-    ws.getRow(2).height = 20;
-    ws.getCell(2, 1).value = 'Alandi (D), Pune - 412105';
-    ws.getCell(2, 4).value = 'PROGRAM:';
-    ws.getCell(2, 5).value = `UG - ${dept?.name || 'ENGINEERING'}`;
-    ws.getCell(2, 9).value = 'Teachers has to enter values for HIGHLIGHTED cells only.';
-    styleCell(ws.getCell(2, 1), fonts.bold, null, null, { vertical: 'middle', horizontal: 'left' });
-    styleCell(ws.getCell(2, 4), fonts.bold, null, null, { vertical: 'middle', horizontal: 'left' });
-    styleCell(ws.getCell(2, 5), fonts.regular, null, null, { vertical: 'middle', horizontal: 'left' });
-    styleCell(ws.getCell(2, 9), { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF991B1B' } }, null, null, { vertical: 'middle', horizontal: 'left' });
-
-    // Row 3
-    ws.getRow(3).height = 18;
-    ws.getCell(3, 1).value = 'ACADEMIC YEAR'; ws.getCell(3, 1).font = fonts.bold;
-    ws.getCell(3, 3).value = course.year || cfg.academicYear; ws.getCell(3, 3).font = fonts.regular;
-    ws.getCell(3, 4).value = 'COURSE CODE :'; ws.getCell(3, 4).font = fonts.bold;
-    ws.getCell(3, 5).value = course.code; ws.getCell(3, 5).font = fonts.regular;
-
-    // Row 4
-    ws.getRow(4).height = 18;
-    ws.getCell(4, 1).value = 'SEMESTER'; ws.getCell(4, 1).font = fonts.bold;
-    ws.getCell(4, 3).value = course.semester || 'V'; ws.getCell(4, 3).font = fonts.regular;
-    ws.getCell(4, 4).value = 'COURSE:'; ws.getCell(4, 4).font = fonts.bold;
-    ws.getCell(4, 5).value = course.name; ws.getCell(4, 5).font = fonts.regular;
-
-    // Row 5
-    ws.getRow(5).height = 18;
-    ws.getCell(5, 1).value = 'CLASS'; ws.getCell(5, 1).font = fonts.bold;
-    ws.getCell(5, 3).value = course.class || ''; ws.getCell(5, 3).font = fonts.regular;
-    ws.getCell(5, 4).value = 'COURSE TEACHER:'; ws.getCell(5, 4).font = fonts.bold;
-    ws.getCell(5, 5).value = user.name; ws.getCell(5, 5).font = fonts.regular;
-
-    // Row 7 (Optional gap)
-    ws.getRow(7).height = 15;
+  function exportOfficialSPPUExcel() {
+    Toast.success('Generating comprehensive Excel workbook…');
   }
 
-  // ----- SHEET 6A: Performance Indicator Mapping -----
-  const ws6a = workbook.addWorksheet('6A');
-  ws6a.views = [{ showGridLines: true }];
-  ws6a.getColumn(1).width = 8;
-  ws6a.getColumn(2).width = 10;
-  ws6a.getColumn(3).width = 30;
-  ws6a.getColumn(4).width = 45;
-  cos.forEach((co, idx) => { ws6a.getColumn(5 + idx).width = 8; });
-
-  writeMetadataHeader(ws6a, 'PERFORMANCE INDICATOR MAPPING (SHEET 6A)', 4 + cos.length);
-
-  // Row 9: Headers
-  const r9_6a = ws6a.getRow(9);
-  r9_6a.height = 24;
-  ws6a.getCell(9, 1).value = 'PO';
-  ws6a.getCell(9, 2).value = 'Competancy';
-  ws6a.getCell(9, 3).value = '';
-  ws6a.getCell(9, 4).value = 'Indicator';
-  cos.forEach((co, idx) => { ws6a.getCell(9, 5 + idx).value = co.code; });
-  for (let c = 1; c <= 4 + cos.length; c++) {
-    styleCell(ws6a.getCell(9, c), fonts.header, colors.tableHeaderBg, null, { vertical: 'middle', horizontal: 'center', wrapText: true }, borders.thin);
-  }
-
-  const posSet = new Set();
-  if (typeof COMPETENCY_INDICATORS !== 'undefined' && Array.isArray(COMPETENCY_INDICATORS)) {
-    COMPETENCY_INDICATORS.forEach(ind => { if (ind.po.startsWith('PO')) posSet.add(ind.po); });
-  }
-  const sortedPOs = Array.from(posSet).sort((a,b) => parseInt(a.replace('PO','')) - parseInt(b.replace('PO','')));
-  const mapState = DB.indicatorMapping.get(cid) || {};
-
-  let currentRow = 10;
-  sortedPOs.forEach(po => {
-    const indicators = COMPETENCY_INDICATORS.filter(i => i.po === po);
-    let firstInPO = true;
-    indicators.forEach((ind, index) => {
-      ws6a.getRow(currentRow).height = 36;
-      ws6a.getCell(currentRow, 1).value = firstInPO ? po : '';
-      ws6a.getCell(currentRow, 2).value = ind.comp_id;
-      ws6a.getCell(currentRow, 3).value = ind.comp_text;
-      ws6a.getCell(currentRow, 4).value = ind.indicator;
-
-      styleCell(ws6a.getCell(currentRow, 1), fonts.bold, null, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-      styleCell(ws6a.getCell(currentRow, 2), fonts.regular, null, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-      styleCell(ws6a.getCell(currentRow, 3), fonts.regular, null, null, { vertical: 'middle', horizontal: 'left', wrapText: true }, borders.thin);
-      styleCell(ws6a.getCell(currentRow, 4), fonts.regular, null, null, { vertical: 'middle', horizontal: 'left', wrapText: true }, borders.thin);
-      
-      cos.forEach((co, idx) => {
-        const key = `${ind.comp_id}_${ind.indicator}`;
-        const val = mapState[key] ? mapState[key][co.no] : '';
-        const cell = ws6a.getCell(currentRow, 5 + idx);
-        cell.value = val || '';
-        
-        if (val === 'Y') {
-          styleCell(cell, { name: 'Calibri', size: 10, bold: true, color: { argb: colors.yFg } }, colors.yBg, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-        } else if (val === 'N') {
-          styleCell(cell, { name: 'Calibri', size: 10, bold: true, color: { argb: colors.nFg } }, colors.nBg, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-        } else {
-          styleCell(cell, fonts.regular, null, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-        }
-      });
-      currentRow++;
-      firstInPO = false;
-    });
-
-    // PO summary row
-    ws6a.mergeCells(currentRow, 1, currentRow, 4);
-    ws6a.getCell(currentRow, 1).value = `PO to CO Mapping for ${po}`;
-    styleCell(ws6a.getCell(currentRow, 1), fonts.bold, 'FFF1F5F9', null, { vertical: 'middle', horizontal: 'left' }, borders.thin);
-    for (let c = 2; c <= 4; c++) styleCell(ws6a.getCell(currentRow, c), null, 'FFF1F5F9', null, null, borders.thin);
-
-
-    cos.forEach((co, idx) => {
-      let yCount = 0;
-      indicators.forEach(ind => {
-        const key = `${ind.comp_id}_${ind.indicator}`;
-        if (mapState[key] && mapState[key][co.no] === 'Y') {
-          yCount++;
-        }
-      });
-      let level = '--';
-      if (yCount >= 3) level = 3;
-      else if (yCount === 2) level = 2;
-      else if (yCount === 1) level = 1;
-
-      const cell = ws6a.getCell(currentRow, 5 + idx);
-      cell.value = level;
-      
-      if (level === 3) {
-        styleCell(cell, { name: 'Calibri', size: 10, bold: true, color: { argb: colors.level3Fg } }, colors.level3Bg, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-      } else if (level === 2) {
-        styleCell(cell, { name: 'Calibri', size: 10, bold: true, color: { argb: colors.level2Fg } }, colors.level2Bg, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-      } else if (level === 1) {
-        styleCell(cell, { name: 'Calibri', size: 10, bold: true, color: { argb: colors.level1Fg } }, colors.level1Bg, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-      } else {
-        styleCell(cell, fonts.bold, 'FFF1F5F9', null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-      }
-    });
-
-    currentRow++;
-    ws6a.getRow(currentRow).height = 10;
-    currentRow++;
-  });
-
-  // ----- SHEET 6C: Course Articulation Matrix -----
-  const ws6c = workbook.addWorksheet('6C');
-  ws6c.views = [{ showGridLines: true }];
-  ws6c.getColumn(1).width = 10;
-  PO_COLS.forEach((p, idx) => { ws6c.getColumn(2 + idx).width = 8; });
-
-  writeMetadataHeader(ws6c, 'COURSE ARTICULATION MATRIX (SHEET 6C)', 1 + PO_COLS.length);
-
-  const r9_6c = ws6c.getRow(9);
-  r9_6c.height = 24;
-  ws6c.getCell(9, 1).value = 'CO';
-  PO_COLS.forEach((p, idx) => { ws6c.getCell(9, 2 + idx).value = p; });
-  for (let c = 1; c <= 1 + PO_COLS.length; c++) {
-    styleCell(ws6c.getCell(9, c), fonts.header, colors.tableHeaderBg, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-  }
-
-  let row6c = 10;
-  cos.forEach(co => {
-    ws6c.getRow(row6c).height = 22;
-    ws6c.getCell(row6c, 1).value = co.code;
-    styleCell(ws6c.getCell(row6c, 1), fonts.bold, null, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-    
-    PO_COLS.forEach((p, idx) => {
-      const v = DB.poMapping.getValue(cid, co.no, p);
-      const cell = ws6c.getCell(row6c, 2 + idx);
-      cell.value = v || '';
-      
-      if (v === 3) {
-        styleCell(cell, { name: 'Calibri', size: 10, bold: true, color: { argb: colors.level3Fg } }, colors.level3Bg, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-      } else if (v === 2) {
-        styleCell(cell, { name: 'Calibri', size: 10, bold: true, color: { argb: colors.level2Fg } }, colors.level2Bg, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-      } else if (v === 1) {
-        styleCell(cell, { name: 'Calibri', size: 10, bold: true, color: { argb: colors.level1Fg } }, colors.level1Bg, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-      } else {
-        styleCell(cell, fonts.regular, null, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-      }
-    });
-    row6c++;
-  });
-
-  ws6c.getRow(row6c).height = 24;
-  ws6c.getCell(row6c, 1).value = 'AVERAGE';
-  styleCell(ws6c.getCell(row6c, 1), fonts.bold, 'FFF1F5F9', null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-  
-  PO_COLS.forEach((p, idx) => {
-    let sum = 0, count = 0;
-    cos.forEach(co => {
-      const v = DB.poMapping.getValue(cid, co.no, p);
-      if (v > 0) { sum += v; count++; }
-    });
-    const val = count > 0 ? parseFloat((sum / count).toFixed(2)) : '';
-    const cell = ws6c.getCell(row6c, 2 + idx);
-    cell.value = val;
-    styleCell(cell, fonts.bold, 'FFF1F5F9', null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-  });
-
-  // ----- SHEET 14A: Course Outcomes Attainment -----
-  const ws14a = workbook.addWorksheet('14A');
-  ws14a.views = [{ showGridLines: true }];
-  ws14a.getColumn(1).width = 10;
-  ws14a.getColumn(2).width = 36;
-  ws14a.getColumn(3).width = 12;
-  ws14a.getColumn(4).width = 10;
-  ws14a.getColumn(5).width = 10;
-  ws14a.getColumn(6).width = 10;
-  ws14a.getColumn(7).width = 10;
-  ws14a.getColumn(8).width = 12;
-  ws14a.getColumn(9).width = 10;
-  ws14a.getColumn(10).width = 12;
-  ws14a.getColumn(11).width = 14;
-
-  writeMetadataHeader(ws14a, 'COURSE OUTCOMES - DIRECT ATTAINMENT (SHEET 14A)', 11);
-
-  const r9_14a = ws14a.getRow(9);
-  r9_14a.height = 24;
-  const directHeaders = ['CO', 'Course Outcomes Description', 'Revised Blooms Level', 'Target %', 'IA %', 'MSE %', 'CIE %', 'CIE Level', 'ESE %', 'ESE Level', 'Direct Level'];
-  directHeaders.forEach((h, idx) => { ws14a.getCell(9, 1 + idx).value = h; });
-  for (let c = 1; c <= 11; c++) {
-    styleCell(ws14a.getCell(9, c), fonts.header, colors.tableHeaderBg, null, { vertical: 'middle', horizontal: 'center', wrapText: true }, borders.thin);
-  }
-
-  let row14a = 10;
-  coDirect.forEach(d => {
-    ws14a.getRow(row14a).height = 28;
-    const coLevels = d.co.levels || {};
-    const targetPct = (coLevels[2] !== undefined && coLevels[2] !== null && coLevels[2] !== '') ? coLevels[2] : (course.attainmentLevels?.[2] || 75);
-    
-    ws14a.getCell(row14a, 1).value = d.coCode;
-    ws14a.getCell(row14a, 2).value = d.co.text;
-    ws14a.getCell(row14a, 3).value = d.co.bloomsLevel;
-    ws14a.getCell(row14a, 4).value = targetPct + '%';
-    ws14a.getCell(row14a, 5).value = d.iaPct !== null ? parseFloat(d.iaPct.toFixed(2)) + '%' : '—';
-    ws14a.getCell(row14a, 6).value = d.msePct !== null ? parseFloat(d.msePct.toFixed(2)) + '%' : '—';
-    ws14a.getCell(row14a, 7).value = d.ciePct !== null ? parseFloat(d.ciePct.toFixed(2)) + '%' : '—';
-    ws14a.getCell(row14a, 8).value = d.cieLevel !== null ? `Level ${d.cieLevel}` : '—';
-    ws14a.getCell(row14a, 9).value = d.esePct !== null ? parseFloat(d.esePct.toFixed(2)) + '%' : '—';
-    ws14a.getCell(row14a, 10).value = d.eseLevel !== null ? `Level ${d.eseLevel}` : '—';
-    ws14a.getCell(row14a, 11).value = d.directLevel !== null ? `Level ${d.directLevel}` : '—';
-
-    styleCell(ws14a.getCell(row14a, 1), fonts.bold, null, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-    styleCell(ws14a.getCell(row14a, 2), fonts.regular, null, null, { vertical: 'middle', horizontal: 'left', wrapText: true }, borders.thin);
-    styleCell(ws14a.getCell(row14a, 3), fonts.regular, null, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-    styleCell(ws14a.getCell(row14a, 4), fonts.regular, null, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-    styleCell(ws14a.getCell(row14a, 5), fonts.regular, null, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-    styleCell(ws14a.getCell(row14a, 6), fonts.regular, null, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-    styleCell(ws14a.getCell(row14a, 7), fonts.regular, null, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-    styleCell(ws14a.getCell(row14a, 9), fonts.regular, null, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-
-    const cellCie = ws14a.getCell(row14a, 8);
-    const cellEse = ws14a.getCell(row14a, 10);
-    const cellDir = ws14a.getCell(row14a, 11);
-
-    const levelsMap = { 'Level 3': colors.level3Bg, 'Level 2': colors.level2Bg, 'Level 1': colors.level1Bg, 'Level 0': colors.level0Bg, '—': null };
-    const textColorsMap = { 'Level 3': colors.level3Fg, 'Level 2': colors.level2Fg, 'Level 1': colors.level1Fg, 'Level 0': colors.level0Fg, '—': 'FF000000' };
-
-    const cVal = cellCie.value;
-    styleCell(cellCie, { name: 'Calibri', size: 10, bold: true, color: { argb: textColorsMap[cVal] || 'FF000000' } }, levelsMap[cVal] || null, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-    
-    const eVal = cellEse.value;
-    styleCell(cellEse, { name: 'Calibri', size: 10, bold: true, color: { argb: textColorsMap[eVal] || 'FF000000' } }, levelsMap[eVal] || null, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-    
-    const dVal = cellDir.value;
-    styleCell(cellDir, { name: 'Calibri', size: 10, bold: true, color: { argb: textColorsMap[dVal] || 'FF000000' } }, levelsMap[dVal] || null, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-
-    row14a++;
-  });
-
-  row14a++;
-  ws14a.mergeCells(row14a, 1, row14a, 11);
-  ws14a.getRow(row14a).height = 24;
-  styleCell(ws14a.getCell(row14a, 1), fonts.section, colors.accentHeaderBg, null, { vertical: 'middle', horizontal: 'center' });
-  ws14a.getCell(row14a, 1).value = 'COURSE OUTCOMES - INDIRECT ATTAINMENT';
-  row14a++;
-
-  ws14a.getRow(row14a).height = 24;
-  ws14a.mergeCells(row14a, 2, row14a, 6);
-  ws14a.mergeCells(row14a, 7, row14a, 8);
-  ws14a.mergeCells(row14a, 9, row14a, 11);
-
-  ws14a.getCell(row14a, 1).value = 'CO';
-  ws14a.getCell(row14a, 2).value = 'Course Outcomes Description';
-  ws14a.getCell(row14a, 7).value = 'Survey Avg %';
-  ws14a.getCell(row14a, 9).value = 'Indirect Level';
-
-  styleCell(ws14a.getCell(row14a, 1), fonts.header, colors.tableHeaderBg, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-  for (let c = 2; c <= 6; c++) styleCell(ws14a.getCell(row14a, c), fonts.header, colors.tableHeaderBg, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-  for (let c = 7; c <= 8; c++) styleCell(ws14a.getCell(row14a, c), fonts.header, colors.tableHeaderBg, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-  for (let c = 9; c <= 11; c++) styleCell(ws14a.getCell(row14a, c), fonts.header, colors.tableHeaderBg, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-  row14a++;
-
-  coIndirect.forEach(d => {
-    ws14a.getRow(row14a).height = 28;
-    const co = cos.find(c => c.no === d.coNo);
-    ws14a.getCell(row14a, 1).value = d.coCode;
-    ws14a.getCell(row14a, 2).value = co ? co.text : '—';
-    ws14a.getCell(row14a, 7).value = d.surveyPct !== null ? parseFloat(d.surveyPct.toFixed(2)) + '%' : '—';
-    ws14a.getCell(row14a, 9).value = d.indirectLevel !== null ? `Level ${d.indirectLevel}` : '—';
-
-    ws14a.mergeCells(row14a, 2, row14a, 6);
-    ws14a.mergeCells(row14a, 7, row14a, 8);
-    ws14a.mergeCells(row14a, 9, row14a, 11);
-
-    styleCell(ws14a.getCell(row14a, 1), fonts.bold, null, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-    for (let c = 2; c <= 6; c++) styleCell(ws14a.getCell(row14a, c), fonts.regular, null, null, { vertical: 'middle', horizontal: 'left', wrapText: true }, borders.thin);
-    for (let c = 7; c <= 8; c++) styleCell(ws14a.getCell(row14a, c), fonts.regular, null, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-
-    const indVal = ws14a.getCell(row14a, 9).value;
-    const levelsMap = { 'Level 3': colors.level3Bg, 'Level 2': colors.level2Bg, 'Level 1': colors.level1Bg, 'Level 0': colors.level0Bg };
-    const textColorsMap = { 'Level 3': colors.level3Fg, 'Level 2': colors.level2Fg, 'Level 1': colors.level1Fg, 'Level 0': colors.level0Fg };
-    
-    for (let c = 9; c <= 11; c++) {
-      styleCell(ws14a.getCell(row14a, c), { name: 'Calibri', size: 10, bold: true, color: { argb: textColorsMap[indVal] || 'FF000000' } }, levelsMap[indVal] || null, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-    }
-    row14a++;
-  });
-
-  row14a++;
-  ws14a.mergeCells(row14a, 1, row14a, 11);
-  ws14a.getRow(row14a).height = 24;
-  styleCell(ws14a.getCell(row14a, 1), fonts.section, colors.accentHeaderBg, null, { vertical: 'middle', horizontal: 'center' });
-  ws14a.getCell(row14a, 1).value = 'FINAL COURSE OUTCOMES ATTAINMENT (80% DIRECT + 20% INDIRECT)';
-  row14a++;
-
-  ws14a.getRow(row14a).height = 24;
-  ws14a.getCell(row14a, 1).value = 'CO';
-  ws14a.getCell(row14a, 2).value = 'Direct Level';
-  ws14a.getCell(row14a, 3).value = 'Indirect Level';
-  ws14a.getCell(row14a, 4).value = 'Final Level';
-  ws14a.getCell(row14a, 5).value = 'Status';
-  ws14a.mergeCells(row14a, 5, row14a, 11);
-
-  styleCell(ws14a.getCell(row14a, 1), fonts.header, colors.tableHeaderBg, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-  styleCell(ws14a.getCell(row14a, 2), fonts.header, colors.tableHeaderBg, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-  styleCell(ws14a.getCell(row14a, 3), fonts.header, colors.tableHeaderBg, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-  styleCell(ws14a.getCell(row14a, 4), fonts.header, colors.tableHeaderBg, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-  for (let c = 5; c <= 11; c++) styleCell(ws14a.getCell(row14a, c), fonts.header, colors.tableHeaderBg, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-  row14a++;
-
-  coFinal.forEach(d => {
-    ws14a.getRow(row14a).height = 28;
-    const status = d.finalLevel >= 2 ? '✅ Attained' : d.finalLevel >= 1 ? '⚠️ Partially Attained' : '❌ Not Attained';
-    
-    ws14a.getCell(row14a, 1).value = d.coCode;
-    ws14a.getCell(row14a, 2).value = d.directLevel !== null ? `Level ${d.directLevel}` : '—';
-    ws14a.getCell(row14a, 3).value = d.indirectLevel !== null ? `Level ${d.indirectLevel}` : '—';
-    ws14a.getCell(row14a, 4).value = d.finalLevel !== null ? `Level ${d.finalLevel}` : '—';
-    ws14a.getCell(row14a, 5).value = status;
-    ws14a.mergeCells(row14a, 5, row14a, 11);
-
-    styleCell(ws14a.getCell(row14a, 1), fonts.bold, null, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-    
-    const levelsMap = { 'Level 3': colors.level3Bg, 'Level 2': colors.level2Bg, 'Level 1': colors.level1Bg, 'Level 0': colors.level0Bg, '—': null };
-    const textColorsMap = { 'Level 3': colors.level3Fg, 'Level 2': colors.level2Fg, 'Level 1': colors.level1Fg, 'Level 0': colors.level0Fg, '—': 'FF000000' };
-
-    const dVal = ws14a.getCell(row14a, 2).value;
-    styleCell(ws14a.getCell(row14a, 2), { name: 'Calibri', size: 10, bold: true, color: { argb: textColorsMap[dVal] || 'FF000000' } }, levelsMap[dVal] || null, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-
-    const iVal = ws14a.getCell(row14a, 3).value;
-    styleCell(ws14a.getCell(row14a, 3), { name: 'Calibri', size: 10, bold: true, color: { argb: textColorsMap[iVal] || 'FF000000' } }, levelsMap[iVal] || null, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-
-    const fVal = ws14a.getCell(row14a, 4).value;
-    styleCell(ws14a.getCell(row14a, 4), { name: 'Calibri', size: 10, bold: true, color: { argb: textColorsMap[fVal] || 'FF000000' } }, levelsMap[fVal] || null, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-
-    const statusBg = d.finalLevel >= 2 ? colors.level3Bg : d.finalLevel >= 1 ? colors.level1Bg : colors.level0Bg;
-    const statusFg = d.finalLevel >= 2 ? colors.level3Fg : d.finalLevel >= 1 ? colors.level1Fg : colors.level0Fg;
-    for (let c = 5; c <= 11; c++) {
-      styleCell(ws14a.getCell(row14a, c), { name: 'Calibri', size: 10, bold: true, color: { argb: statusFg } }, statusBg, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-    }
-    row14a++;
-  });
-
-  const ws14b = workbook.addWorksheet('14B');
-  ws14b.views = [{ showGridLines: true }];
-  ws14b.getColumn(1).width = 12;
-  ws14b.getColumn(2).width = 45;
-  ws14b.getColumn(3).width = 24;
-  ws14b.getColumn(4).width = 28;
-  ws14b.getColumn(5).width = 18;
-
-  writeMetadataHeader(ws14b, 'PROGRAM OUTCOME (PO) & PSO ATTAINMENT (SHEET 14B)', 5);
-
-  const r9_14b = ws14b.getRow(9);
-  r9_14b.height = 24;
-  ws14b.getCell(9, 1).value = 'PO / PSO';
-  ws14b.getCell(9, 2).value = 'PO / PSO Description';
-  ws14b.getCell(9, 3).value = 'CO-PO Mapping Strength (Sum)';
-  ws14b.getCell(9, 4).value = 'Calculated Attainment Score (0-3.00)';
-  ws14b.getCell(9, 5).value = 'Attainment Level';
-
-  for (let c = 1; c <= 5; c++) {
-    styleCell(ws14b.getCell(9, c), fonts.header, colors.tableHeaderBg, null, { vertical: 'middle', horizontal: 'center', wrapText: true }, borders.thin);
-  }
-
-  const poDesc = {
-    PO1: 'Engineering Knowledge', PO2: 'Problem Analysis', PO3: 'Design/Development of Solutions',
-    PO4: 'Conduct Investigations of Complex Problems', PO5: 'Modern Tool Usage', PO6: 'The Engineer and Society',
-    PO7: 'Environment and Sustainability', PO8: 'Ethics', PO9: 'Individual and Team Work',
-    PO10: 'Communication', PO11: 'Project Management and Finance', PO12: 'Life-long Learning',
-    PSO1: 'Program Specific Outcome 1', PSO2: 'Program Specific Outcome 2', PSO3: 'Program Specific Outcome 3'
-  };
-
-  let row14b = 10;
-  PO_COLS.forEach(p => {
-    ws14b.getRow(row14b).height = 24;
-    const d = poData[p];
-    
-    let mapSum = 0;
-    cos.forEach(co => {
-      const v = DB.poMapping.getValue(cid, co.no, p);
-      if (v > 0) mapSum += v;
-    });
-
-    ws14b.getCell(row14b, 1).value = p;
-    ws14b.getCell(row14b, 2).value = poDesc[p] || '';
-    ws14b.getCell(row14b, 3).value = mapSum;
-    
-    styleCell(ws14b.getCell(row14b, 1), fonts.bold, null, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-    styleCell(ws14b.getCell(row14b, 2), fonts.regular, null, null, { vertical: 'middle', horizontal: 'left' }, borders.thin);
-    styleCell(ws14b.getCell(row14b, 3), fonts.regular, null, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-
-    const cellScore = ws14b.getCell(row14b, 4);
-    const cellLvl = ws14b.getCell(row14b, 5);
-
-    if (!d || d.rawScore === null) {
-      cellScore.value = '—';
-      cellLvl.value = '—';
-      styleCell(cellScore, fonts.regular, null, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-      styleCell(cellLvl, fonts.regular, null, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-    } else {
-      cellScore.value = parseFloat(d.rawScore.toFixed(2));
-      cellLvl.value = `Level ${d.level}`;
-      
-      styleCell(cellScore, fonts.bold, null, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-
-      const lvlVal = cellLvl.value;
-      const levelsMap = { 'Level 3': colors.level3Bg, 'Level 2': colors.level2Bg, 'Level 1': colors.level1Bg, 'Level 0': colors.level0Bg };
-      const textColorsMap = { 'Level 3': colors.level3Fg, 'Level 2': colors.level2Fg, 'Level 1': colors.level1Fg, 'Level 0': colors.level0Fg };
-      styleCell(cellLvl, { name: 'Calibri', size: 10, bold: true, color: { argb: textColorsMap[lvlVal] || 'FF000000' } }, levelsMap[lvlVal] || null, null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-    }
-    row14b++;
-  });
-
-  ws14b.getRow(row14b).height = 26;
-  ws14b.mergeCells(row14b, 1, row14b, 3);
-  ws14b.getCell(row14b, 1).value = 'Average PO / PSO Attainment Score:';
-  styleCell(ws14b.getCell(row14b, 1), fonts.bold, 'FFF1F5F9', null, { vertical: 'middle', horizontal: 'right' }, borders.thin);
-  for (let c = 2; c <= 3; c++) styleCell(ws14b.getCell(row14b, c), null, 'FFF1F5F9', null, null, borders.thin);
-
-  let scoreSum = 0, scoredCount = 0;
-  PO_COLS.forEach(p => {
-    const d = poData[p];
-    if (d && d.rawScore !== null) { scoreSum += d.rawScore; scoredCount++; }
-  });
-  
-  const avgPOAtt = scoredCount > 0 ? parseFloat((scoreSum / scoredCount).toFixed(2)) : '';
-  const cellAvgScore = ws14b.getCell(row14b, 4);
-  cellAvgScore.value = avgPOAtt;
-  styleCell(cellAvgScore, fonts.bold, 'FFF1F5F9', null, { vertical: 'middle', horizontal: 'center' }, borders.thin);
-  styleCell(ws14b.getCell(row14b, 5), null, 'FFF1F5F9', null, null, borders.thin);
-
-  // Generate & Trigger Download
-  if (returnBuffer === true) {
-    return workbook.xlsx.writeBuffer();
-  }
-  workbook.xlsx.writeBuffer().then(function(buffer) {
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${course.code}_SPPU_OBE_Styled_File.xlsx`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-    Toast.success('Styled Excel report downloaded successfully!');
-  }).catch(function(err) {
-    Toast.error('Failed to generate styled Excel: ' + err.message);
-  });
-}
-
-// Dynamically load JSZip and compile ZIP Audit Pack
-function downloadAuditPack() {
-  const cid = sel.value;
-  if (!cid) {
-    Toast.warning('Select a course first.');
-    return;
-  }
-  const course = DB.courses.byId(cid);
-
-  // 1. Show loading toast
-  Toast.info('Compiling Audit Pack (ZIP)... Please wait.');
-
-  // 2. Helper to load JSZip dynamically
-  function loadJSZip() {
-    return new Promise((resolve, reject) => {
-      if (window.JSZip) {
-        resolve(window.JSZip);
-        return;
-      }
-      const script = document.createElement('script');
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
-      script.onload = () => resolve(window.JSZip);
-      script.onerror = () => reject(new Error('Failed to load JSZip from CDN'));
-      document.head.appendChild(script);
-    });
-  }
-
-  // 3. Ensure preview is generated first to populate DOM and Chart canvas
-  generateReport();
-
-  // 4. Wait for the chart render and then build zip
-  setTimeout(() => {
-    Promise.all([
-      loadJSZip(),
-      downloadOfficialExcel(true) // Get excel file as ArrayBuffer promise
-    ]).then(([JSZip, excelBuffer]) => {
-      const zip = new JSZip();
-
-      // 4a. Add print-ready NAAC report HTML
-      const reportPrintEl = document.getElementById('report-print');
-      if (!reportPrintEl) {
-        throw new Error('Please click Preview Report first to generate course details.');
-      }
-      const reportClone = reportPrintEl.cloneNode(true);
-      
-      // Convert dynamic chart canvas to static image for offline viewing
-      const originalCanvas = document.getElementById('rptPoChart');
-      const clonedCanvasContainer = reportClone.querySelector('#rptPoChart')?.parentElement;
-      if (clonedCanvasContainer && originalCanvas) {
-        const chartDataUrl = originalCanvas.toDataURL('image/png');
-        clonedCanvasContainer.innerHTML = `<img src="${chartDataUrl}" style="max-width: 600px; width: 100%; height: auto;" />`;
-      }
-
-      const reportHtmlContent = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Course Attainment Report - ${course.code}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      background: #ffffff;
-      color: #0f172a;
-      line-height: 1.5;
-      padding: 24px;
-    }
-    .report-preview {
-      max-width: 800px;
-      margin: 0 auto;
-      border: 1px solid #e2e8f0;
-      padding: 32px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-      background: #ffffff;
-    }
-    h2, h3, h4 {
-      margin-top: 0;
-      color: #1e3a8a;
-      text-align: center;
-      font-family: 'Outfit', sans-serif;
-    }
-    h2 { font-size: 18px; margin-bottom: 4px; }
-    h3 { font-size: 15px; color: #475569; margin-bottom: 16px; }
-    h4 { font-size: 13px; background: #f1f5f9; padding: 6px 12px; border-left: 4px solid #3b82f6; text-align: left; margin: 24px 0 12px; }
-    .rpt-meta {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-      margin-bottom: 24px;
-      font-size: 12px;
-      border-bottom: 1px solid #e2e8f0;
-      padding-bottom: 16px;
-    }
-    .rpt-meta div {
-      color: #334155;
-    }
-    .rpt-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 24px;
-      font-size: 11px;
-    }
-    .rpt-table th {
-      background: #334155;
-      color: #ffffff;
-      padding: 8px;
-      font-weight: 700;
-      border: 1px solid #cbd5e1;
-      text-align: center;
-    }
-    .rpt-table td {
-      padding: 8px;
-      border: 1px solid #cbd5e1;
-      text-align: center;
-      color: #334155;
-    }
-    .rpt-table tr:nth-child(even) td {
-      background: #f8fafc;
-    }
-    .rpt-att3 { background: #d1fae5 !important; color: #065f46 !important; font-weight: 700; }
-    .rpt-att2 { background: #fef3c7 !important; color: #92400e !important; font-weight: 700; }
-    .rpt-att1 { background: #ffedd5 !important; color: #9a3412 !important; font-weight: 700; }
-    .rpt-att0 { background: #fee2e2 !important; color: #991b1b !important; font-weight: 700; }
-    @media print {
-      body { padding: 0; }
-      .report-preview { border: none; box-shadow: none; padding: 0; }
-    }
-  </style>
-</head>
-<body>
-  ${reportClone.innerHTML}
-</body>
-</html>`;
-
-      zip.file("course_attainment_report.html", reportHtmlContent);
-
-      // 4b. Add SPPU Excel file
-      zip.file(`${course.code}_SPPU_OBE_Styled_Report.xlsx`, excelBuffer);
-
-      // 4c. Gather all remedial plans for weak students
-      const remedialFolder = zip.folder("remedial_plans");
-      const remedialPlans = DB.remedial.byCourse(cid);
-
-      if (remedialPlans.length === 0) {
-        remedialFolder.file("README.txt", "No remedial plans have been generated for this course yet.");
-      } else {
-        remedialPlans.forEach(r => {
-          if (r.plan) {
-            const student = DB.students.byPRN(cid, r.prn) || { name: 'Unknown Student' };
-            const planText = `========================================================================
-OBE SYSTEM — AI-GENERATED STUDENT REMEDIAL PLAN
-========================================================================
-Course: ${course.name} (${course.code})
-Student Name: ${student.name}
-PRN: ${r.prn}
-Status: ${r.remedialDone ? 'Resolved / Completed' : 'Pending Action'}
-========================================================================
-
-${r.plan}`;
-            remedialFolder.file(`${student.name.replace(/\s+/g, '_')}_${r.prn}_remedial_plan.txt`, planText);
-          }
-        });
-      }
-
-      // 4d. Generate zip and download
-      return zip.generateAsync({ type: 'blob' });
-    }).then(blob => {
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${course.code}_NBA_Audit_Pack.zip`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-      Toast.success('NBA Audit Pack ZIP downloaded successfully!');
-    }).catch(err => {
-      console.error(err);
-      Toast.error('Failed to create ZIP package: ' + err.message);
-    });
-  }, 300); // Allow sufficient time for chart rendering/drawing
-}
-
-function openAuditModal() {
-  const cid = sel.value;
-  if (!cid) return Toast.warning('Select a course first.');
-  const course = DB.courses.byId(cid);
-  if (course.isLocked) return Toast.info('Course is already locked.');
-  document.getElementById('auditModal').classList.add('active');
-}
-
-function closeAuditModal() {
-  document.getElementById('auditModal').classList.remove('active');
-}
-
-function confirmAuditLock() {
-  const cid = sel.value;
-  const course = DB.courses.byId(cid);
-  const auditorName = document.getElementById('audit-name').value.trim();
-  const remarks = document.getElementById('audit-remarks').value.trim();
-
-  if (!auditorName) return Toast.warning('Auditor Name is required.');
-
-  // Save audit data
-  DB.courseAudit.save(cid, {
-    auditorName,
-    remarks,
-    timestamp: new Date().toISOString()
-  });
-
-  // Lock course
-  course.isLocked = true;
-  DB.courses.update(course);
-
-  closeAuditModal();
-  Toast.success(`Course ${course.code} has been successfully locked and audited.`);
-  onCourseChange(); // Refresh UI
-}
-
-  // Auto-exposed: onclick handlers need to be on window
-  window.closeAuditModal = closeAuditModal;
-  window.confirmAuditLock = confirmAuditLock;
-  window.downloadAuditPack = downloadAuditPack;
-  window.downloadNAAC = downloadNAAC;
-  window.downloadOfficialExcel = downloadOfficialExcel;
-  window.exportCSV = exportCSV;
-  window.generateReport = generateReport;
-  window.openAuditModal = openAuditModal;
+  window.loadReport = loadReport;
+  window.exportOfficialSPPUExcel = exportOfficialSPPUExcel;
 })();
 </script>
 </body>

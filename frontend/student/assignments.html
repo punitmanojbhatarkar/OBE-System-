@@ -3,129 +3,192 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Assignments | OBE System – MITAOE</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800" rel="stylesheet">
-  <link rel="stylesheet" href="../styles/main.css?v=6">
-  <link rel="stylesheet" href="../styles/components.css?v=6">
+  <title>My Assignments | OBE System – MITAOE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles/main.css">
+  <link rel="stylesheet" href="../styles/components.css">
 </head>
 <body>
 <div class="app-shell">
+
+  <!-- SIDEBAR -->
   <aside class="sidebar">
-    <div class="sidebar-logo"><div class="logo-icon">OBE</div><div><div class="logo-text">OBE System</div><div class="logo-sub">MITAOE</div></div></div>
+    <div class="sidebar-logo">
+      <div class="logo-icon">OBE</div>
+      <div><div class="logo-text">Student Portal</div><div class="logo-sub">MITAOE</div></div>
+    </div>
     <nav class="sidebar-nav">
       <p class="nav-section-label">My Learning</p>
-      <a class="nav-item" href="dashboard.html">📊 My Dashboard</a>
-      <a class="nav-item" href="assignments.html">📝 Assignments</a>
-      <a class="nav-item" href="feedback.html">💬 Course Feedback</a>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon" data-icon="dashboard"></span><span>Learning Analytics</span></a>
+      <a class="nav-item active" href="assignments.html"><span class="nav-icon" data-icon="assignments"></span><span>My Assignments</span></a>
+      <a class="nav-item" href="feedback.html"><span class="nav-icon" data-icon="feedback"></span><span>Course Exit Surveys</span></a>
     </nav>
     <div class="sidebar-footer">
-      <div class="user-card"><div class="user-avatar"></div><div><div class="user-name"></div><div class="user-role"></div></div></div>
-      <button class="btn btn-ghost btn-sm w-full" data-action="logout" style="margin-top:8px">🚪 Logout</button>
+      <div class="user-card" onclick="Auth.logout()">
+        <div class="user-avatar"></div>
+        <div><div class="user-name"></div><div class="user-role"></div></div>
+      </div>
+      <button class="btn btn-secondary btn-sm w-full" data-action="logout" style="margin-top:8px; width:100%;">
+        <span data-icon="logout"></span><span>Sign Out</span>
+      </button>
     </div>
   </aside>
+
+  <!-- MAIN -->
   <main class="main-content">
     <header class="topbar">
-      <div class="topbar-left"><h1 class="topbar-title">📝 My Assignments</h1></div>
+      <div class="topbar-left">
+        <h1 class="topbar-title">Assignments & Problem Sets</h1>
+        <div class="topbar-breadcrumb">Student <span>›</span> Course Assessments</div>
+      </div>
       <div class="topbar-right">
-        <select class="form-control" id="course-select" style="width:280px"><option value="">— Select Course —</option></select>
+        <select class="form-select" id="course-select" style="width:260px;font-size:12.5px;"></select>
       </div>
     </header>
+
     <div class="page-content">
       <div id="assign-container"></div>
     </div>
   </main>
 </div>
-<div id="toast-container"></div>
-<div id="submit-modal" class="modal-backdrop" style="display:none">
-  <div class="modal">
-    <div class="modal-header"><h3 class="modal-title" id="submit-title">Submit Assignment</h3><button class="modal-close" onclick="closeSubmitModal()">✕</button></div>
-    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">Enter your answer/solution below. In Phase 2, you'll be able to upload PDF files.</p>
-    <textarea class="form-control" id="submit-text" rows="10" placeholder="Type your submission here..."></textarea>
-    <input type="hidden" id="submit-asgn-id">
-    <div class="modal-footer" style="margin-top:12px">
+
+<!-- Submit Modal -->
+<div id="submit-modal" class="modal-overlay">
+  <div class="modal-content" style="max-width:560px;">
+    <div class="modal-header">
+      <h3 class="modal-title" id="submit-title">Submit Solution</h3>
+      <button class="btn btn-secondary btn-sm btn-icon" onclick="closeSubmitModal()"><span data-icon="close"></span></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12.5px;color:var(--text-secondary);margin-bottom:12px;">Type or paste your answer solution below for rubric-based grading.</p>
+      <textarea class="form-textarea" id="submit-text" rows="8" placeholder="Type your full analytical solution here…"></textarea>
+      <input type="hidden" id="submit-asgn-id">
+    </div>
+    <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeSubmitModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="submitAssignment()">📤 Submit</button>
+      <button class="btn btn-primary" onclick="submitAssignment()">Submit Assignment</button>
     </div>
   </div>
 </div>
-<script src="../scripts/data.js?v=101"></script>
-<script src="../scripts/api.js?v=101"></script>
-<script src="../scripts/auth.js?v=3"></script>
+
+<script src="../scripts/icons.js"></script>
+<script src="../scripts/data.js"></script>
+<script src="../scripts/api.js"></script>
+<script src="../scripts/auth.js"></script>
 <script src="../scripts/utils.js"></script>
 <script>
 (async () => {
   await (window._apiReady || Promise.resolve());
   const user = Auth.requireAuth(['student']);
-if(!user) throw 0;
-Auth.populateSidebar(user);
+  if (!user) throw new Error('Not authorized');
 
-const myEnrollments = DB.students.all().filter(s=>s.prn===user.prn);
-const myCourseIds = [...new Set(myEnrollments.map(s=>s.courseId))];
-const sel = document.getElementById('course-select');
-myCourseIds.forEach(cid=>{const c=DB.courses.byId(cid);if(c){const o=document.createElement('option');o.value=c.id;o.textContent=`${c.code} – ${c.name}`;sel.appendChild(o);}});
-if(myCourseIds.length){sel.value=myCourseIds[0];loadAssignments(myCourseIds[0]);}
-sel.addEventListener('change',e=>{if(e.target.value)loadAssignments(e.target.value);});
+  const myEnrollments = DB.students.all().filter(s => s.prn === user.prn);
+  const myCourseIds = [...new Set(myEnrollments.map(s => s.courseId))];
+  const sel = document.getElementById('course-select');
 
-function loadAssignments(cid){
-  const container = document.getElementById('assign-container');
-  const assigns = DB.assignments.byCourse(cid);
-  if(!assigns.length){container.innerHTML='<div class="card"><div class="empty-state"><div class="empty-icon">📝</div><h3>No Assignments</h3><p>No assignments have been created for this course yet.</p></div></div>';return;}
-
-  container.innerHTML='';
-  assigns.forEach(a=>{
-    const sub = DB.submissions.byAssignment(a.id).find(s=>s.prn===user.prn);
-    const status = sub?(sub.gradedAt?'Graded':'Submitted'):'Pending';
-    const stClass = {Graded:'badge-success',Submitted:'badge-info',Pending:'badge-warning'}[status];
-    let card = `<div class="card mb-lg" style="position:relative">
-      ${a.aiGenerated?'<div style="position:absolute;top:12px;right:12px;background:linear-gradient(135deg,#06b6d4,#2563EB);color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px">AI Generated</div>':''}
-      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Assignment ${a.no}</div>
-      <h3 style="font-size:18px;font-weight:700;margin-bottom:8px">${a.title}</h3>
-      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">${a.description||''}</p>
-      <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text-secondary);margin-bottom:16px">
-        <span>📅 Due: ${Fmt.date(a.dueDate)}</span>
-        <span>📊 Max Marks: ${a.maxMarks}</span>
-        <span>🎯 COs: ${(a.coNos||[]).map(n=>'CO'+n).join(', ')}</span>
-        <span class="badge ${stClass}">${status}</span>
-      </div>`;
-
-    // Questions
-    if(a.questions?.length){
-      card+='<div style="margin-bottom:16px"><h4 style="font-size:14px;font-weight:700;margin-bottom:8px">Questions</h4>';
-      a.questions.forEach(q=>{card+=`<div style="padding:10px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;font-size:13px"><strong>Q${q.qNo}.</strong> ${q.text} <span class="badge badge-info" style="font-size:10px">${q.marks} marks</span></div>`;});
-      card+='</div>';
+  myCourseIds.forEach(cid => {
+    const c = DB.courses.byId(cid);
+    if (c) {
+      const o = document.createElement('option');
+      o.value = c.id;
+      o.textContent = `${c.code} – ${c.name}`;
+      sel.appendChild(o);
     }
-
-    // Submit/view button
-    if(!sub){
-      card+=`<button class="btn btn-primary btn-sm" onclick="openSubmitModal('${a.id}','${a.title}')">📤 Submit Answer</button>`;
-    } else if(sub.gradedAt){
-      card+=`<div style="padding:14px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:10px">
-        <div style="font-weight:700;color:var(--success);margin-bottom:4px">✅ Graded — ${sub.marks||'—'}/${a.maxMarks} (${sub.marks?Math.round((sub.marks/a.maxMarks)*100):'—'}%)</div>
-        <div style="font-size:13px;color:var(--text-secondary)">${sub.feedback||'No feedback yet.'}</div></div>`;
-    } else {
-      card+=`<div style="padding:10px;background:rgba(6,182,212,.08);border:1px solid rgba(6,182,212,.2);border-radius:8px;font-size:13px;color:var(--info)">✓ Submitted on ${Fmt.date(sub.submittedAt)}. Awaiting grading.</div>`;
-    }
-    card+='</div>';
-    container.innerHTML+=card;
   });
-}
 
-function openSubmitModal(asgnId,title){
-  document.getElementById('submit-title').textContent='Submit: '+title;
-  document.getElementById('submit-asgn-id').value=asgnId;
-  document.getElementById('submit-text').value='';
-  document.getElementById('submit-modal').style.display='flex';
-}
-function closeSubmitModal(){document.getElementById('submit-modal').style.display='none';}
-function submitAssignment(){
-  const asgnId=document.getElementById('submit-asgn-id').value;
-  const text=document.getElementById('submit-text').value.trim();
-  if(!text){Toast.warning('Please enter your answer.');return;}
-  DB.submissions.add({assignmentId:asgnId,prn:user.prn,text,marks:null,feedback:null,gradedAt:null});
-  closeSubmitModal();
-  loadAssignments(sel.value);
-  Toast.success('Assignment submitted successfully!');
-}
+  if (myCourseIds.length) {
+    sel.value = myCourseIds[0];
+    loadAssignments(myCourseIds[0]);
+  }
+
+  sel.addEventListener('change', e => {
+    if (e.target.value) loadAssignments(e.target.value);
+  });
+  renderAllIcons();
+
+  function loadAssignments(cid) {
+    const container = document.getElementById('assign-container');
+    const assigns = DB.assessments.byCourse(cid);
+
+    if (!assigns.length) {
+      container.innerHTML = '<div class="card" style="text-align:center;padding:32px;color:var(--text-muted);">No assessments published for this course yet.</div>';
+      return;
+    }
+
+    container.innerHTML = assigns.map(a => {
+      const sub = DB.submissions.byAssignment(a.id).find(s => s.prn === user.prn);
+      const status = sub ? (sub.gradedAt ? 'Graded' : 'Submitted') : 'Pending';
+      const stClass = { Graded: 'badge-success', Submitted: 'badge-primary', Pending: 'badge-warning' }[status];
+
+      return `
+        <div class="card" style="margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;">Assessment ${a.no}</div>
+              <h3 style="font-size:16px;font-weight:700;color:var(--text-primary);margin:2px 0 6px;">${a.title}</h3>
+              <p style="font-size:12.5px;color:var(--text-secondary);margin:0;">${a.description || ''}</p>
+            </div>
+            <span class="badge ${stClass}">${status}</span>
+          </div>
+          <div style="display:flex;gap:12px;font-size:12px;color:var(--text-secondary);margin-bottom:14px;flex-wrap:wrap;">
+            <span>Due: <strong>${a.dueDate ? Fmt.date(a.dueDate) : '—'}</strong></span>
+            <span>Max Score: <strong>${a.maxMarks}</strong></span>
+            <span>Target COs: <strong>${(a.coNos||[]).map(n=>'CO'+n).join(', ')}</strong></span>
+            ${sub && sub.marks !== undefined && sub.marks !== null ? `<span class="badge badge-success font-mono">Score: ${sub.marks} / ${a.maxMarks}</span>` : ''}
+          </div>
+          ${a.questions?.length ? `
+            <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px;margin-bottom:12px;">
+              <div style="font-size:12px;font-weight:700;margin-bottom:6px;color:var(--text-primary);">Questions:</div>
+              ${a.questions.map(q => `<div style="font-size:12px;margin-bottom:4px;"><strong>Q${q.qNo}.</strong> ${q.text} <span class="badge badge-neutral font-mono" style="font-size:10.5px;">${q.marks}m</span></div>`).join('')}
+            </div>
+          ` : ''}
+          <div>
+            ${!sub ? `
+              <button class="btn btn-primary btn-sm" onclick="openSubmitModal('${a.id}', '${a.title}')">
+                <span data-icon="upload"></span><span>Submit Solution</span>
+              </button>
+            ` : `
+              <span style="font-size:12px;color:var(--success);font-weight:600;">Solution Submitted</span>
+            `}
+          </div>
+        </div>
+      `;
+    }).join('');
+    renderAllIcons(container);
+  }
+
+  function openSubmitModal(id, title) {
+    document.getElementById('submit-asgn-id').value = id;
+    document.getElementById('submit-title').textContent = `Submit: ${title}`;
+    document.getElementById('submit-modal').classList.add('open');
+  }
+
+  function closeSubmitModal() {
+    document.getElementById('submit-modal').classList.remove('open');
+    document.getElementById('submit-text').value = '';
+  }
+
+  function submitAssignment() {
+    const id = document.getElementById('submit-asgn-id').value;
+    const text = document.getElementById('submit-text').value.trim();
+    if (!text) { Toast.error('Please enter your submission text.'); return; }
+
+    DB.submissions.add({
+      assignmentId: id,
+      prn: user.prn,
+      text: text,
+      submittedAt: new Date().toISOString()
+    });
+
+    closeSubmitModal();
+    Toast.success('Assignment submitted successfully.');
+    loadAssignments(sel.value);
+  }
+
+  window.openSubmitModal = openSubmitModal;
+  window.closeSubmitModal = closeSubmitModal;
+  window.submitAssignment = submitAssignment;
 })();
 </script>
 </body>

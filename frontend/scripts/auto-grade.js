@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
   function showFileName(name) {
-    fileSelectedName.textContent = '📄 ' + name;
+    fileSelectedName.textContent = name;
     fileSelectedName.style.display = 'block';
   }
 
@@ -71,7 +71,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     assignmentSelect.innerHTML = '<option value="">-- Choose Assignment --</option><option value="manual">-- Custom / Manual --</option>';
     if (!cid) return;
 
-    const courseAsgn = DB.assessments.byCourse(cid).filter(a => a.type === 'assignment' || a.type === 'question_paper');
+    const allAssignments = JSON.parse(localStorage.getItem('obe_assignments') || '[]');
+    const courseAsgn = allAssignments.filter(a => a.courseId === cid);
     courseAsgn.forEach(a => {
       const opt = document.createElement('option');
       opt.value = a.id;
@@ -91,7 +92,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       rubricsInput.value = '';
       return;
     }
-    const a = DB.assessments.byId(sel);
+    const allAssignments = JSON.parse(localStorage.getItem('obe_assignments') || '[]');
+    const a = allAssignments.find(x => x.id === sel);
     if (!a) return;
     
     maxMarksInput.value = a.maxMarks || a.marks || 10;
@@ -118,8 +120,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     btnCopy.addEventListener('click', () => {
       const text = document.getElementById('overall-feedback').textContent;
       navigator.clipboard.writeText(text).then(() => {
-        btnCopy.textContent = '✅ Copied!';
-        setTimeout(() => { btnCopy.textContent = '📋 Copy Feedback'; }, 2000);
+        btnCopy.textContent = 'Copied to Clipboard';
+        setTimeout(() => { btnCopy.textContent = 'Copy Feedback'; }, 2000);
       });
     });
   }
@@ -148,7 +150,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     btn.disabled = true;
-    btnText.textContent = '⏳ Grading... please wait';
+    btnText.textContent = 'Evaluating submission...';
     resultDiv.style.display = 'none';
 
     try {
@@ -195,7 +197,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       alert('Grading failed: ' + (err.message || 'Unknown error. Check browser console for details.'));
     } finally {
       btn.disabled = false;
-      btnText.textContent = '🤖 Grade with AI Engine';
+      btnText.textContent = 'Grade Submission';
     }
   });
 
@@ -220,7 +222,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const offset = circumference - (pct / 100) * circumference;
     const ring = document.getElementById('score-ring-fill');
     if (ring) {
-      const ringColor = pct >= 80 ? '#22c55e' : pct >= 60 ? '#f59e0b' : '#ef4444';
+      const ringColor = '#2563EB';
       ring.style.stroke = ringColor;
       setTimeout(() => { ring.style.strokeDashoffset = offset; }, 100);
     }
@@ -250,8 +252,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const readinessLabel  = document.getElementById('readiness-score-label');
     if (readinessLabel) readinessLabel.textContent = readiness + ' / 100';
     if (readinessBar) {
-      const barColor = readiness >= 75 ? '#22c55e' : readiness >= 50 ? '#f59e0b' : '#ef4444';
-      readinessBar.style.background = barColor;
+      readinessBar.style.background = '#2563EB';
       setTimeout(() => { readinessBar.style.width = readiness + '%'; }, 200);
     }
 
@@ -264,8 +265,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const scoreAllocated = parseFloat(item.scoreAllocated    ?? 0);
       const maxRubric      = parseFloat(item.maxMarksForRubric ?? (maxMarks / Math.max(evaluation.length, 1)));
       const rubricPct      = maxRubric > 0 ? (scoreAllocated / maxRubric) * 100 : 0;
-      const barCol         = rubricPct >= 75 ? '#22c55e' : rubricPct >= 50 ? '#f59e0b' : '#ef4444';
-      const scoreColor     = rubricPct >= 75 ? '#16a34a' : rubricPct >= 50 ? '#d97706' : '#dc2626';
+      const barCol         = '#2563EB';
+      const scoreColor     = '#0F172A';
 
       const card = document.createElement('div');
       card.className = 'rubric-card';
@@ -285,21 +286,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div class="rubric-card-body">
           <div class="rubric-detail-row">
             <div class="rubric-detail-box justification-box">
-              <label>🔍 Examiner's Justification</label>
+              <label>Examiner's Justification</label>
               <p>${escapeHtml(item.justification || '—')}</p>
             </div>
             <div class="rubric-detail-box strength-box">
-              <label>✅ Strengths Found</label>
+              <label>Strengths Found</label>
               <p>${escapeHtml(item.strengthsFound || '—')}</p>
             </div>
           </div>
           <div class="rubric-detail-row">
             <div class="rubric-detail-box weakness-box">
-              <label>❌ Weaknesses / Gaps</label>
+              <label>Weaknesses / Gaps</label>
               <p>${escapeHtml(item.weaknessesFound || '—')}</p>
             </div>
             <div class="rubric-detail-box improvement-box">
-              <label>💡 How to Improve</label>
+              <label>How to Improve</label>
               <p>${escapeHtml(item.improvementSuggestion || '—')}</p>
             </div>
           </div>

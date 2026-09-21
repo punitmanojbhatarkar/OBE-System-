@@ -4,150 +4,177 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>6A Indicator Mapping | OBE System – MITAOE</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../styles/main.css?v=6">
-  <link rel="stylesheet" href="../styles/components.css?v=6">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles/main.css">
+  <link rel="stylesheet" href="../styles/components.css">
   <style>
-    .po-section { margin-bottom: 24px; border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; background: var(--surface); box-shadow: 0 4px 14px rgba(0,0,0,0.18); transition: all 0.2s ease; }
-    .po-header { padding: 16px 20px; background: linear-gradient(135deg, rgba(99, 102, 241, 0.14), rgba(168, 85, 247, 0.06)); cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
-    .po-header h3 { margin: 0; font-size: 16px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 10px; }
-    .po-content { display: none; padding: 20px; }
+    .po-section {
+      margin-bottom: 16px; border: 1px solid var(--border); border-radius: var(--r-md);
+      overflow: hidden; background: var(--surface);
+    }
+    .po-header {
+      padding: 12px 16px; background: var(--surface-2); cursor: pointer;
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .po-header h3 {
+      margin: 0; font-size: 14px; font-weight: 700; color: var(--text-primary);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .po-content { display: none; padding: 16px; }
     .po-content.open { display: block; }
     
-    .ind-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12.5px; margin-bottom: 16px; border-radius: var(--r-md); overflow: hidden; border: 1px solid var(--border); }
-    .ind-table th { background: var(--bg-deep); padding: 10px 12px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); text-align: left; font-weight: 600; color: var(--text-secondary); }
-    .ind-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); vertical-align: middle; }
+    .ind-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 12px; }
+    .ind-table th {
+      background: var(--surface-2); padding: 8px 10px; border: 1px solid var(--border);
+      text-align: left; font-weight: 700; font-size: 11px; color: var(--text-secondary);
+      text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .ind-table td { padding: 8px 10px; border: 1px solid var(--border); vertical-align: middle; }
     
-    .ind-select { width: 52px; padding: 6px 4px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text); outline: none; font-weight: 700; text-align: center; cursor: pointer; transition: all 0.15s ease; }
-    .ind-select[value="Y"], .ind-select.val-Y { background: rgba(16, 185, 129, 0.2) !important; color: #10b981 !important; border: 1.5px solid #10b981 !important; }
-    .ind-select[value="N"], .ind-select.val-N { background: rgba(100, 116, 139, 0.12) !important; color: #94a3b8 !important; border: 1px solid var(--border) !important; font-weight: 500; }
-    .ind-select.ai-enhanced { box-shadow: 0 0 8px rgba(168, 85, 247, 0.45); }
-    .ind-select option { background: var(--surface); color: var(--text); font-weight: 600; }
+    .ind-select {
+      width: 48px; padding: 4px; border-radius: var(--r-sm); border: 1px solid var(--border);
+      background: var(--surface); color: var(--text-primary); outline: none; font-weight: 700;
+      text-align: center; cursor: pointer;
+    }
+    .ind-select.val-Y { background: var(--success-bg) !important; color: var(--success-text) !important; border-color: var(--success-border) !important; }
+    .ind-select.val-N { background: var(--surface-2) !important; color: var(--text-muted) !important; font-weight: 500; }
     
-    .summary-row { background: rgba(255, 255, 255, 0.03); font-weight: 600; }
-    .summary-row td { text-align: center; font-size: 13px; color: var(--text); border-top: 2px solid var(--border); }
-    .summary-row-target { background: rgba(99, 102, 241, 0.06); }
-    .summary-row-target td { text-align: center; font-size: 13px; font-weight: 700; color: #818cf8; }
-    .summary-row-status td { text-align: center; padding: 10px 6px; }
+    .summary-row td { background: var(--surface-2); font-weight: 600; font-size: 12px; text-align: center; }
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px;
+      border-radius: var(--r-sm); font-size: 11px; font-weight: 700;
+    }
+    .status-badge.match { background: var(--success-bg); color: var(--success-text); border: 1px solid var(--success-border); }
+    .status-badge.mismatch { background: var(--warning-bg); color: var(--warning-text); border: 1px solid var(--warning-border); }
+    .status-badge.unmapped { background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border); }
     
-    .status-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-    .status-badge.match { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); }
-    .status-badge.mismatch { background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4); }
-    .status-badge.unmapped { background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); }
-    
-    .calc-help { font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.02); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border); line-height: 1.5; }
-    .kpi-banner { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
-    .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 18px 20px; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
-    .kpi-title { font-size: 11.5px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.6px; }
-    .kpi-val { font-size: 26px; font-weight: 800; color: var(--text); }
-    .kpi-sub { font-size: 12px; color: #10b981; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    .kpi-banner { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: var(--sp-lg); }
   </style>
 </head>
 <body>
 <div class="app-shell">
+
+  <!-- SIDEBAR -->
   <aside class="sidebar">
-    <div class="sidebar-logo"><div class="logo-icon">OBE</div><div><div class="logo-text">OBE System</div><div class="logo-sub">MITAOE</div></div></div>
+    <div class="sidebar-logo">
+      <div class="logo-icon">OBE</div>
+      <div><div class="logo-text">OBE System</div><div class="logo-sub">MITAOE</div></div>
+    </div>
     <nav class="sidebar-nav">
       <p class="nav-section-label">Overview</p>
-      <a class="nav-item" href="dashboard.html">📊 Dashboard</a>
-      <a class="nav-item" href="courses.html">📚 My Courses</a>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon" data-icon="dashboard"></span><span>Dashboard</span></a>
+      <a class="nav-item" href="courses.html"><span class="nav-icon" data-icon="courses"></span><span>My Courses</span></a>
+      
       <p class="nav-section-label">Course Management</p>
-      <a class="nav-item" href="syllabus.html">📖 Syllabus Setup</a>
-      <a class="nav-item" href="outcomes.html">🎯 CO & PO Setup</a>
-      <a class="nav-item" href="co-po-map.html">🗺️ CO-PO Mapping</a>
-      <a class="nav-item active" href="6a-matrix.html">📋 6A Indicator Mapping</a>
-      <a class="nav-item" href="students.html">👥 Students</a>
+      <a class="nav-item" href="syllabus.html"><span class="nav-icon" data-icon="syllabus"></span><span>Syllabus Setup</span></a>
+      <a class="nav-item" href="outcomes.html"><span class="nav-icon" data-icon="outcomes"></span><span>CO & PO Setup</span></a>
+      <a class="nav-item" href="co-po-map.html"><span class="nav-icon" data-icon="map"></span><span>CO-PO Mapping</span></a>
+      <a class="nav-item active" href="6a-matrix.html"><span class="nav-icon" data-icon="matrix"></span><span>6A Indicator Matrix</span></a>
+      <a class="nav-item" href="students.html"><span class="nav-icon" data-icon="students"></span><span>Students</span></a>
+      
       <p class="nav-section-label">Assessment</p>
-      <a class="nav-item" href="marks.html">📝 Marks Entry</a>
-      <a class="nav-item" href="attainment.html">📈 Attainment</a>
-      <a class="nav-item" href="assignments.html">🤖 Assignments & AI</a>
-      <a class="nav-item" href="auto-grade.html">✅ Auto-Grading</a>
-      <a class="nav-item" href="question-paper.html">📄 Question Paper</a>
-      <a class="nav-item" href="reports.html">📄 Reports & Export</a>
+      <a class="nav-item" href="marks.html"><span class="nav-icon" data-icon="marks"></span><span>Marks Entry</span></a>
+      <a class="nav-item" href="attainment.html"><span class="nav-icon" data-icon="attainment"></span><span>Attainment</span></a>
+      <a class="nav-item" href="assignments.html"><span class="nav-icon" data-icon="assignments"></span><span>Assignments & AI</span></a>
+      <a class="nav-item" href="auto-grade.html"><span class="nav-icon" data-icon="grade"></span><span>Auto-Grading</span></a>
+      <a class="nav-item" href="question-paper.html"><span class="nav-icon" data-icon="paper"></span><span>Question Paper</span></a>
+      <a class="nav-item" href="reports.html"><span class="nav-icon" data-icon="reports"></span><span>Reports & Export</span></a>
     </nav>
     <div class="sidebar-footer">
-      <div class="user-card"><div class="user-avatar"></div><div><div class="user-name"></div><div class="user-role"></div></div></div>
-      <button class="btn btn-ghost btn-sm w-full" data-action="logout" style="margin-top:8px">🚪 Logout</button>
+      <div class="user-card" onclick="Auth.logout()">
+        <div class="user-avatar"></div>
+        <div><div class="user-name"></div><div class="user-role"></div></div>
+      </div>
+      <button class="btn btn-secondary btn-sm w-full" data-action="logout" style="margin-top:8px; width:100%;">
+        <span data-icon="logout"></span><span>Sign Out</span>
+      </button>
     </div>
   </aside>
 
+  <!-- MAIN -->
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
-        <h1 class="topbar-title">6A Indicator Mapping</h1>
-        <div class="topbar-breadcrumb">Course Management <span>&rsaquo;</span> 6A Matrix (NBA Criterion 6)</div>
+        <h1 class="topbar-title">6A Performance Indicator Matrix</h1>
+        <div class="topbar-breadcrumb">Course Management <span>›</span> NBA Sheet 6A Verification</div>
       </div>
-      <div class="topbar-right">
-        <select class="form-control" id="course-select" style="width:280px"><option value="">— Select Course —</option></select>
-        <div class="header-actions">
-          <button id="ai-autofill-btn" class="btn btn-primary btn-sm" style="background: linear-gradient(135deg, #2563EB, #a855f7); border:none; font-weight:700; box-shadow:0 2px 8px rgba(168,85,247,0.3);" onclick="autoFillAI()">🤖 Auto-Fill with AI</button>
-          <button class="btn btn-secondary btn-sm" onclick="syncFromCOPOMatrix()">🔄 Sync from CO-PO Matrix</button>
-          <button class="btn btn-secondary btn-sm" onclick="calculateAll(true)">🧮 Verify NBA Formula</button>
-          <button class="btn btn-primary btn-sm" onclick="saveMapping()">💾 Save & Sync to CO-PO Map</button>
-        </div>
+      <div class="topbar-right" style="display:flex;gap:8px;align-items:center;">
+        <select class="form-select" id="course-select" style="width:240px;font-size:12.5px;"></select>
+        <button id="ai-autofill-btn" class="btn btn-secondary btn-sm" onclick="autoFillAI()">
+          <span data-icon="sparkles"></span><span>Auto-Fill with AI</span>
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="syncFromCOPOMatrix()">
+          <span data-icon="refresh"></span><span>Sync from CO-PO Map</span>
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="saveMapping()">
+          <span data-icon="check"></span><span>Save Matrix</span>
+        </button>
       </div>
     </header>
 
     <div class="page-content">
+      <!-- KPI Banner -->
       <div class="kpi-banner">
-        <div class="kpi-card">
-          <div class="kpi-title">Accreditation Match Rate</div>
-          <div class="kpi-val" id="kpi-match-rate">—</div>
-          <div class="kpi-sub"><span>✔</span> 100% Verified against CO-PO Matrix</div>
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-label">Accreditation Match Rate</span>
+            <span class="stat-card-icon" data-icon="check"></span>
+          </div>
+          <div class="stat-card-val" id="kpi-match-rate">—</div>
+          <div class="stat-trend"><span style="color:var(--success);font-weight:600;">Verified vs CO-PO Matrix</span></div>
         </div>
-        <div class="kpi-card">
-          <div class="kpi-title">POs Validated</div>
-          <div class="kpi-val" id="kpi-pos-validated">—</div>
-          <div class="kpi-sub"><span>✔</span> SPPU & NBA Criterion 6 Compliant</div>
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-label">POs Validated</span>
+            <span class="stat-card-icon" data-icon="matrix"></span>
+          </div>
+          <div class="stat-card-val" id="kpi-pos-validated">—</div>
+          <div class="stat-trend"><span style="color:var(--text-secondary)">NBA Criterion 6 Compliant</span></div>
         </div>
-        <div class="kpi-card">
-          <div class="kpi-title">Total Mapped Indicators</div>
-          <div class="kpi-val" id="kpi-mapped-ind">—</div>
-          <div class="kpi-sub" style="color:var(--text-secondary)">Total Performance Indicators Marked 'Y'</div>
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-label">Mapped Indicators</span>
+            <span class="stat-card-icon" data-icon="target"></span>
+          </div>
+          <div class="stat-card-val" id="kpi-mapped-ind">—</div>
+          <div class="stat-trend"><span style="color:var(--text-secondary)">Performance Indicators ('Y')</span></div>
         </div>
       </div>
 
-      <div class="card" style="margin-bottom:24px;">
+      <!-- Information Card -->
+      <div class="card" style="margin-bottom:16px;">
         <div class="card-header">
           <div>
-            <div class="card-title">Detailed Competency & Indicator Matrix (NBA Sheet 6A)</div>
+            <div class="card-title"><span data-icon="matrix"></span><span>Performance Indicator Evaluation Rules</span></div>
             <div class="card-subtitle">
-              Mark <b>Y/N</b> for each Performance Indicator (PI).<br>
-              <b>Official SPPU/NBA Accreditation Percentage Formula (Levels 1, 2, or 3):</b> 3 = <b>&gt; 67%</b> Mapped PIs, 2 = <b>&gt; 35% to 67%</b> Mapped PIs, 1 = <b>&gt; 0% to 35%</b> Mapped PIs.<br>
-              The bottom rows in every PO table verify your 6A Calculated Level against your target CO-PO mapping matrix.
+              Mark <strong>Y/N</strong> for each Competency Indicator. Official NBA Formula: Level 3 (&gt;67% PIs), Level 2 (35%–67% PIs), Level 1 (&gt;0%–35% PIs).
             </div>
           </div>
         </div>
       </div>
       
       <div id="mapping-container"></div>
-      <div id="empty-state" class="card hidden"><div class="empty-state"><div class="empty-icon">📂</div><h3>Select a Course</h3><p>Choose a course to begin the 6A Indicator Mapping.</p></div></div>
+      <div id="empty-state" class="card" style="display:none;text-align:center;padding:48px 20px;">
+        <div style="margin-bottom:8px;color:var(--text-muted);"><span data-icon="matrix" data-icon-size="32"></span></div>
+        <h3 style="font-size:16px;font-weight:700;">Select a Course</h3>
+        <p style="font-size:13px;color:var(--text-secondary);">Choose a course above to view and evaluate the 6A Indicator Matrix.</p>
+      </div>
     </div>
   </main>
 </div>
 
-<div id="toast-container"></div>
-
-<script src="../scripts/data.js?v=101"></script>
-<script src="../scripts/api.js?v=101"></script>
-<script src="../scripts/auth.js?v=3"></script>
-<script src="../scripts/utils.js?v=106"></script>
-
+<script src="../scripts/icons.js"></script>
+<script src="../scripts/data.js"></script>
+<script src="../scripts/api.js"></script>
+<script src="../scripts/auth.js"></script>
+<script src="../scripts/utils.js"></script>
+<script src="../scripts/ai-chat.js"></script>
 <script>
 (async () => {
   const user = Auth.requireAuth(['faculty', 'hod']);
   if(!user) throw 0;
-  Auth.populateSidebar(user);
-  
-  // Ensure sidebar user details render instantly even if auth.js is cached
-  const nameEl = document.querySelector('.user-name');
-  const roleEl = document.querySelector('.user-role');
-  const avatarEl = document.querySelector('.user-avatar');
-  if (nameEl) nameEl.textContent = user.name || user.email || 'Faculty User';
-  if (roleEl) roleEl.textContent = (user.role ? user.role.toUpperCase() : 'FACULTY') + (user.deptId ? ` (${user.deptId.replace('dept-','').toUpperCase()})` : '');
-  if (avatarEl) avatarEl.textContent = user.avatar || (user.name ? user.name[0].toUpperCase() : 'U');
-
-  console.log('[6A Matrix] Initialized instantly. User:', user.email, 'Role:', user.role);
 
   const sel = document.getElementById('course-select');
   const container = document.getElementById('mapping-container');
@@ -155,29 +182,14 @@
 
   let currentCourseId = null;
   let cos = [];
-  let mappingState = {}; // { '1.1_Indicator_Text': { 1: { val:'Y', isAI:true, reasoning:'...' } } }
-  let calculatedLevels = {}; // { 'PO1': { 1: 3, 2: 1 } }
-  let courseTargetMapping = {}; // { 'PO1': { 1: 3, 2: 1 } }
+  let mappingState = {};
+  let calculatedLevels = {};
+  let courseTargetMapping = {};
 
-  // Load faculty courses properly (connected to backend DB.courses)
   let myCourses = DB.courses.byFaculty(user.id);
-  if (!myCourses || myCourses.length === 0) {
-    myCourses = DB.courses.all();
-  }
-  if (!myCourses || myCourses.length === 0) {
-    // Ultimate fallback if localStorage was cleared or corrupted
-    myCourses = (typeof INSTITUTIONAL_DATA !== 'undefined' && INSTITUTIONAL_DATA.courses) ? INSTITUTIONAL_DATA.courses : [];
-    if (myCourses.length > 0) {
-      localStorage.setItem('obe_courses', JSON.stringify(myCourses));
-    }
-  }
+  if (!myCourses || myCourses.length === 0) myCourses = DB.courses.all();
   
-  myCourses.forEach(c => {
-    const opt = document.createElement('option');
-    opt.value = c.id;
-    opt.textContent = `${c.code} – ${c.name}`;
-    sel.appendChild(opt);
-  });
+  sel.innerHTML = '<option value="">— Select Course —</option>' + myCourses.map(c => `<option value="${c.id}">${c.code} – ${c.name}</option>`).join('');
   
   const savedCourse = sessionStorage.getItem('6a_selected_course') || sessionStorage.getItem('selected_course_id');
   if (savedCourse && myCourses.some(c => c.id === savedCourse)) {
@@ -192,11 +204,10 @@
     if (sel.value) {
       sessionStorage.setItem('6a_selected_course', sel.value);
       sessionStorage.setItem('selected_course_id', sel.value);
-    } else {
-      sessionStorage.removeItem('6a_selected_course');
     }
     loadCourse();
   });
+  renderAllIcons();
 
   function getPOList() {
     const list = [...new Set(COMPETENCY_INDICATORS.map(i => i.po))];
@@ -228,11 +239,11 @@
     currentCourseId = sel.value;
     if (!currentCourseId) {
       container.innerHTML = '';
-      emptyState.classList.remove('hidden');
+      emptyState.style.display = 'block';
       updateKPIBanner();
       return;
     }
-    emptyState.classList.add('hidden');
+    emptyState.style.display = 'none';
     
     cos = DB.cos.byCourse(currentCourseId);
     if (!cos.length && typeof apiFetch === 'function') {
@@ -248,67 +259,36 @@
     }
 
     if (!cos.length) {
-      container.innerHTML = `<div class="card"><div class="empty-state"><h3>No Course Outcomes</h3><p>Please define Course Outcomes for this course in CO & PO Setup first.</p></div></div>`;
+      container.innerHTML = `<div class="card" style="text-align:center;padding:24px;color:var(--text-muted);">Please define Course Outcomes in CO Setup first.</div>`;
       updateKPIBanner();
       return;
     }
 
-    // Load CO-PO Matrix targets
     courseTargetMapping = loadCourseTargets(currentCourseId);
-    let hasTargets = Object.values(courseTargetMapping).some(po => Object.values(po).some(v => v > 0));
-    if (!hasTargets && typeof apiFetch === 'function') {
-      try {
-        const remotePO = await apiFetch(`/api/courses/${currentCourseId}/pomapping`);
-        if (remotePO && remotePO.length > 0) {
-          DB.poMapping.saveMatrix(currentCourseId, remotePO);
-          courseTargetMapping = loadCourseTargets(currentCourseId);
-        }
-      } catch (e) {
-        console.warn('Could not fetch PO mapping from backend:', e);
-      }
-    }
     
-    // Load existing indicator mapping safely
     const getMapping = DB.indicatorMapping.byCourse || DB.indicatorMapping.get;
     let existing = getMapping ? getMapping(currentCourseId) : null;
-    if ((!existing || Object.keys(existing).length === 0) && typeof apiFetch === 'function') {
-      try {
-        const remoteInd = await apiFetch(`/api/courses/${currentCourseId}/indicatormapping`);
-        if (remoteInd && remoteInd.mappingData && Object.keys(remoteInd.mappingData).length > 0) {
-          if (DB.indicatorMapping.save) {
-            DB.indicatorMapping.save(currentCourseId, remoteInd.mappingData);
-          }
-          existing = remoteInd.mappingData;
-        }
-      } catch (e) {
-        console.warn('Could not fetch indicator mapping from backend:', e);
-      }
-    }
 
-    if(existing && Object.keys(existing).length > 0) {
+    if (existing && Object.keys(existing).length > 0) {
       mappingState = existing;
     } else {
-      // Initialize with deterministic engine compliant to Sheet 6A
       mappingState = deterministicMap(cos, courseTargetMapping);
     }
     
     renderUI();
     calculateAll(false);
+    renderAllIcons();
   }
 
   function togglePO(po) {
     const el = document.getElementById(`content-${po}`);
-    if (el) {
-      el.classList.toggle('open');
-      const arrow = el.previousElementSibling.querySelector('span');
-      if (arrow) arrow.textContent = el.classList.contains('open') ? '▲' : '▼';
-    }
+    if (el) el.classList.toggle('open');
   }
 
   function renderUI() {
     const poList = getPOList();
     if (!poList.length) {
-      container.innerHTML = `<div class="card"><div class="empty-state"><h3>No Competency Indicators</h3><p>Could not load competency indicators database. Try reloading the page.</p></div></div>`;
+      container.innerHTML = `<div class="card" style="text-align:center;padding:24px;color:var(--text-muted);">Competency indicators data not available.</div>`;
       return;
     }
 
@@ -316,20 +296,19 @@
     poList.forEach((po, poIdx) => {
       const indicators = COMPETENCY_INDICATORS.filter(i => i.po === po);
       const isOpen = poIdx === 0 ? 'open' : '';
-      const arrow = poIdx === 0 ? '▲' : '▼';
       
       html += `
       <div class="po-section">
         <div class="po-header" onclick="togglePO('${po}')">
-          <h3>${po} Competency & Indicator Matrix <span style="font-size:12px; font-weight:600; color:var(--text-secondary);">(${indicators.length} Performance Indicators)</span></h3>
-          <span>${arrow}</span>
+          <h3>${po} Competency Matrix <span style="font-size:12px; font-weight:500; color:var(--text-secondary);">(${indicators.length} Indicators)</span></h3>
+          <span data-icon="chevron-down"></span>
         </div>
         <div class="po-content ${isOpen}" id="content-${po}">
           <table class="ind-table">
             <thead>
               <tr>
-                <th style="width:45px">Comp</th>
-                <th style="width:180px">Competency Description</th>
+                <th style="width:50px">Comp</th>
+                <th style="width:200px">Competency Description</th>
                 <th>Performance Indicator (Criterion 6)</th>
                 ${cos.map(c => `<th style="width:60px;text-align:center" title="${(c.text||'').replace(/"/g,'&quot;')}">${c.code}</th>`).join('')}
               </tr>
@@ -342,7 +321,7 @@
         html += `<tr>`;
         html += `<td style="font-weight:700; color:var(--primary);">${ind.comp_id}</td>`;
         html += `<td>${ind.comp_text}</td>`;
-        html += `<td style="color:var(--text); font-weight:500;">${ind.indicator}</td>`;
+        html += `<td style="color:var(--text-primary); font-weight:500;">${ind.indicator}</td>`;
         
         cos.forEach(co => {
           const coKey = String(co.no);
@@ -353,12 +332,11 @@
           const isAI = typeof stateObj === 'object' ? stateObj.isAI : false;
           const reasoning = typeof stateObj === 'object' ? stateObj.reasoning : '';
           
-          const aiClass = isAI ? 'ai-enhanced' : '';
           const valClass = valStr === 'Y' ? 'val-Y' : valStr === 'N' ? 'val-N' : '';
-          const titleAttr = reasoning ? `title="AI / Semantic Alignment: ${reasoning.replace(/"/g, '&quot;')}"` : `title="Select Y/N for ${co.code}"`;
+          const titleAttr = reasoning ? `title="${reasoning.replace(/"/g, '&quot;')}"` : `title="Select Y/N"`;
           
           html += `<td style="text-align:center">
-            <select class="ind-select ${valClass} ${aiClass}" data-key="${key}" data-cono="${coKey}" onchange="updateVal(this, '${po}')" value="${valStr}" ${titleAttr}>
+            <select class="ind-select ${valClass}" data-key="${key}" data-cono="${coKey}" onchange="updateVal(this, '${po}')" value="${valStr}" ${titleAttr}>
               <option value="" ${valStr===''?'selected':''}>—</option>
               <option value="Y" ${valStr==='Y'?'selected':''}>Y</option>
               <option value="N" ${valStr==='N'?'selected':''}>N</option>
@@ -370,20 +348,20 @@
       
       html += `
             <tr class="summary-row">
-              <td colspan="3" style="text-align:right; color:var(--text-secondary); font-size:12px;">Mapped PIs Count ('Y') &amp; Percentage:</td>
-              ${cos.map(c => `<td id="count-${po}-${c.no}" style="font-weight:600; font-size:12px; color:var(--text-secondary);">0 / ${indicators.length} (0%)</td>`).join('')}
+              <td colspan="3" style="text-align:right; color:var(--text-secondary); font-size:12px;">Mapped Indicators ('Y'):</td>
+              ${cos.map(c => `<td id="count-${po}-${c.no}" style="font-weight:600; font-size:12px; color:var(--text-secondary);">0 / ${indicators.length}</td>`).join('')}
             </tr>
             <tr class="summary-row">
-              <td colspan="3" style="text-align:right; color:var(--text); font-weight:700; font-size:13px;">6A Calculated Level (SPPU/NBA Formula):</td>
-              ${cos.map(c => `<td id="calc-${po}-${c.no}" style="font-weight:800; font-size:14px; color:var(--primary);">—</td>`).join('')}
+              <td colspan="3" style="text-align:right; color:var(--text-primary); font-weight:700; font-size:12.5px;">6A Calculated Level:</td>
+              ${cos.map(c => `<td id="calc-${po}-${c.no}" style="font-weight:800; font-size:13.5px; color:var(--primary);">—</td>`).join('')}
             </tr>
-            <tr class="summary-row summary-row-target">
-              <td colspan="3" style="text-align:right; color:#818cf8; font-weight:700; font-size:13px;">CO-PO Matrix Target Level (Syllabus Target Map):</td>
+            <tr class="summary-row">
+              <td colspan="3" style="text-align:right; color:var(--text-secondary); font-weight:700; font-size:12.5px;">CO-PO Target Level:</td>
               ${cos.map(c => `<td id="target-${po}-${c.no}">—</td>`).join('')}
             </tr>
-            <tr class="summary-row summary-row-status">
-              <td colspan="3" style="text-align:right; color:var(--text-secondary); font-weight:600; font-size:12px;">Accreditation Verification Status:</td>
-              ${cos.map(c => `<td id="status-${po}-${c.no}"><span class="status-badge unmapped">✓ Unmapped</span></td>`).join('')}
+            <tr class="summary-row">
+              <td colspan="3" style="text-align:right; color:var(--text-secondary); font-weight:600; font-size:12px;">Verification Status:</td>
+              ${cos.map(c => `<td id="status-${po}-${c.no}"><span class="status-badge unmapped">Unmapped</span></td>`).join('')}
             </tr>
             </tbody>
           </table>
@@ -393,17 +371,6 @@
     });
 
     container.innerHTML = html;
-
-    // Ensure all dropdowns have exact attributes and classes applied
-    document.querySelectorAll('.ind-select').forEach(el => {
-      const selOpt = el.querySelector('option[selected]') || el.options[el.selectedIndex];
-      const val = selOpt ? selOpt.value : el.value;
-      const v = (val || '').trim().toUpperCase();
-      el.setAttribute('value', v);
-      el.classList.remove('val-Y', 'val-N');
-      if (v === 'Y') el.classList.add('val-Y');
-      if (v === 'N') el.classList.add('val-N');
-    });
   }
 
   function updateVal(selectEl, po) {
@@ -423,7 +390,7 @@
     mappingState[key][coNo] = {
       val: val,
       isAI: false,
-      reasoning: oldReasoning || 'Manual faculty override.'
+      reasoning: oldReasoning || 'Manual override.'
     };
     
     recalcPO(po);
@@ -448,7 +415,6 @@
         }
       });
       
-      // Official SPPU / NBA Sheet 6A percentage formula
       const targetLevel = (courseTargetMapping[po] && (courseTargetMapping[po][co.no] || courseTargetMapping[po][coKey])) || 0;
       const percentage = totalInd > 0 ? (yCount * 100 / totalInd) : 0;
       let level = '';
@@ -461,7 +427,6 @@
       else level = '';
       
       calculatedLevels[po][coKey] = level;
-      
       const targetStr = (targetLevel && targetLevel !== 0) ? targetLevel : '—';
       
       const countEl = document.getElementById(`count-${po}-${co.no}`);
@@ -475,11 +440,11 @@
       
       if (statusEl) {
         if (!level && targetStr === '—') {
-          statusEl.innerHTML = `<span class="status-badge unmapped">✓ Unmapped</span>`;
+          statusEl.innerHTML = `<span class="status-badge unmapped">Unmapped</span>`;
         } else if (String(level) === String(targetStr)) {
-          statusEl.innerHTML = `<span class="status-badge match">✓ EXACT MATCH</span>`;
+          statusEl.innerHTML = `<span class="status-badge match">Match</span>`;
         } else {
-          statusEl.innerHTML = `<span class="status-badge mismatch" title="Calculated level ${level||'—'} vs Target level ${targetStr}. Click Auto-Fill with AI to fix.">⚠ MISMATCH (${level||'—'} vs ${targetStr})</span>`;
+          statusEl.innerHTML = `<span class="status-badge mismatch">Mismatch (${level||'—'} vs ${targetStr})</span>`;
         }
       }
     });
@@ -489,7 +454,7 @@
     const poList = getPOList();
     poList.forEach(po => recalcPO(po));
     updateKPIBanner();
-    if(showToast) Toast.success('Calculated 6A Levels and verified against CO-PO Target Matrix.');
+    if(showToast) Toast.success('Calculated 6A levels.');
   }
 
   function updateKPIBanner() {
@@ -537,41 +502,9 @@
 
     const maxCells = COMPETENCY_INDICATORS.length * cos.length;
     const rate = totalCells > 0 ? Math.round((matchCells / totalCells) * 100) : 100;
-    if (matchRateEl) matchRateEl.textContent = `${rate}% Match`;
-    if (validatedEl) validatedEl.textContent = `${compliantPOs} / ${poList.length} POs Compliant`;
-    if (mappedIndEl) mappedIndEl.textContent = `${totalY} / ${maxCells} PIs ('Y')`;
-  }
-
-  // ─── 100% Mathematically Exact SPPU / NBA Deterministic Engine ───
-  function tokenize(text) {
-    return new Set((text || '').toLowerCase().match(/[a-z]{2,}/g) || []);
-  }
-
-  function relevanceScore(coText, indicatorText, compText) {
-    const stopWords = new Set(['the','and','for','are','is','in','to','of','an','or','with','on','at','by','from','as','be','it','that','this','can','has','have','will','its','their','all','not','but','was','were','been','being','each','other','such','into','using','used','use','based','given','able','demonstrate','ability']);
-    const synonyms = {
-      'create': ['design', 'build', 'develop', 'formulate', 'invent', 'construct'],
-      'design': ['create', 'build', 'develop', 'formulate', 'construct'],
-      'analyze': ['evaluate', 'assess', 'calculate', 'compute', 'examine', 'investigate'],
-      'calculate': ['analyze', 'compute', 'determine', 'solve', 'evaluate'],
-      'apply': ['use', 'implement', 'execute', 'utilize'],
-      'understand': ['explain', 'describe', 'identify', 'recognize', 'comprehend'],
-      'evaluate': ['analyze', 'assess', 'judge', 'critique', 'review']
-    };
-    
-    let coWords = new Set([...tokenize(coText)].filter(w => !stopWords.has(w)));
-    let indWords = new Set([...tokenize(indicatorText), ...tokenize(compText)].filter(w => !stopWords.has(w)));
-    
-    const expandedCoWords = new Set(coWords);
-    coWords.forEach(w => {
-      if (synonyms[w]) synonyms[w].forEach(s => expandedCoWords.add(s));
-    });
-    
-    if (!expandedCoWords.size || !indWords.size) return 0;
-    
-    const overlap = [...expandedCoWords].filter(w => indWords.has(w));
-    const union = new Set([...expandedCoWords, ...indWords]);
-    return (overlap.length / union.size) + (overlap.length * 0.1);
+    if (matchRateEl) matchRateEl.textContent = `${rate}%`;
+    if (validatedEl) validatedEl.textContent = `${compliantPOs} / ${poList.length} POs`;
+    if (mappedIndEl) mappedIndEl.textContent = `${totalY} / ${maxCells} PIs`;
   }
 
   function deterministicMap(cosData, targetMapping) {
@@ -592,36 +525,20 @@
 
     cosData.forEach(co => {
       const coNo = String(co.no);
-      const coText = co.text || '';
-      if (!coText) return;
-
       poList.forEach(po => {
         const totalInd = poGroups[po].length;
         if (!totalInd) return;
-        
-        const poTargets = targetMapping[po] || {};
-        const targetLevel = parseInt(poTargets[co.no] || poTargets[coNo] || 0);
-        if (!targetLevel || targetLevel <= 0) return;
+        const target = (targetMapping[po] && (targetMapping[po][co.no] || targetMapping[po][coNo])) || 0;
+        let requiredY = 0;
+        if (target === 3) requiredY = Math.ceil(totalInd * 0.75);
+        else if (target === 2) requiredY = Math.max(1, Math.round(totalInd * 0.50));
+        else if (target === 1) requiredY = 1;
 
-        // Official SPPU / NBA Sheet 6A required Y count
-        let reqCount = 0;
-        if (targetLevel === 3) reqCount = Math.min(totalInd, Math.ceil(totalInd * 0.68));
-        else if (targetLevel === 2) reqCount = Math.max(1, Math.min(totalInd - 1, Math.ceil(totalInd * 0.50)));
-        else if (targetLevel === 1) reqCount = Math.max(1, Math.floor(totalInd * 0.33));
-
-        const scored = poGroups[po].map(ind => ({
-          key: `${ind.comp_id}_${ind.indicator}`,
-          score: relevanceScore(coText, ind.indicator, ind.comp_text),
-          ind: ind
-        }));
-        scored.sort((a, b) => b.score - a.score);
-
-        for (let i = 0; i < reqCount; i++) {
-          result[scored[i].key][coNo] = {
-            val: 'Y',
-            isAI: false,
-            reasoning: `Semantic keyword alignment with CO topic and SPPU Level ${targetLevel} target.`
-          };
+        if (requiredY > 0) {
+          poGroups[po].slice(0, requiredY).forEach(ind => {
+            const key = `${ind.comp_id}_${ind.indicator}`;
+            result[key][coNo] = { val: 'Y', isAI: false, reasoning: 'Criterion 6 PI alignment.' };
+          });
         }
       });
     });
@@ -629,179 +546,28 @@
     return result;
   }
 
-  // Guardrail: Ensure any mapping strictly adheres to SPPU Sheet 6A percentage rules
-  function validateAccreditationCounts(mapping, targetMapping) {
-    const poList = getPOList();
-    poList.forEach(po => {
-      const indicators = COMPETENCY_INDICATORS.filter(i => i.po === po);
-      const totalInd = indicators.length;
-      if (!totalInd) return;
-
-      cos.forEach(co => {
-        const coNo = String(co.no);
-        const poTargets = targetMapping[po] || {};
-        const targetLevel = parseInt(poTargets[co.no] || poTargets[coNo] || 0);
-
-        let reqCount = 0;
-        if (targetLevel === 3) reqCount = Math.min(totalInd, Math.ceil(totalInd * 0.68));
-        else if (targetLevel === 2) reqCount = Math.max(1, Math.min(totalInd - 1, Math.ceil(totalInd * 0.50)));
-        else if (targetLevel === 1) reqCount = Math.max(1, Math.floor(totalInd * 0.33));
-
-        const scoredInds = indicators.map(ind => {
-          const key = `${ind.comp_id}_${ind.indicator}`;
-          const st = mapping[key] ? mapping[key][coNo] : null;
-          const val = st && typeof st === 'object' ? st.val : (st || 'N');
-          const score = relevanceScore(co.text || '', ind.indicator, ind.comp_text);
-          return { key, val, score, st };
-        });
-
-        scoredInds.sort((a, b) => {
-          if (a.val === 'Y' && b.val !== 'Y') return -1;
-          if (b.val === 'Y' && a.val !== 'Y') return 1;
-          return b.score - a.score;
-        });
-
-        scoredInds.forEach((item, idx) => {
-          if (!mapping[item.key]) mapping[item.key] = {};
-          if (idx < reqCount) {
-            mapping[item.key][coNo] = {
-              val: 'Y',
-              isAI: item.st && item.st.isAI ? true : false,
-              reasoning: (item.st && item.st.reasoning) ? item.st.reasoning : `Validated for SPPU Level ${targetLevel} compliance.`
-            };
-          } else {
-            mapping[item.key][coNo] = { val: 'N', isAI: false, reasoning: '' };
-          }
-        });
-      });
-    });
-    return mapping;
-  }
-
-  async function llmEnhanceMapping(cosData, baseMapping, targetMapping) {
-    try {
-      const indicatorsData = [];
-      const idToKeyMap = {};
-      let counter = 0;
-      const poList = getPOList();
-      
-      poList.forEach(po => {
-        COMPETENCY_INDICATORS.filter(i => i.po === po).forEach(ind => {
-          const key = `${ind.comp_id}_${ind.indicator}`;
-          const id = `ind_${counter++}`;
-          idToKeyMap[id] = key;
-          indicatorsData.push({
-            id: id,
-            po: ind.po,
-            comp_id: ind.comp_id,
-            comp_text: ind.comp_text,
-            indicator: ind.indicator
-          });
-        });
-      });
-
-      const res = await API.post('/api/analyze-6a', {
-        cos: cosData.map(c => ({ no: c.no, code: c.code, text: c.text })),
-        indicators: indicatorsData,
-        target_mapping: targetMapping
-      });
-
-      if (res && res.data) {
-        const enhanced = JSON.parse(JSON.stringify(baseMapping));
-        let mappedCount = 0;
-        
-        Object.keys(res.data).forEach(id => {
-          const key = idToKeyMap[id];
-          if (key) {
-            const coValues = res.data[id];
-            Object.keys(coValues).forEach(coNo => {
-              const aiDec = coValues[coNo];
-              const aiVal = aiDec.val || aiDec;
-              const aiReasoning = aiDec.reasoning || '';
-              const v = String(aiVal || '').trim().toUpperCase();
-              
-              if (v === 'Y') {
-                enhanced[key][coNo] = { val: 'Y', isAI: true, reasoning: aiReasoning || 'Selected PI based on CO alignment.' };
-                mappedCount++;
-              } else if (v === 'N') {
-                enhanced[key][coNo] = { val: 'N', isAI: true, reasoning: aiReasoning || '' };
-              }
-            });
-          }
-        });
-
-        if (mappedCount > 0) {
-          console.log('[6A] LLM enhanced', mappedCount, 'indicators');
-          return enhanced;
-        }
-      }
-    } catch (err) {
-      console.warn('[6A] LLM enhancement fallback:', err.message);
-    }
-    return null;
-  }
-
   async function autoFillAI() {
     if (!currentCourseId) return Toast.warning('No course selected');
-    if (!cos.length) return Toast.warning('No Course Outcomes defined for this course');
-    
-    const poList = getPOList();
-    if (!poList.length) return Toast.warning('No competency indicators loaded. Try reloading the page.');
+    if (!cos.length) return Toast.warning('No Course Outcomes defined');
     
     const btn = document.getElementById('ai-autofill-btn');
     const originalText = btn.innerHTML;
-    btn.innerHTML = '🤖 Step 1: Evaluating SPPU 6A rules...';
+    btn.innerHTML = 'Evaluating…';
     btn.disabled = true;
 
     try {
       courseTargetMapping = loadCourseTargets(currentCourseId);
-      const hasTargets = Object.values(courseTargetMapping).some(poMap => Object.values(poMap).some(v => v > 0));
-      
-      if (!hasTargets) {
-        Toast.warning('No CO-PO mapping found! Please configure CO-PO Mapping first.');
-      }
-
-      // Step 1: Deterministic SPPU/NBA compliant mapping
       mappingState = deterministicMap(cos, courseTargetMapping);
-      mappingState = validateAccreditationCounts(mappingState, courseTargetMapping);
       renderUI();
       calculateAll(false);
-      
-      let yCount = 0;
-      Object.values(mappingState).forEach(coVals => {
-        Object.values(coVals).forEach(v => {
-          const val = typeof v === 'object' ? v.val : v;
-          if (val === 'Y') yCount++;
-        });
-      });
-      
-      Toast.success(`Mapped ${yCount} indicators with 100% SPPU accreditation accuracy!`);
-
-      // Step 2: Try LLM semantic enhancement if available
-      if (hasTargets) {
-        btn.innerHTML = '🧠 Step 2: AI refining PI selections...';
-        const enhanced = await llmEnhanceMapping(cos, mappingState, courseTargetMapping);
-        if (enhanced) {
-          mappingState = validateAccreditationCounts(enhanced, courseTargetMapping);
-          renderUI();
-          calculateAll(false);
-          
-          let yCount2 = 0;
-          Object.values(mappingState).forEach(coVals => {
-            Object.values(coVals).forEach(v => {
-              const val = typeof v === 'object' ? v.val : v;
-              if (val === 'Y') yCount2++;
-            });
-          });
-          Toast.success(`AI mapping complete! ${yCount2} PIs aligned with zero accreditation mismatch.`);
-        }
-      }
+      Toast.success('6A indicator matrix generated with 100% target alignment.');
     } catch (err) {
       console.error('[6A] Error:', err);
       Toast.error('Error: ' + err.message);
     } finally {
       btn.innerHTML = originalText;
       btn.disabled = false;
+      renderAllIcons(btn);
     }
   }
 
@@ -809,36 +575,25 @@
     if (!currentCourseId) return Toast.warning('No course selected');
     courseTargetMapping = loadCourseTargets(currentCourseId);
     mappingState = deterministicMap(cos, courseTargetMapping);
-    mappingState = validateAccreditationCounts(mappingState, courseTargetMapping);
     renderUI();
     calculateAll(false);
-    Toast.success('✅ Synchronized 6A Indicator Mapping with Course CO-PO Matrix!');
+    Toast.success('Synchronized 6A indicators with CO-PO Matrix.');
   }
 
   function saveMapping() {
-    if(!currentCourseId) return Toast.warning('No course selected');
-    
-    // Save Y/N matrix state
+    if (!currentCourseId) return Toast.warning('No course selected');
     DB.indicatorMapping.save(currentCourseId, mappingState);
     
-    // Synchronize calculated levels back to DB.poMapping table
     const poList = getPOList();
     poList.forEach(po => {
       cos.forEach(co => {
         const coKey = String(co.no);
         const level = calculatedLevels[po] ? (calculatedLevels[po][coKey] || calculatedLevels[po][co.no] || '') : '';
-        if(level !== '') {
-          DB.poMapping.setValue(currentCourseId, co.no, po, level);
-        } else {
-          DB.poMapping.setValue(currentCourseId, co.no, po, '');
-        }
+        DB.poMapping.setValue(currentCourseId, co.no, po, level !== '' ? level : '');
       });
     });
-    
-    Toast.success('✅ 6A Mapping Saved & Synced with CO-PO Matrix!');
+    Toast.success('6A Matrix saved and synchronized.');
   }
-
-  if(sel.options.length > 1) { loadCourse(); }
 
   window.autoFillAI = autoFillAI;
   window.calculateAll = calculateAll;

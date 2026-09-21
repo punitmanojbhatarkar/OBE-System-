@@ -6,64 +6,60 @@
   <title>Faculty Dashboard | OBE System – MITAOE</title>
   <meta name="description" content="Faculty OBE Dashboard – Course Outcomes & Attainment Overview">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../styles/main.css?v=6">
-  <link rel="stylesheet" href="../styles/components.css?v=6">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles/main.css">
+  <link rel="stylesheet" href="../styles/components.css">
   <style>
     .chart-card {
       background: var(--surface); border: 1px solid var(--border);
       border-radius: var(--r-lg); padding: var(--sp-lg);
-      box-shadow: var(--shadow-sm);
     }
-    .chart-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; color: var(--text-primary); }
+    .chart-title { font-size: 14px; font-weight: 700; margin-bottom: 2px; color: var(--text-primary); }
     .chart-sub   { font-size: 12px; color: var(--text-secondary); margin-bottom: var(--sp-md); }
+    
     .ai-meter { display: flex; flex-direction: column; gap: 8px; }
-    .ai-meter-bar { height: 8px; background: var(--surface-2); border-radius: var(--r-full); overflow: hidden; border: 1px solid var(--border); }
-    .ai-meter-fill { height: 100%; background: var(--primary); border-radius: var(--r-full); transition: width 0.8s cubic-bezier(.4,0,.2,1); }
+    .ai-meter-bar { height: 6px; background: var(--surface-2); border-radius: var(--r-full); overflow: hidden; border: 1px solid var(--border); }
+    .ai-meter-fill { height: 100%; background: var(--primary); border-radius: var(--r-full); transition: width 0.6s ease; }
+    
     .course-card-mini {
       display: flex; align-items: center; gap: var(--sp-md);
       padding: var(--sp-md); background: var(--surface);
       border: 1px solid var(--border); border-radius: var(--r-md);
-      transition: all var(--t-base); cursor: pointer;
-      box-shadow: var(--shadow-xs);
+      transition: all var(--t-fast); cursor: pointer;
     }
-    .course-card-mini:hover { border-color: var(--primary-mid); background: var(--primary-light); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+    .course-card-mini:hover { border-color: var(--primary); background: var(--surface-2); }
     .course-mini-icon {
-      width: 42px; height: 42px; border-radius: var(--r-md);
+      width: 38px; height: 38px; border-radius: var(--r-md);
       background: var(--primary); display: flex; align-items: center;
-      justify-content: center; font-size: 16px; font-weight: 800;
-      color: #fff; flex-shrink: 0;
+      justify-content: center; font-size: 14px; font-weight: 700;
+      color: #FFFFFF; flex-shrink: 0;
     }
     .quick-links { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
     .quick-link {
-      font-size: 11px; padding: 3px 9px; border-radius: var(--r-full);
+      font-size: 11px; padding: 2px 8px; border-radius: var(--r-sm);
       background: var(--surface-2); color: var(--text-secondary);
       border: 1px solid var(--border);
       transition: all var(--t-fast); font-weight: 600;
     }
-    .quick-link:hover { background: var(--primary-light); color: var(--primary); border-color: var(--primary-mid); }
-    .stat-trend { display: flex; align-items: center; gap: 4px; font-size: 11.5px; margin-top: 8px; }
-    .welcome-banner {
-      background: linear-gradient(135deg, #1D4ED8 0%, #2563EB 50%, #3B82F6 100%);
+    .quick-link:hover { background: var(--primary); color: #FFFFFF; border-color: var(--primary); }
+    .stat-trend { display: flex; align-items: center; gap: 4px; font-size: 11.5px; margin-top: 6px; }
+    
+    .welcome-header {
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: var(--r-lg);
-      padding: var(--sp-lg) var(--sp-xl); margin-bottom: var(--sp-xl);
+      padding: 20px 24px;
+      margin-bottom: var(--sp-lg);
       display: flex; align-items: center; justify-content: space-between;
-      box-shadow: 0 4px 20px rgba(37,99,235,0.25);
-      position: relative; overflow: hidden;
     }
-    .welcome-banner::before {
-      content: ''; position: absolute; top: -40%; right: -5%;
-      width: 300px; height: 300px; border-radius: 50%;
-      background: rgba(0,0,0,0.05);
-    }
-    .welcome-text h2 { font-size: 22px; font-weight: 800; color: #fff; letter-spacing: -0.3px; }
-    .welcome-text p  { color: rgba(255,255,255,0.75); font-size: 14px; margin-top: 4px; }
-    .welcome-badge {
-      background: rgba(255,255,255,0.15); color: #fff;
-      padding: 8px 18px; border-radius: var(--r-full);
-      font-size: 13px; font-weight: 700;
-      border: 1px solid rgba(255,255,255,0.2);
-      backdrop-filter: blur(4px);
+    .welcome-text h2 { font-size: 18px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.3px; }
+    .welcome-text p  { color: var(--text-secondary); font-size: 13px; margin-top: 2px; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-lg); }
+    .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--sp-md); }
+    .mb-lg { margin-bottom: var(--sp-lg); }
+    @media (max-width: 900px) {
+      .grid-2 { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -78,29 +74,31 @@
     </div>
     <nav class="sidebar-nav">
       <p class="nav-section-label">Overview</p>
-      <a class="nav-item" href="dashboard.html">📊 Dashboard</a>
-      <a class="nav-item" href="courses.html">📚 My Courses</a>
+      <a class="nav-item active" href="dashboard.html"><span class="nav-icon" data-icon="dashboard"></span><span>Dashboard</span></a>
+      <a class="nav-item" href="courses.html"><span class="nav-icon" data-icon="courses"></span><span>My Courses</span></a>
+      
       <p class="nav-section-label">Course Management</p>
-      <a class="nav-item" href="syllabus.html">📖 Syllabus Setup</a>
-      <a class="nav-item" href="outcomes.html">🎯 CO & PO Setup</a>
-      <a class="nav-item" href="co-po-map.html">🗺️ CO-PO Mapping</a>
-      <a class="nav-item" href="6a-matrix.html">📋 6A Indicator Mapping</a>
-      <a class="nav-item" href="students.html">👥 Students</a>
+      <a class="nav-item" href="syllabus.html"><span class="nav-icon" data-icon="syllabus"></span><span>Syllabus Setup</span></a>
+      <a class="nav-item" href="outcomes.html"><span class="nav-icon" data-icon="outcomes"></span><span>CO & PO Setup</span></a>
+      <a class="nav-item" href="co-po-map.html"><span class="nav-icon" data-icon="map"></span><span>CO-PO Mapping</span></a>
+      <a class="nav-item" href="6a-matrix.html"><span class="nav-icon" data-icon="matrix"></span><span>6A Indicator Matrix</span></a>
+      <a class="nav-item" href="students.html"><span class="nav-icon" data-icon="students"></span><span>Students</span></a>
+      
       <p class="nav-section-label">Assessment</p>
-      <a class="nav-item" href="marks.html">📝 Marks Entry</a>
-      <a class="nav-item" href="attainment.html">📈 Attainment</a>
-      <a class="nav-item" href="assignments.html">🤖 Assignments & AI</a>
-      <a class="nav-item" href="auto-grade.html">✅ Auto-Grading</a>
-      <a class="nav-item" href="question-paper.html">📄 Question Paper</a>
-      <a class="nav-item" href="reports.html">📄 Reports & Export</a>
+      <a class="nav-item" href="marks.html"><span class="nav-icon" data-icon="marks"></span><span>Marks Entry</span></a>
+      <a class="nav-item" href="attainment.html"><span class="nav-icon" data-icon="attainment"></span><span>Attainment</span></a>
+      <a class="nav-item" href="assignments.html"><span class="nav-icon" data-icon="assignments"></span><span>Assignments & AI</span></a>
+      <a class="nav-item" href="auto-grade.html"><span class="nav-icon" data-icon="grade"></span><span>Auto-Grading</span></a>
+      <a class="nav-item" href="question-paper.html"><span class="nav-icon" data-icon="paper"></span><span>Question Paper</span></a>
+      <a class="nav-item" href="reports.html"><span class="nav-icon" data-icon="reports"></span><span>Reports & Export</span></a>
     </nav>
     <div class="sidebar-footer">
-      <div class="user-card">
+      <div class="user-card" onclick="Auth.logout()">
         <div class="user-avatar"></div>
         <div><div class="user-name"></div><div class="user-role"></div></div>
       </div>
-      <button class="btn btn-ghost btn-sm w-full" data-action="logout" style="margin-top:8px">
-        🚪 Logout
+      <button class="btn btn-secondary btn-sm w-full" data-action="logout" style="margin-top:8px; width:100%;">
+        <span data-icon="logout"></span><span>Sign Out</span>
       </button>
     </div>
   </aside>
@@ -113,79 +111,92 @@
         <div class="topbar-breadcrumb">Overview <span>›</span> Home</div>
       </div>
       <div class="topbar-right">
-        <a href="courses.html" class="btn btn-primary btn-sm">📚 My Courses</a>
+        <a href="courses.html" class="btn btn-primary btn-sm">
+          <span data-icon="courses"></span><span>My Courses</span>
+        </a>
       </div>
     </header>
 
     <div class="page-content">
 
-      <!-- Welcome Banner -->
-      <div class="welcome-banner" style="margin-bottom:var(--sp-md)">
+      <!-- Welcome Header -->
+      <div class="welcome-header">
         <div class="welcome-text">
-          <h2>Welcome back, <span id="faculty-name">Faculty</span>! 👋</h2>
-          <p>Here's your OBE overview for Academic Year <span id="acad-year">2025-26</span></p>
+          <h2>Welcome back, <span id="faculty-name">Faculty</span></h2>
+          <p>Outcome-Based Education overview &bull; Academic Year <span id="acad-year">2025-26</span></p>
         </div>
         <div>
-          <span class="welcome-badge" id="dept-badge">Loading...</span>
+          <span class="badge badge-primary" id="dept-badge">Loading...</span>
         </div>
       </div>
 
       <!-- Vision & Mission -->
       <div class="grid-2 mb-lg">
-        <div class="card" style="padding:16px">
-          <div style="font-weight:700;margin-bottom:8px;font-size:14px;color:var(--text-secondary)">🏛️ Institute Vision & Mission</div>
-          <div style="font-size:13px;margin-bottom:6px"><strong>Vision:</strong> <span id="inst-vision-text" style="font-style:italic"></span></div>
-          <div style="font-size:13px"><strong>Mission:</strong> <span id="inst-mission-text" style="font-style:italic"></span></div>
+        <div class="card" style="margin-bottom:0;">
+          <div class="card-title" style="margin-bottom:12px;">
+            <span data-icon="departments"></span><span>Institute Vision & Mission</span>
+          </div>
+          <div style="font-size:12.5px;margin-bottom:8px"><strong style="color:var(--text-secondary)">Vision:</strong> <span id="inst-vision-text" style="color:var(--text-primary)"></span></div>
+          <div style="font-size:12.5px"><strong style="color:var(--text-secondary)">Mission:</strong> <span id="inst-mission-text" style="color:var(--text-primary)"></span></div>
         </div>
-        <div class="card" style="padding:16px">
-          <div style="font-weight:700;margin-bottom:8px;font-size:14px;color:var(--text-secondary)">🌟 Department Vision & Mission</div>
-          <div style="font-size:13px;margin-bottom:6px"><strong>Vision:</strong> <span id="dept-vision-text" style="font-style:italic"></span></div>
-          <div style="font-size:13px"><strong>Mission:</strong> <span id="dept-mission-text" style="font-style:italic"></span></div>
+        <div class="card" style="margin-bottom:0;">
+          <div class="card-title" style="margin-bottom:12px;">
+            <span data-icon="target"></span><span>Department Vision & Mission</span>
+          </div>
+          <div style="font-size:12.5px;margin-bottom:8px"><strong style="color:var(--text-secondary)">Vision:</strong> <span id="dept-vision-text" style="color:var(--text-primary)"></span></div>
+          <div style="font-size:12.5px"><strong style="color:var(--text-secondary)">Mission:</strong> <span id="dept-mission-text" style="color:var(--text-primary)"></span></div>
         </div>
       </div>
 
+      <!-- KPI Stat Cards -->
       <div class="grid-4 mb-lg" id="stat-cards">
-        <div class="stat-card stat-card-primary">
-          <div class="stat-icon">📚</div>
-          <div class="stat-value" id="stat-courses">—</div>
-          <div class="stat-label">Total Courses</div>
-          <div class="stat-trend"><span style="color:var(--primary)">▶</span> <span style="color:var(--text-secondary)">This semester</span></div>
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-label">Total Courses</span>
+            <span class="stat-card-icon" data-icon="courses"></span>
+          </div>
+          <div class="stat-card-val" id="stat-courses">—</div>
+          <div class="stat-trend"><span style="color:var(--text-secondary)">Assigned this semester</span></div>
         </div>
-        <div class="stat-card stat-card-success">
-          <div class="stat-icon">🎯</div>
-          <div class="stat-value" id="stat-co">—</div>
-          <div class="stat-label">Avg CO Attainment</div>
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-label">Avg CO Attainment</span>
+            <span class="stat-card-icon" data-icon="attainment"></span>
+          </div>
+          <div class="stat-card-val" id="stat-co">—</div>
           <div class="stat-trend" id="co-trend"><span>—</span></div>
         </div>
-        <div class="stat-card stat-card-info">
-          <div class="stat-icon">📈</div>
-          <div class="stat-value" id="stat-po">—</div>
-          <div class="stat-label">Avg PO Attainment</div>
-          <div class="stat-trend" id="po-trend"><span>—</span></div>
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-label">Avg PO Score</span>
+            <span class="stat-card-icon" data-icon="matrix"></span>
+          </div>
+          <div class="stat-card-val" id="stat-po">—</div>
+          <div class="stat-trend" id="po-trend"><span>Across PO1-PO12</span></div>
         </div>
-        <div class="stat-card stat-card-warning">
-          <div class="stat-icon">✅</div>
-          <div class="stat-value" id="stat-attained">—</div>
-          <div class="stat-label">COs Attained (≥ L2)</div>
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-label">COs Attained (&ge; L2)</span>
+            <span class="stat-card-icon" data-icon="grade"></span>
+          </div>
+          <div class="stat-card-val" id="stat-attained">—</div>
           <div class="stat-trend" id="att-trend"><span>—</span></div>
         </div>
       </div>
 
       <!-- Smart Advisor Panel -->
-      <div class="card mb-lg" style="border: 1px solid rgba(139,92,246,0.3)">
-        <div class="card-header" style="background: linear-gradient(90deg, rgba(139,92,246,0.1) 0%, transparent 100%); border-bottom: 1px solid rgba(139,92,246,0.2);">
+      <div class="card mb-lg">
+        <div class="card-header">
           <div>
-            <div class="card-title" style="color: var(--primary); display:flex; align-items:center; gap:8px;">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-              Smart OBE Advisor
+            <div class="card-title">
+              <span data-icon="sparkles"></span><span>Smart OBE Advisor</span>
             </div>
-            <div class="card-subtitle">Automated health checks and suggestions for your courses</div>
+            <div class="card-subtitle">Automated compliance checks and suggestions for your courses</div>
           </div>
           <span class="badge badge-info" id="advisor-badge">Analyzing...</span>
         </div>
-        <div id="advisor-list" style="padding: 16px; display:flex; flex-direction:column; gap:12px; max-height: 350px; overflow-y: auto;">
-           <div class="skeleton" style="height:60px; border-radius:8px;"></div>
-           <div class="skeleton" style="height:60px; border-radius:8px;"></div>
+        <div id="advisor-list" style="display:flex; flex-direction:column; gap:10px; max-height:300px; overflow-y:auto;">
+           <div style="padding:12px; background:var(--surface-2); border-radius:6px; color:var(--text-muted); font-size:13px;">Analyzing course data...</div>
         </div>
       </div>
 
@@ -193,13 +204,13 @@
       <div class="grid-2 mb-lg">
         <!-- CO Attainment Bar Chart -->
         <div class="chart-card">
-          <div class="chart-title">📊 CO Attainment by Course</div>
-          <div class="chart-sub">Final CO attainment levels across all your courses</div>
+          <div class="chart-title">CO Attainment by Course</div>
+          <div class="chart-sub">Final calculated CO attainment level (Scale 0–3)</div>
           <canvas id="co-chart" height="220"></canvas>
         </div>
         <!-- PO Radar Chart -->
         <div class="chart-card">
-          <div class="chart-title">🕸️ PO Attainment Radar</div>
+          <div class="chart-title">PO Attainment Radar</div>
           <div class="chart-sub">Program Outcome coverage (averaged across courses)</div>
           <canvas id="po-chart" height="220"></canvas>
         </div>
@@ -208,115 +219,124 @@
       <!-- Bottom Row: Course Summary + AI Meter -->
       <div class="grid-2">
         <!-- Course Summary -->
-        <div class="card">
+        <div class="card" style="margin-bottom:0;">
           <div class="card-header">
             <div>
-              <div class="card-title">📚 My Courses</div>
-              <div class="card-subtitle">Quick access to course management</div>
+              <div class="card-title">
+                <span data-icon="courses"></span><span>My Courses</span>
+              </div>
+              <div class="card-subtitle">Direct access to course management modules</div>
             </div>
             <a href="courses.html" class="btn btn-secondary btn-sm">View All</a>
           </div>
-          <div id="course-list" style="display:flex; flex-direction:column; gap:10px;">
-            <div class="skeleton" style="height:70px; border-radius:12px;"></div>
-            <div class="skeleton" style="height:70px; border-radius:12px;"></div>
+          <div id="course-list" style="display:flex; flex-direction:column; gap:8px;">
+            <div style="padding:16px; text-align:center; color:var(--text-muted); font-size:13px;">Loading courses...</div>
           </div>
         </div>
 
         <!-- Right column -->
         <div style="display:flex;flex-direction:column;gap:var(--sp-lg);">
           <!-- AI Usage Meter -->
-          <div class="card">
+          <div class="card" style="margin-bottom:0;">
             <div class="card-header">
               <div>
-                <div class="card-title">🤖 AI Usage Meter</div>
-                <div class="card-subtitle">Assignment generation calls this month</div>
+                <div class="card-title">
+                  <span data-icon="sparkles"></span><span>AI Usage Meter</span>
+                </div>
+                <div class="card-subtitle">Monthly assignment generation and auto-grading quota</div>
               </div>
-              <span class="badge badge-info" id="ai-status-badge">Loading</span>
+              <span class="badge badge-info" id="ai-status-badge">Active</span>
             </div>
             <div class="ai-meter" id="ai-meter">
-              <div style="display:flex; justify-content:space-between; font-size:13px;">
-                <span class="text-muted">Calls Used</span>
-                <span id="ai-calls-label" style="font-weight:700">— / —</span>
+              <div style="display:flex; justify-content:space-between; font-size:12.5px;">
+                <span style="color:var(--text-secondary)">Calls Used</span>
+                <span id="ai-calls-label" style="font-weight:700; color:var(--text-primary)">— / —</span>
               </div>
               <div class="ai-meter-bar">
                 <div class="ai-meter-fill" id="ai-meter-fill" style="width:0%"></div>
               </div>
-              <div style="font-size:12px; color:var(--text-muted)" id="ai-hint">AI features are loading…</div>
+              <div style="font-size:11.5px; color:var(--text-muted)" id="ai-hint">AI features ready</div>
             </div>
           </div>
 
           <!-- Attainment Summary Mini -->
-          <div class="card">
+          <div class="card" style="margin-bottom:0;">
             <div class="card-header">
-              <div class="card-title">📋 Attainment Summary</div>
+              <div>
+                <div class="card-title">
+                  <span data-icon="attainment"></span><span>Course Target Attainment</span>
+                </div>
+                <div class="card-subtitle">COs meeting institutional benchmark (&ge; Level 2)</div>
+              </div>
             </div>
-            <div id="att-summary" style="display:flex; flex-direction:column; gap:10px;">
-              <div class="skeleton" style="height:40px;border-radius:8px;"></div>
-              <div class="skeleton" style="height:40px;border-radius:8px;"></div>
+            <div id="att-summary" style="display:flex; flex-direction:column; gap:12px;">
+              <div style="padding:12px; text-align:center; color:var(--text-muted); font-size:13px;">Loading summary...</div>
             </div>
           </div>
         </div>
       </div>
 
-    </div><!-- /page-content -->
+    </div>
   </main>
 </div>
 
-<div id="toast-container"></div>
-
+<!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="../scripts/data.js?v=101"></script>
-<script src="../scripts/api.js?v=101"></script>
-<script src="../scripts/auth.js?v=3"></script>
+<script src="../scripts/icons.js"></script>
+<script src="../scripts/api.js"></script>
+<script src="../scripts/data.js"></script>
+<script src="../scripts/auth.js"></script>
+<script src="../scripts/utils.js"></script>
 <script src="../scripts/attainment.js"></script>
 <script src="../scripts/advisor.js"></script>
-<script src="../scripts/utils.js"></script>
+<script src="../scripts/ai-chat.js"></script>
 <script>
-(async () => {
-  await (window._apiReady || Promise.resolve());
+(function() {
   const user = Auth.requireAuth(['faculty', 'hod']);
-  if (!user) throw new Error('Not authorized');
-  Auth.populateSidebar(user);
+  if (!user) return;
 
-  let coChartInst = null, poChartInst = null;
+  let coChartInst = null;
+  let poChartInst = null;
 
-  // Scripts are at bottom of body so DOM is ready - run immediately
-  initPage();
+  document.addEventListener('DOMContentLoaded', () => {
+    init();
+  });
 
-  function initPage() {
-    const courses = DB.courses.byFaculty(user.id);
-    const cfg     = DB.config.get();
-    const dept    = DB.departments.byId(user.deptId);
-
-    // Welcome & Vision/Mission
-    document.getElementById('faculty-name').textContent = user.name.split(' ')[0] || user.name;
+  async function init() {
+    renderAllIcons();
+    // Load config & vision/mission
+    const cfg = DB.config.get();
     document.getElementById('acad-year').textContent = cfg.academicYear || '2025-26';
-    document.getElementById('dept-badge').textContent = dept ? dept.name : 'Faculty';
-    document.getElementById('inst-vision-text').textContent = cfg.instituteVision || 'No institute vision defined yet.';
-    document.getElementById('inst-mission-text').textContent = cfg.instituteMission || 'No institute mission defined yet.';
-    document.getElementById('dept-vision-text').textContent = (dept && dept.vision) ? dept.vision : 'No department vision defined yet.';
-    document.getElementById('dept-mission-text').textContent = (dept && dept.mission) ? dept.mission : 'No department mission defined yet.';
+    document.getElementById('faculty-name').textContent = user.name || 'Faculty';
+
+    const dept = DB.departments.byId(user.deptId);
+    document.getElementById('dept-badge').textContent = dept ? dept.name : 'Engineering';
+    
+    document.getElementById('inst-vision-text').textContent = cfg.instituteVision || 'N/A';
+    document.getElementById('inst-mission-text').textContent = cfg.instituteMission || 'N/A';
+    document.getElementById('dept-vision-text').textContent = dept && dept.vision ? dept.vision : 'To achieve excellence in outcome-based technical education.';
+    document.getElementById('dept-mission-text').textContent = dept && dept.mission ? dept.mission : 'Empowering students through curriculum alignment and continuous evaluation.';
+
+    const courses = DB.courses.byFaculty(user.id);
 
     // Build Smart Advisor UI
     renderAdvisor(courses);
 
-    // Stats — animated counters
+    // Stats
     const stats = Attainment.getDashboardStats(user.id) || { totalCourses:0, avgCO:0, avgPO:0, attained:0 };
-    animateCounter(document.getElementById('stat-courses'), stats.totalCourses, 700);
-    if (stats.avgCO > 0) animateCounter(document.getElementById('stat-co'), stats.avgCO, 900, '', 1);
-    else document.getElementById('stat-co').textContent = '—';
-    if (stats.avgPO > 0) animateCounter(document.getElementById('stat-po'), stats.avgPO, 900, '', 2);
-    else document.getElementById('stat-po').textContent = '—';
-    animateCounter(document.getElementById('stat-attained'), stats.attained, 700);
+    document.getElementById('stat-courses').textContent = stats.totalCourses || courses.length;
+    document.getElementById('stat-co').textContent = stats.avgCO > 0 ? stats.avgCO.toFixed(1) : '—';
+    document.getElementById('stat-po').textContent = stats.avgPO > 0 ? stats.avgPO.toFixed(2) : '—';
+    document.getElementById('stat-attained').textContent = stats.attained || 0;
 
     // Trend labels
     document.getElementById('co-trend').innerHTML = stats.avgCO >= 2
-      ? `<span style="color:var(--success)">▲</span> <span style="color:var(--success)">Good Attainment</span>`
-      : `<span style="color:var(--warning)">◆</span> <span style="color:var(--warning)">Needs Improvement</span>`;
-    document.getElementById('po-trend').innerHTML = `<span style="color:var(--info)">▶</span> <span style="color:var(--text-secondary)">Across PO1-PO12</span>`;
+      ? `<span class="badge badge-success">Target Met</span>`
+      : `<span class="badge badge-warning">Needs Focus</span>`;
+    document.getElementById('po-trend').innerHTML = `<span style="color:var(--text-secondary)">Across PO1-PO12</span>`;
     document.getElementById('att-trend').innerHTML = stats.attained > 0
-      ? `<span style="color:var(--success)">✓</span> <span style="color:var(--success)">${stats.attained} COs meeting target</span>`
-      : `<span style="color:var(--warning)">⚠</span> <span style="color:var(--warning)">Enter marks to track</span>`;
+      ? `<span style="color:var(--success);font-weight:600;">${stats.attained} COs &ge; Level 2</span>`
+      : `<span style="color:var(--text-muted)">Enter marks to track</span>`;
 
     // AI Meter
     const aiEnabled   = cfg.aiEnabled;
@@ -324,14 +344,14 @@
     const aiMax       = cfg.maxAICalls  || 50;
     const aiPct       = Math.min((aiUsed / aiMax) * 100, 100);
     document.getElementById('ai-calls-label').textContent = `${aiUsed} / ${aiMax}`;
-    document.getElementById('ai-status-badge').textContent = aiEnabled ? '🟢 Enabled' : '🔴 Disabled';
+    document.getElementById('ai-status-badge').textContent = aiEnabled ? 'Enabled' : 'Disabled';
     document.getElementById('ai-status-badge').className   = `badge ${aiEnabled ? 'badge-success' : 'badge-danger'}`;
     document.getElementById('ai-hint').textContent = aiEnabled
-      ? `${aiMax - aiUsed} calls remaining — AI generation active`
-      : 'AI features are currently disabled by admin. Contact admin to enable.';
+      ? `${aiMax - aiUsed} calls remaining this month`
+      : 'AI services paused';
     setTimeout(() => {
       document.getElementById('ai-meter-fill').style.width = aiPct + '%';
-    }, 300);
+    }, 200);
 
     // Course List
     renderCourseList(courses);
@@ -342,12 +362,13 @@
 
     // Attainment Summary
     renderAttSummary(courses);
+    renderAllIcons();
   }
 
   function renderCourseList(courses) {
     const el = document.getElementById('course-list');
     if (!courses.length) {
-      el.innerHTML = `<div class="empty-state"><div class="empty-icon">📚</div><h3>No Courses Yet</h3><p>You have no courses assigned.</p><a href="courses.html" class="btn btn-primary btn-sm">Add Course</a></div>`;
+      el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px;">No courses assigned yet. <a href="courses.html" class="btn btn-primary btn-sm" style="margin-top:8px;">Add Course</a></div>`;
       return;
     }
     el.innerHTML = courses.map(c => {
@@ -355,10 +376,10 @@
       const cos      = DB.cos.byCourse(c.id).filter(x => x.text);
       return `
         <div class="course-card-mini" onclick="selectCourse('${c.id}')">
-          <div class="course-mini-icon">${c.shortName ? c.shortName[0] : c.code[0]}</div>
+          <div class="course-mini-icon">${c.shortName ? c.shortName.slice(0,2).toUpperCase() : c.code.slice(0,2).toUpperCase()}</div>
           <div style="flex:1;min-width:0">
-            <div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name}</div>
-            <div style="font-size:12px;color:var(--text-secondary)">${c.code} · Sem ${c.semester} · ${students} students · ${cos.length} COs</div>
+            <div style="font-weight:700;font-size:13.5px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name}</div>
+            <div style="font-size:11.5px;color:var(--text-secondary)">${c.code} &bull; Sem ${c.semester} &bull; ${students} students &bull; ${cos.length} COs</div>
             <div class="quick-links">
               <a class="quick-link" href="outcomes.html" onclick="sessionStorage.setItem('selected_course_id','${c.id}')">COs</a>
               <a class="quick-link" href="marks.html"    onclick="sessionStorage.setItem('selected_course_id','${c.id}')">Marks</a>
@@ -366,7 +387,7 @@
               <a class="quick-link" href="co-po-map.html"  onclick="sessionStorage.setItem('selected_course_id','${c.id}')">CO-PO Map</a>
             </div>
           </div>
-          <span class="badge ${c.status === 'active' ? 'badge-success' : 'badge-muted'}">${c.status || 'active'}</span>
+          <span class="badge ${c.status === 'active' ? 'badge-success' : 'badge-neutral'}">${c.status || 'active'}</span>
         </div>`;
     }).join('');
   }
@@ -376,7 +397,6 @@
   }
 
   function buildCOChart(courses) {
-    // Gather all COs across courses
     let allLabels = [];
     let allData   = [];
     let allColors = [];
@@ -385,11 +405,11 @@
     courses.forEach(c => {
       const finals = Attainment.calcCOFinal(c.id);
       finals.forEach(co => {
-        allLabels.push(`${c.shortName||c.code} / ${co.coCode}`);
+        allLabels.push(`${c.shortName || c.code} - ${co.coCode}`);
         allData.push(co.finalLevel !== null ? co.finalLevel : 0);
-        if (co.finalLevel >= 2) { allColors.push('rgba(5,150,105,0.75)');  allBorders.push('#059669'); }
-        else if (co.finalLevel === 1) { allColors.push('rgba(217,119,6,0.75)'); allBorders.push('#D97706'); }
-        else { allColors.push('rgba(220,38,38,0.55)'); allBorders.push('#DC2626'); }
+        if (co.finalLevel >= 2) { allColors.push('#10B981'); allBorders.push('#059669'); }
+        else if (co.finalLevel === 1) { allColors.push('#F59E0B'); allBorders.push('#D97706'); }
+        else { allColors.push('#EF4444'); allBorders.push('#DC2626'); }
       });
     });
 
@@ -398,24 +418,27 @@
     coChartInst = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: allLabels.length ? allLabels : ['No Data'],
+        labels: allLabels.length ? allLabels : ['No Course Data'],
         datasets: [{
-          label: 'CO Attainment Level',
+          label: 'Attainment Level (0-3)',
           data: allData.length ? allData : [0],
-          backgroundColor: allColors.length ? allColors : ['rgba(37,99,235,0.3)'],
-          borderColor: allBorders,
-          borderWidth: 1.5,
-          borderRadius: 8,
-          borderSkipped: false,
+          backgroundColor: allColors.length ? allColors : ['#94A3B8'],
+          borderColor: allBorders.length ? allBorders : ['#64748B'],
+          borderWidth: 1,
+          borderRadius: 4
         }]
       },
       options: {
-        responsive: true, maintainAspectRatio: true,
+        responsive: true,
+        maintainAspectRatio: true,
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: '#0F172A', titleColor: '#F8FAFC', bodyColor: '#CBD5E1',
-            padding: 10, cornerRadius: 8,
+            backgroundColor: '#0F172A',
+            titleColor: '#FFFFFF',
+            bodyColor: '#CBD5E1',
+            padding: 8,
+            cornerRadius: 4,
             callbacks: { label: ctx => `Level ${ctx.raw} / 3` }
           }
         },
@@ -423,7 +446,7 @@
           y: {
             min: 0, max: 3,
             ticks: { color: '#64748B', stepSize: 1, callback: v => `L${v}` },
-            grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false }
+            grid: { color: '#E2E8F0', drawBorder: false }
           },
           x: {
             ticks: { color: '#64748B', font: { size: 10 }, maxRotation: 45 },
@@ -460,33 +483,34 @@
         datasets: [{
           label: 'PO Attainment',
           data,
-          backgroundColor: 'rgba(37,99,235,0.1)',
+          backgroundColor: 'rgba(37,99,235,0.08)',
           borderColor: '#2563EB',
           pointBackgroundColor: '#2563EB',
-          pointBorderColor: '#fff',
-          pointHoverBackgroundColor: '#fff',
-          pointHoverBorderColor: '#2563EB',
-          borderWidth: 2.5,
-          pointRadius: 5,
+          pointBorderColor: '#FFFFFF',
+          borderWidth: 2,
+          pointRadius: 4
         }]
       },
       options: {
-        responsive: true, maintainAspectRatio: true,
+        responsive: true,
+        maintainAspectRatio: true,
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: '#0F172A', titleColor: '#F8FAFC', bodyColor: '#CBD5E1',
-            padding: 10, cornerRadius: 8,
-            callbacks: { label: ctx => `PO Score: ${ctx.raw.toFixed ? ctx.raw.toFixed(2) : ctx.raw} / 3` }
+            backgroundColor: '#0F172A',
+            titleColor: '#FFFFFF',
+            bodyColor: '#CBD5E1',
+            padding: 8,
+            cornerRadius: 4,
+            callbacks: { label: ctx => `Score: ${ctx.raw.toFixed ? ctx.raw.toFixed(2) : ctx.raw} / 3` }
           }
         },
         scales: {
           r: {
             min: 0, max: 3,
-            ticks: { stepSize: 1, color: '#64748B', backdropColor: '#F8FAFC', font: { size: 10 } },
-            grid: { color: 'rgba(0,0,0,0.08)' },
-            pointLabels: { color: '#475569', font: { size: 11, weight: '700' } },
-            angleLines: { color: 'rgba(0,0,0,0.07)' }
+            ticks: { stepSize: 1, color: '#64748B', font: { size: 10 }, showLabelBackdrop: false },
+            grid: { color: '#E2E8F0' },
+            pointLabels: { color: '#475569', font: { size: 10.5, weight: '600' } }
           }
         }
       }
@@ -495,81 +519,67 @@
 
   function renderAttSummary(courses) {
     const el = document.getElementById('att-summary');
-    if (!courses.length) { el.innerHTML = `<p class="text-muted text-sm">No courses to summarize.</p>`; return; }
-    let html = '';
-    courses.forEach(c => {
+    if (!courses.length) {
+      el.innerHTML = `<div style="font-size:12px;color:var(--text-muted);">No active courses.</div>`;
+      return;
+    }
+    el.innerHTML = courses.map(c => {
       const finals = Attainment.calcCOFinal(c.id);
       const attained = finals.filter(x => x.finalLevel >= 2).length;
       const total    = finals.filter(x => x.finalLevel !== null).length;
       const pct      = total > 0 ? Math.round((attained / total) * 100) : 0;
-      const color    = pct >= 75 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)';
-      html += `
+      return `
         <div>
-          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
-            <span style="font-weight:600">${c.shortName || c.code}</span>
-            <span style="color:${color};font-weight:700">${attained}/${total} COs ≥ L2</span>
+          <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px;">
+            <span style="font-weight:600;color:var(--text-primary)">${c.shortName || c.code}</span>
+            <span style="font-weight:600;color:var(--text-secondary)">${attained}/${total} COs &ge; L2 (${pct}%)</span>
           </div>
-          <div class="progress-bar">
-            <div class="progress-fill ${pct >= 75 ? 'success' : pct >= 50 ? 'warning' : 'danger'}" style="width:${pct}%"></div>
+          <div style="height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden;border:1px solid var(--border);">
+            <div style="height:100%;background:${pct>=70?'var(--success)':'var(--warning)'};width:${pct}%;"></div>
           </div>
         </div>`;
-    });
-    el.innerHTML = html;
+    }).join('');
   }
+
   function renderAdvisor(courses) {
     const listEl = document.getElementById('advisor-list');
     const badgeEl = document.getElementById('advisor-badge');
-    
-    // Use Advisor engine globally
     const issues = window.Advisor ? Advisor.getGlobalDiagnostics(user.id) : [];
     
     listEl.innerHTML = '';
     
     if (issues.length === 0) {
-      badgeEl.textContent = '0 Issues';
+      badgeEl.textContent = 'All Valid';
       badgeEl.className = 'badge badge-success';
       listEl.innerHTML = `
-        <div style="text-align:center; padding:24px; color:var(--text-muted);">
-          <div style="font-size:32px; margin-bottom:8px;">✅</div>
-          <div style="font-weight:600; color:var(--success);">All Good!</div>
-          <div style="font-size:12px; margin-top:4px;">No configuration issues or missing data found for your courses.</div>
-        </div>
-      `;
+        <div style="padding:14px; text-align:center; color:var(--text-secondary); font-size:12.5px;">
+          <div style="font-weight:600; color:var(--success); margin-bottom:2px;">All Courses Configured</div>
+          <div>No missing marks, unmapped COs, or curriculum gaps detected.</div>
+        </div>`;
       return;
     }
 
-    badgeEl.textContent = `${issues.length} Suggestion${issues.length>1?'s':''}`;
+    badgeEl.textContent = `${issues.length} Note${issues.length>1?'s':''}`;
     badgeEl.className = 'badge badge-warning';
 
     issues.forEach(iss => {
-      const isError = iss.type === 'error';
-      const isWarn = iss.type === 'warning';
-      const color = isError ? 'var(--danger)' : (isWarn ? 'var(--warning)' : 'var(--info)');
-      const bg = isError ? 'rgba(239,68,68,0.1)' : (isWarn ? 'rgba(245,158,11,0.1)' : 'rgba(59,130,246,0.1)');
-      const icon = isError ? '❌' : (isWarn ? '⚠️' : '💡');
-
       const el = document.createElement('div');
       el.style.cssText = `
-        display:flex; justify-content:space-between; align-items:flex-start;
-        padding: 12px; border-radius: 8px; background: ${bg}; border-left: 3px solid ${color};
-        gap: 12px;
+        display:flex; justify-content:space-between; align-items:center;
+        padding: 10px 12px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--border);
+        gap: 12px; font-size:12.5px;
       `;
-      
-      const coursePrefix = iss.course ? `<span style="font-size:10px; font-weight:700; background:rgba(255,255,255,0.15); padding:2px 6px; border-radius:4px; margin-right:6px;">${iss.course.code}</span>` : '';
-
+      const coursePrefix = iss.course ? `<strong style="color:var(--primary);margin-right:6px;">${iss.course.code}</strong>` : '';
       el.innerHTML = `
-        <div style="display:flex; gap:12px; flex:1;">
-          <div style="font-size:16px; margin-top:2px;">${icon}</div>
-          <div>
-            <div style="font-weight:600; font-size:14px; margin-bottom:4px; color:${color}; display:flex; align-items:center;">
-              ${coursePrefix} ${iss.title}
-            </div>
-            <div style="font-size:12px; color:var(--text-secondary); line-height:1.4;">
-              ${iss.description}
-            </div>
+        <div style="flex:1;">
+          <div style="font-weight:600; color:var(--text-primary); margin-bottom:2px;">
+            ${coursePrefix}${iss.title}
+          </div>
+          <div style="font-size:11.5px; color:var(--text-secondary);">
+            ${iss.description}
           </div>
         </div>
-        <a href="${iss.actionUrl}" class="btn btn-sm" style="background:transparent; border:1px solid ${color}; color:${color}; font-size:11px; padding:4px 10px; white-space:nowrap; flex-shrink:0;" onclick="sessionStorage.setItem('selected_course_id', '${iss.course?iss.course.id:''}')">
+        <a href="${iss.actionUrl}" class="btn btn-secondary btn-sm" onclick="sessionStorage.setItem('selected_course_id', '${iss.course?iss.course.id:''}')">
           ${iss.actionText}
         </a>
       `;
@@ -577,8 +587,6 @@
     });
   }
 
-
-  // Auto-exposed: onclick handlers need to be on window
   window.selectCourse = selectCourse;
 })();
 </script>
