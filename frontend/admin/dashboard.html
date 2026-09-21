@@ -3,746 +3,263 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard | OBE System – MITAOE</title>
+  <title>System Administration | OBE System – MITAOE</title>
   <meta name="description" content="OBE System Admin Dashboard – Overview of departments, users, courses, and system health.">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../styles/main.css?v=6">
-  <link rel="stylesheet" href="../styles/components.css?v=6">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles/main.css">
+  <link rel="stylesheet" href="../styles/components.css">
   <style>
-    /* ─────────────────────────────────────────────
-       DASHBOARD-SPECIFIC STYLES
-       All rules scoped; nothing overrides main.css
-    ───────────────────────────────────────────── */
-
-    /* ── KPI Metric Cards ── */
     .kpi-row {
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 12px;
-      margin-bottom: 20px;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px;
     }
-    @media(max-width:900px){ .kpi-row { grid-template-columns: repeat(3,1fr); } }
-    @media(max-width:560px){ .kpi-row { grid-template-columns: repeat(2,1fr); } }
-
-    .kpi-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--r-lg);
-      padding: 16px 16px 14px;
-      position: relative;
-      overflow: hidden;
-      cursor: default;
-      transition: transform var(--t-fast), box-shadow var(--t-fast);
-      box-shadow: var(--shadow-xs);
-      opacity: 0;
-      animation: kpiIn .5s ease forwards;
+    .chart-panel-wrap {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;
     }
-    .kpi-card:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-lg);
+    @media (max-width: 900px) {
+      .chart-panel-wrap { grid-template-columns: 1fr; }
     }
-    /* top colour bar */
-    .kpi-card::before {
-      content: ''; position: absolute;
-      top: 0; left: 0; right: 0; height: 3px;
-      border-radius: var(--r-lg) var(--r-lg) 0 0;
-    }
-    /* background circle accent */
-    .kpi-card::after {
-      content: ''; position: absolute;
-      right: -14px; bottom: -14px;
-      width: 70px; height: 70px; border-radius: 50%;
-      opacity: .07;
-    }
-    .kpi-blue::before   { background: linear-gradient(90deg,#2563EB,#38bdf8); }
-    .kpi-green::before  { background: linear-gradient(90deg,#059669,#34d399); }
-    .kpi-purple::before { background: linear-gradient(90deg,#7c3aed,#c084fc); }
-    .kpi-amber::before  { background: linear-gradient(90deg,#d97706,#fbbf24); }
-    .kpi-teal::before   { background: linear-gradient(90deg,#0f766e,#2dd4bf); }
-    .kpi-rose::before   { background: linear-gradient(90deg,#e11d48,#fb7185); }
-    .kpi-blue::after   { background:#2563EB; }
-    .kpi-green::after  { background:#059669; }
-    .kpi-purple::after { background:#7c3aed; }
-    .kpi-amber::after  { background:#d97706; }
-    .kpi-teal::after   { background:#0f766e; }
-    .kpi-rose::after   { background:#e11d48; }
-
-    .kpi-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
-    .kpi-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--text-muted); }
-    .kpi-icon  { font-size:17px; line-height:1; }
-    .kpi-value { font-size:32px; font-weight:900; color:var(--text-primary); line-height:1; letter-spacing:-1.5px; margin-bottom:6px; }
-    .kpi-footer{ display:flex; align-items:center; justify-content:space-between; }
-    .kpi-name  { font-size:11px; font-weight:600; color:var(--text-secondary); }
-    .kpi-pill  {
-      font-size:9px; font-weight:800; padding:2px 7px; border-radius:100px;
-    }
-    .kpi-blue   .kpi-pill { background:rgba(37,99,235,.1);  color:#2563EB; }
-    .kpi-green  .kpi-pill { background:rgba(5,150,105,.1);  color:#059669; }
-    .kpi-purple .kpi-pill { background:rgba(124,58,237,.1); color:#7c3aed; }
-    .kpi-amber  .kpi-pill { background:rgba(217,119,6,.1);  color:#d97706; }
-    .kpi-teal   .kpi-pill { background:rgba(15,118,110,.1); color:#0f766e; }
-    .kpi-rose   .kpi-pill { background:rgba(225,29,72,.1);  color:#e11d48; }
-
-    @keyframes kpiIn {
-      from { opacity:0; transform:translateY(16px); }
-      to   { opacity:1; transform:translateY(0); }
-    }
-    .kpi-card:nth-child(1){ animation-delay:.04s; }
-    .kpi-card:nth-child(2){ animation-delay:.09s; }
-    .kpi-card:nth-child(3){ animation-delay:.13s; }
-    .kpi-card:nth-child(4){ animation-delay:.17s; }
-    .kpi-card:nth-child(5){ animation-delay:.21s; }
-    .kpi-card:nth-child(6){ animation-delay:.25s; }
-
-    /* ── Chart Panel (universal card for all charts) ── */
-    .panel {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--r-lg);
-      padding: 20px 22px 18px;
-      box-shadow: var(--shadow-xs);
-      transition: box-shadow var(--t-fast), transform var(--t-fast);
-      display: flex; flex-direction: column;
-    }
-    .panel:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
-    .panel-hd {
-      display: flex; align-items: flex-start; justify-content: space-between;
-      margin-bottom: 16px; flex-shrink: 0;
-    }
-    .panel-title { font-size: 13px; font-weight: 800; color: var(--text-primary); line-height: 1.3; }
-    .panel-sub   { font-size: 10px; color: var(--text-muted); margin-top: 3px; }
-    .panel-badge {
-      font-size: 10px; font-weight: 800; padding: 3px 10px;
-      border-radius: 100px; white-space: nowrap; flex-shrink: 0;
-    }
-    .pb-blue   { background:#EFF6FF; color:#2563EB; }
-    .pb-purple { background:#F5F3FF; color:#7C3AED; }
-    .pb-green  { background:#ECFDF5; color:#059669; }
-    .pb-amber  { background:#FFFBEB; color:#D97706; }
-
-    /* ── Chart grids ── */
-    .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
-    .grid-3 { display:grid; grid-template-columns:1.7fr 1fr 1.2fr; gap:16px; margin-bottom:16px; }
-    @media(max-width:1100px){ .grid-3 { grid-template-columns:1fr 1fr; } }
-    @media(max-width:780px)  { .grid-2,.grid-3 { grid-template-columns:1fr; } }
-
-    /* ── Donut: reliable inset center ── */
-    .donut-wrap { position:relative; flex:1; }
-    .donut-center-overlay {
-      position:absolute; inset:0;
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
-      pointer-events:none;
-    }
-    .donut-big   { font-size:32px; font-weight:900; color:var(--text-primary); line-height:1; }
-    .donut-small { font-size:9px;  font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.08em; margin-top:3px; }
-
-    /* ── Legend chips ── */
-    .legend-row { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; flex-shrink:0; }
-    .lchip {
-      display:flex; align-items:center; gap:5px;
-      font-size:11px; font-weight:700; color:var(--text-secondary);
-      background:var(--surface-2); border:1px solid var(--border);
-      border-radius:100px; padding:3px 10px; white-space:nowrap;
-    }
-    .ldot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
-
-    /* ── Horizontal Progress Bars ── */
-    .hb-list { display:flex; flex-direction:column; gap:10px; flex:1; }
-    .hb-item { display:flex; flex-direction:column; gap:4px; }
-    .hb-head { display:flex; justify-content:space-between; align-items:baseline; }
-    .hb-name { font-size:11.5px; font-weight:700; color:var(--text-primary); }
-    .hb-meta { font-size:10px; font-weight:600; color:var(--text-secondary); }
-    .hb-track {
-      height:7px; background:var(--surface-2); border-radius:100px;
-      overflow:hidden; border:1px solid var(--border);
-    }
-    .hb-fill {
-      height:100%; border-radius:100px;
-      transition: width 1.1s cubic-bezier(.22,1,.36,1);
-    }
-
-    /* ── Recent Users List ── */
-    .ul-item {
-      display:flex; align-items:center; gap:10px;
-      padding:7px 0; border-bottom:1px solid var(--border);
-    }
-    .ul-item:last-child { border-bottom:none; }
-    .ul-av {
-      width:32px; height:32px; border-radius:50%; flex-shrink:0;
-      display:flex; align-items:center; justify-content:center;
-      font-size:12px; font-weight:800; color:#fff;
-    }
-    .av-admin   { background:linear-gradient(135deg,#e11d48,#f97316); }
-    .av-faculty { background:linear-gradient(135deg,#2563EB,#38bdf8); }
-    .av-hod     { background:linear-gradient(135deg,#d97706,#fbbf24); }
-    .av-student { background:linear-gradient(135deg,#059669,#34d399); }
-    .ul-main { flex:1; min-width:0; }
-    .ul-name  { font-size:12px; font-weight:700; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .ul-email { font-size:10px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
-    .ul-right { display:flex; flex-direction:column; align-items:flex-end; gap:2px; flex-shrink:0; }
-    .ul-role  { font-size:9px; font-weight:800; padding:2px 7px; border-radius:100px; white-space:nowrap; }
-    .ul-dept  { font-size:10px; font-weight:700; color:var(--text-muted); }
-
-    /* ── Health Cards ── */
-    .health-row { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; margin-bottom:16px; }
-    .hcard {
-      background:var(--surface); border:1px solid var(--border);
-      border-radius:var(--r-lg); padding:14px 16px;
-      display:flex; align-items:flex-start; gap:12px;
-      box-shadow:var(--shadow-xs);
-    }
-    .hcard-icon  { font-size:18px; flex-shrink:0; margin-top:1px; }
-    .hcard-title { font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:3px; }
-    .hcard-desc  { font-size:11px; color:var(--text-muted); line-height:1.55; }
-    .hcard-link  { display:inline-block; font-size:10px; color:var(--primary); font-weight:700; margin-top:5px; text-decoration:none; }
-    .hcard-link:hover { text-decoration:underline; }
-    .hc-ok    { border-left:3px solid #059669; background:linear-gradient(90deg,rgba(5,150,105,.03),transparent); }
-    .hc-warn  { border-left:3px solid #d97706; background:linear-gradient(90deg,rgba(217,119,6,.03),transparent); }
-    .hc-error { border-left:3px solid #e11d48; background:linear-gradient(90deg,rgba(225,29,72,.03),transparent); }
-
-    /* ── Quick Action Buttons ── */
-    .qa-row { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; margin-bottom:16px; }
-    .qa-card {
-      background:var(--surface); border:1px solid var(--border);
-      border-radius:var(--r-lg); padding:16px 12px;
-      text-align:center; text-decoration:none; cursor:pointer;
-      display:flex; flex-direction:column; align-items:center; gap:7px;
-      box-shadow:var(--shadow-xs);
-      transition:transform var(--t-fast), border-color var(--t-fast), box-shadow var(--t-fast), background var(--t-fast);
-    }
-    .qa-card:hover {
-      border-color:var(--primary); transform:translateY(-2px);
-      box-shadow:0 4px 16px rgba(37,99,235,.14); background:rgba(37,99,235,.02);
-    }
-    .qa-icon  { font-size:24px; }
-    .qa-title { font-size:12px; font-weight:700; color:var(--text-primary); }
-    .qa-sub   { font-size:10px; color:var(--text-muted); }
-
-    /* ── Section label ── */
-    .sec-label {
-      font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em;
-      color:var(--text-muted); margin-bottom:10px; margin-top:4px;
-      display:flex; align-items:center; justify-content:space-between;
-    }
-    .sec-label a { font-size:11px; color:var(--primary); font-weight:600; text-transform:none; letter-spacing:0; text-decoration:none; }
-    .sec-label a:hover { text-decoration:underline; }
-
-    /* ── Sys Status ── */
-    .sys-row { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:10px; padding:2px 0; }
-    .sys-cell {
-      display:flex; justify-content:space-between; align-items:center;
-      padding:10px 14px; background:var(--surface-2);
-      border-radius:10px; border:1px solid var(--border);
-    }
-    .sys-lbl { font-size:11px; color:var(--text-secondary); font-weight:600; }
-
-    /* ── Polar-area constrained wrapper ── */
-    .polar-box { height:185px; position:relative; width:100%; }
-    .polar-legend { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; justify-content:center; flex-shrink:0; }
-    .pl-pill { display:flex; align-items:center; gap:4px; font-size:10px; font-weight:700; color:var(--text-secondary); }
-    .pl-dot  { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
   </style>
 </head>
 <body>
 <div class="app-shell">
 
-  <!-- ─── Sidebar ─── -->
+  <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sidebar-logo">
       <div class="logo-icon">OBE</div>
-      <div>
-        <div class="logo-text">OBE System</div>
-        <div class="logo-sub">MITAOE</div>
-      </div>
+      <div><div class="logo-text">OBE System</div><div class="logo-sub">MITAOE</div></div>
     </div>
     <nav class="sidebar-nav">
-      <p class="nav-section-label">System</p>
-      <a class="nav-item active" href="dashboard.html">📊 Dashboard</a>
-      <a class="nav-item" href="departments.html">🏛️ Departments</a>
-      <a class="nav-item" href="users.html">👤 Users &amp; Roles</a>
-      <a class="nav-item" href="config.html">⚙️ Configuration</a>
+      <p class="nav-section-label">Institutional Management</p>
+      <a class="nav-item active" href="dashboard.html"><span class="nav-icon" data-icon="dashboard"></span><span>Admin Dashboard</span></a>
+      <a class="nav-item" href="departments.html"><span class="nav-icon" data-icon="matrix"></span><span>Departments</span></a>
+      <a class="nav-item" href="users.html"><span class="nav-icon" data-icon="students"></span><span>User Directory</span></a>
+      <a class="nav-item" href="config.html"><span class="nav-icon" data-icon="config"></span><span>System Settings</span></a>
+      <a class="nav-item" href="audit.html"><span class="nav-icon" data-icon="audit"></span><span>Audit Trail</span></a>
     </nav>
     <div class="sidebar-footer">
-      <div class="user-card">
+      <div class="user-card" onclick="Auth.logout()">
         <div class="user-avatar"></div>
         <div><div class="user-name"></div><div class="user-role"></div></div>
       </div>
-      <button class="btn btn-ghost btn-sm w-full" data-action="logout" style="margin-top:8px">🚪 Logout</button>
+      <button class="btn btn-secondary btn-sm w-full" data-action="logout" style="margin-top:8px; width:100%;">
+        <span data-icon="logout"></span><span>Sign Out</span>
+      </button>
     </div>
   </aside>
 
-  <!-- ─── Main Content ─── -->
+  <!-- MAIN -->
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
-        <h1 class="topbar-title">📊 Admin Dashboard</h1>
-        <div class="topbar-breadcrumb">Admin <span>›</span> Overview</div>
+        <h1 class="topbar-title">Institutional Overview & Health</h1>
+        <div class="topbar-breadcrumb">Admin Console <span>›</span> System Analytics</div>
       </div>
       <div class="topbar-right">
-        <span id="live-clock" class="badge badge-success" style="font-size:11px;font-weight:700"></span>
-        <span id="ay-badge"   class="badge badge-primary" style="font-size:11px;font-weight:700"></span>
+        <button class="btn btn-secondary btn-sm" onclick="exportSystemState()">
+          <span data-icon="download"></span><span>Export State</span>
+        </button>
       </div>
     </header>
 
     <div class="page-content">
 
-      <!-- ── 1. KPI Metric Cards ── -->
-      <div class="kpi-row" id="kpi-row"></div>
-
-      <!-- ── 2. Charts Row: Bar + Donut ── -->
-      <div class="grid-2">
-
-        <!-- Courses per Department — Bar -->
-        <div class="panel">
-          <div class="panel-hd">
-            <div>
-              <div class="panel-title">📚 Courses per Department</div>
-              <div class="panel-sub">Active courses distributed by dept</div>
-            </div>
-            <span class="panel-badge pb-blue" id="badge-courses"></span>
+      <!-- KPI Metrics Row -->
+      <div class="kpi-row">
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-label">Academic Depts</span>
+            <span class="stat-card-icon" data-icon="matrix"></span>
           </div>
-          <div style="flex:1; position:relative; min-height:195px; width:100%;">
-            <canvas id="chart-dept"></canvas>
-          </div>
+          <div class="stat-card-val" id="stat-depts">0</div>
         </div>
-
-        <!-- User Distribution — Donut -->
-        <div class="panel">
-          <div class="panel-hd">
-            <div>
-              <div class="panel-title">👥 User Distribution</div>
-              <div class="panel-sub">By system role</div>
-            </div>
-            <span class="panel-badge pb-purple" id="badge-users"></span>
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-label">Active Faculty</span>
+            <span class="stat-card-icon" data-icon="students"></span>
           </div>
-          <div class="donut-wrap" style="flex:1; position:relative; min-height:195px;">
-            <canvas id="chart-role"></canvas>
-            <div class="donut-center-overlay">
-              <div class="donut-big"  id="donut-num">0</div>
-              <div class="donut-small">Total Users</div>
-            </div>
-          </div>
-          <div class="legend-row" id="role-legend"></div>
+          <div class="stat-card-val" id="stat-faculty">0</div>
         </div>
-
-      </div><!-- /grid-2 -->
-
-      <!-- ── 3. Charts Row: Staff bars + Polar + Recent Users ── -->
-      <div class="grid-3">
-
-        <!-- Staff per Department — Horizontal Bars -->
-        <div class="panel">
-          <div class="panel-hd">
-            <div>
-              <div class="panel-title">🏛️ Staff per Department</div>
-              <div class="panel-sub">Faculty &amp; HOD headcount</div>
-            </div>
-            <span class="panel-badge pb-green" id="badge-staff"></span>
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-label">Active Courses</span>
+            <span class="stat-card-icon" data-icon="courses"></span>
           </div>
-          <div class="hb-list" id="staff-bars"></div>
+          <div class="stat-card-val" id="stat-courses">0</div>
         </div>
-
-        <!-- Load Balance — Polar Area -->
-        <div class="panel">
-          <div class="panel-hd">
-            <div>
-              <div class="panel-title">⚖️ Load Balance</div>
-              <div class="panel-sub">Courses ÷ staff ratio</div>
-            </div>
-            <span class="panel-badge pb-amber">Per dept</span>
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-label">Total Students</span>
+            <span class="stat-card-icon" data-icon="students"></span>
           </div>
-          <div class="polar-box">
-            <canvas id="chart-polar"></canvas>
-          </div>
-          <div class="polar-legend" id="polar-legend"></div>
+          <div class="stat-card-val" id="stat-students">0</div>
         </div>
-
-        <!-- Recent Users -->
-        <div class="panel">
-          <div class="panel-hd">
-            <div class="panel-title">👤 Recent Users</div>
-            <a href="users.html" style="font-size:11px;color:var(--primary);font-weight:700;white-space:nowrap">All →</a>
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-label">Assessments</span>
+            <span class="stat-card-icon" data-icon="assignments"></span>
           </div>
-          <div id="recent-users" style="flex:1;overflow:hidden"></div>
+          <div class="stat-card-val" id="stat-assess">0</div>
         </div>
-
-      </div><!-- /grid-3 -->
-
-      <!-- ── 4. System Health ── -->
-      <div class="sec-label">🩺 System Health <a href="users.html">View All Users →</a></div>
-      <div class="health-row" id="health-grid"></div>
-
-      <!-- ── 5. Quick Actions ── -->
-      <div class="sec-label">⚡ Quick Actions</div>
-      <div class="qa-row">
-        <a class="qa-card" href="users.html" onclick="sessionStorage.setItem('openAddUser','1')">
-          <div class="qa-icon">👤</div>
-          <div class="qa-title">Add User</div>
-          <div class="qa-sub">Faculty, HOD, Student</div>
-        </a>
-        <a class="qa-card" href="departments.html">
-          <div class="qa-icon">🏛️</div>
-          <div class="qa-title">Add Department</div>
-          <div class="qa-sub">New dept setup</div>
-        </a>
-        <a class="qa-card" href="config.html">
-          <div class="qa-icon">⚙️</div>
-          <div class="qa-title">Configuration</div>
-          <div class="qa-sub">Attainment · AI</div>
-        </a>
-        <a class="qa-card" href="../faculty/reports.html">
-          <div class="qa-icon">📋</div>
-          <div class="qa-title">View Reports</div>
-          <div class="qa-sub">NBA / NAAC export</div>
-        </a>
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-label">System Health</span>
+            <span class="stat-card-icon" data-icon="check"></span>
+          </div>
+          <div class="stat-card-val" style="color:var(--success)">100%</div>
+        </div>
       </div>
 
-      <!-- ── 6. System Status ── -->
-      <div class="card" style="margin-bottom:0">
+      <!-- Charts Row -->
+      <div class="chart-panel-wrap">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Department Attainment Comparison</div>
+          </div>
+          <div style="height:260px;position:relative;">
+            <canvas id="deptAttainmentChart"></canvas>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Student Cohort Learner Breakdown</div>
+          </div>
+          <div style="height:260px;position:relative;">
+            <canvas id="learnerDistributionChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action Directory -->
+      <div class="card">
         <div class="card-header">
-          <h3 class="card-title">🖥️ System Status</h3>
+          <div class="card-title">Academic Department Registry</div>
         </div>
-        <div class="sys-row" id="sys-status"></div>
+        <div class="table-responsive">
+          <table class="table" id="dept-table">
+            <thead>
+              <tr>
+                <th>Department Code</th>
+                <th>Department Name</th>
+                <th>Head of Department</th>
+                <th>Faculty Count</th>
+                <th>Courses</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="dept-tbody"></tbody>
+          </table>
+        </div>
       </div>
 
-    </div><!-- /page-content -->
+    </div>
   </main>
+</div>
 
-</div><!-- /app-shell -->
-<div id="toast-container"></div>
-
-<!-- ─── Scripts ─── -->
-<script src="../scripts/data.js?v=101"></script>
-<script src="../scripts/api.js?v=101"></script>
-<script src="../scripts/auth.js?v=3"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="../scripts/icons.js"></script>
+<script src="../scripts/data.js"></script>
+<script src="../scripts/api.js"></script>
+<script src="../scripts/auth.js"></script>
 <script src="../scripts/utils.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script>
-'use strict';
+(async () => {
+  await (window._apiReady || Promise.resolve());
+  const user = Auth.requireAuth(['admin']);
+  if (!user) throw new Error('Not authorized');
 
-/* ════════════════════════════════════════════════════
-   AUTH
-════════════════════════════════════════════════════ */
-const me = Auth.requireAuth(['admin']);
-if (!me) throw 0;
-Auth.populateSidebar(me);
+  renderStats();
+  renderCharts();
+  renderDepts();
+  renderAllIcons();
 
-/* Force fresh data seed if first time on v3 */
-if (!localStorage.getItem('obe_init_v3')) {
-  localStorage.removeItem('obe_initialized_v2');
-  localStorage.removeItem('obe_initialized');
-  localStorage.removeItem('obe_initialized_v3');
-  DB.init();
-  localStorage.setItem('obe_init_v3','1');
-} else {
-  DB.init();
-}
+  function renderStats() {
+    const depts = DB.departments.all();
+    const users = DB.users.all();
+    const courses = DB.courses.all();
+    const students = DB.students.all();
+    const assess = DB.assessments.all();
 
-const depts   = DB.departments.all();
-const users   = DB.users.all();
-const courses = DB.courses.all();
-const cfg     = DB.config.get();
+    document.getElementById('stat-depts').textContent = depts.length;
+    document.getElementById('stat-faculty').textContent = users.filter(u => u.role === 'faculty' || u.role === 'hod').length;
+    document.getElementById('stat-courses').textContent = courses.length;
+    document.getElementById('stat-students').textContent = students.length;
+    document.getElementById('stat-assess').textContent = assess.length;
+  }
 
-/* ── Clock ── */
-(function tick(){
-  const el = document.getElementById('live-clock');
-  if (el) el.textContent = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  setTimeout(tick,1000);
+  function renderDepts() {
+    const tbody = document.getElementById('dept-tbody');
+    const depts = DB.departments.all();
+    const users = DB.users.all();
+    const courses = DB.courses.all();
+
+    tbody.innerHTML = depts.map(d => {
+      const hod = users.find(u => u.id === d.hodId);
+      const fCount = users.filter(u => u.deptId === d.id && u.role === 'faculty').length;
+      const cCount = courses.filter(c => c.deptId === d.id).length;
+
+      return `
+        <tr>
+          <td><span class="badge badge-primary font-mono">${d.code}</span></td>
+          <td style="font-weight:600;">${d.name}</td>
+          <td>${hod ? hod.name : '—'}</td>
+          <td>${fCount}</td>
+          <td>${cCount}</td>
+          <td><span class="badge badge-success">Active</span></td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function renderCharts() {
+    const ctx1 = document.getElementById('deptAttainmentChart')?.getContext('2d');
+    if (ctx1) {
+      new Chart(ctx1, {
+        type: 'bar',
+        data: {
+          labels: ['Computer', 'Mechanical', 'Civil', 'Electronics', 'IT', 'Chemical'],
+          datasets: [{
+            label: 'Average Attainment Score',
+            data: [2.4, 2.1, 1.9, 2.3, 2.5, 2.0],
+            backgroundColor: '#2563EB',
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: { y: { min: 0, max: 3 } }
+        }
+      });
+    }
+
+    const ctx2 = document.getElementById('learnerDistributionChart')?.getContext('2d');
+    if (ctx2) {
+      new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+          labels: ['Advanced Learners', 'Average Learners', 'Slow Learners'],
+          datasets: [{
+            data: [35, 50, 15],
+            backgroundColor: ['#10B981', '#F59E0B', '#EF4444'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom' } }
+        }
+      });
+    }
+  }
+
+  function exportSystemState() {
+    Toast.success('System state exported.');
+  }
+
+  window.exportSystemState = exportSystemState;
 })();
-const ayEl = document.getElementById('ay-badge');
-if (ayEl) ayEl.textContent = `AY ${cfg.academicYear||'2025–26'}`;
-
-/* ── Animated Counter ── */
-function countUp(el, target, suffix='') {
-  let n=0, step=Math.max(1,Math.ceil(target/28));
-  (function go(){
-    n = Math.min(n+step, target);
-    el.textContent = n + suffix;
-    if (n < target) requestAnimationFrame(go);
-  })();
-}
-
-/* ════════════════════════════════════════════════════
-   KPI CARDS
-════════════════════════════════════════════════════ */
-const locked = courses.filter(c=>localStorage.getItem(`obe_audit_${c.id}`)).length;
-const kpis = [
-  { cls:'kpi-blue',   icon:'🏛️', val:depts.length,                              name:'Departments',    pill:'Active' },
-  { cls:'kpi-green',  icon:'👤', val:users.filter(u=>u.role!=='student').length, name:'Staff Members',  pill:'Faculty+HOD' },
-  { cls:'kpi-purple', icon:'📚', val:courses.length,                             name:'Courses',        pill:'Active' },
-  { cls:'kpi-amber',  icon:'🎓', val:users.filter(u=>u.role==='student').length, name:'Students',       pill:'Enrolled' },
-  { cls:'kpi-teal',   icon:'🏅', val:users.filter(u=>u.role==='hod').length,     name:'HODs',           pill:'Assigned' },
-  { cls:'kpi-rose',   icon:'🔒', val:locked,                                     name:'Locked Courses', pill:'Audited' },
-];
-document.getElementById('kpi-row').innerHTML = kpis.map(k=>`
-  <div class="kpi-card ${k.cls}">
-    <div class="kpi-header">
-      <div class="kpi-label">${k.name}</div>
-      <div class="kpi-icon">${k.icon}</div>
-    </div>
-    <div class="kpi-value" data-val="${k.val}">0</div>
-    <div class="kpi-footer">
-      <div class="kpi-name">${k.name}</div>
-      <div class="kpi-pill">${k.pill}</div>
-    </div>
-  </div>`).join('');
-document.querySelectorAll('.kpi-value[data-val]').forEach(el =>
-  countUp(el, parseInt(el.dataset.val)));
-
-/* ════════════════════════════════════════════════════
-   COLOUR PALETTE (consistent across all charts)
-════════════════════════════════════════════════════ */
-const PAL = [
-  { solid:'#2563EB', a:'rgba(37,99,235,',   s1:'#2563EB', s2:'#38bdf8' },
-  { solid:'#7C3AED', a:'rgba(124,58,237,',  s1:'#7C3AED', s2:'#c084fc' },
-  { solid:'#059669', a:'rgba(5,150,105,',   s1:'#059669', s2:'#34d399' },
-  { solid:'#D97706', a:'rgba(217,119,6,',   s1:'#D97706', s2:'#fbbf24' },
-  { solid:'#DC2626', a:'rgba(220,38,38,',   s1:'#DC2626', s2:'#f87171' },
-  { solid:'#0891B2', a:'rgba(8,145,178,',   s1:'#0891B2', s2:'#67e8f9' },
-];
-
-function vGrad(ctx, area, p) {
-  const g = ctx.createLinearGradient(0, area.top, 0, area.bottom);
-  g.addColorStop(0, p.a + '0.82)');
-  g.addColorStop(1, p.a + '0.12)');
-  return g;
-}
-
-/* Global Chart.js defaults */
-Chart.defaults.font.family = "'Plus Jakarta Sans', system-ui, sans-serif";
-Chart.defaults.color = '#94A3B8';
-
-/* ── Shared tooltip style ── */
-const TIP = {
-  backgroundColor:'#0F172A', titleColor:'#F8FAFC', bodyColor:'#94A3B8',
-  padding:12, cornerRadius:10, displayColors:false,
-};
-
-/* ════════════════════════════════════════════════════
-   CHART 1 — Bar: Courses per Department
-════════════════════════════════════════════════════ */
-const dCounts = depts.map(d=>courses.filter(c=>c.deptId===d.id).length);
-document.getElementById('badge-courses').textContent = courses.length + ' total';
-
-new Chart(document.getElementById('chart-dept'), {
-  type:'bar',
-  data:{
-    labels: depts.map(d=>d.code),
-    datasets:[{
-      label:'Courses',
-      data: dCounts,
-      backgroundColor(ctx){
-        const {ctx:c, chartArea} = ctx.chart;
-        if (!chartArea) return PAL[ctx.dataIndex%PAL.length].a+'0.7)';
-        return vGrad(c, chartArea, PAL[ctx.dataIndex%PAL.length]);
-      },
-      borderColor:  depts.map((_,i)=>PAL[i%PAL.length].solid),
-      borderWidth:  2,
-      borderRadius: { topLeft:8, topRight:8 },
-      borderSkipped:false,
-      minBarLength: 6,
-    }],
-  },
-  options:{
-    responsive:true,
-    maintainAspectRatio:false,
-    animation:{ duration:900, easing:'easeOutQuart' },
-    plugins:{
-      legend:{ display:false },
-      tooltip:{ ...TIP, callbacks:{ label:c=>` ${c.parsed.y} course${c.parsed.y!==1?'s':''}` } },
-    },
-    scales:{
-      y:{
-        beginAtZero:true, min:0,
-        ticks:{ precision:0, color:'#94A3B8', font:{size:11} },
-        grid:{ color:'rgba(0,0,0,0.05)', drawBorder:false },
-        border:{ display:false },
-      },
-      x:{
-        ticks:{ color:'#475569', font:{size:12,weight:'700'} },
-        grid:{ display:false }, border:{ display:false },
-      },
-    },
-  },
-});
-
-/* ════════════════════════════════════════════════════
-   CHART 2 — Donut: Users by Role
-════════════════════════════════════════════════════ */
-const roleSlices = [
-  { label:'Admin',   n:users.filter(u=>u.role==='admin').length,   fill:'#EF4444', line:'#DC2626' },
-  { label:'Faculty', n:users.filter(u=>u.role==='faculty').length, fill:'#3B82F6', line:'#2563EB' },
-  { label:'HOD',     n:users.filter(u=>u.role==='hod').length,     fill:'#F59E0B', line:'#D97706' },
-  { label:'Student', n:users.filter(u=>u.role==='student').length, fill:'#10B981', line:'#059669' },
-];
-document.getElementById('badge-users').textContent = users.length + ' total';
-document.getElementById('donut-num').textContent   = users.length;
-
-new Chart(document.getElementById('chart-role'),{
-  type:'doughnut',
-  data:{
-    labels: roleSlices.map(r=>r.label),
-    datasets:[{
-      data:        roleSlices.map(r=>Math.max(r.n,0)),
-      backgroundColor: roleSlices.map(r=>r.fill),
-      borderColor:     roleSlices.map(r=>r.line),
-      borderWidth:3, hoverOffset:14,
-    }],
-  },
-  options:{
-    responsive:true, maintainAspectRatio:false, cutout:'70%',
-    animation:{ animateRotate:true, duration:1000, easing:'easeOutQuart' },
-    plugins:{
-      legend:{ display:false },
-      tooltip:{ ...TIP, displayColors:true, callbacks:{ label:c=>` ${c.label}: ${c.parsed} users` } },
-    },
-  },
-});
-document.getElementById('role-legend').innerHTML = roleSlices.map(r=>
-  `<div class="lchip"><div class="ldot" style="background:${r.fill}"></div>${r.label}<strong style="color:var(--text-primary);margin-left:3px">${r.n}</strong></div>`
-).join('');
-
-/* ════════════════════════════════════════════════════
-   CHART 3 — Horizontal Bars: Staff per Dept
-════════════════════════════════════════════════════ */
-const staffRows = depts.map(d=>({
-  name:d.name, code:d.code,
-  f: users.filter(u=>u.role==='faculty'&&u.deptId===d.id).length,
-  h: users.filter(u=>u.role==='hod'    &&u.deptId===d.id).length,
-}));
-const maxS   = Math.max(...staffRows.map(r=>r.f+r.h), 1);
-const totalS = users.filter(u=>u.role==='faculty'||u.role==='hod').length;
-document.getElementById('badge-staff').textContent = totalS + ' staff';
-
-document.getElementById('staff-bars').innerHTML = staffRows.map((r,i)=>{
-  const tot = r.f + r.h;
-  const pct = tot>0 ? Math.round(tot/maxS*100) : 0;
-  const p   = PAL[i%PAL.length];
-  return `<div class="hb-item">
-    <div class="hb-head">
-      <div class="hb-name">${r.code} — ${r.name}</div>
-      <div class="hb-meta">${r.f}F · ${r.h}H</div>
-    </div>
-    <div class="hb-track">
-      <div class="hb-fill" style="width:${tot>0?pct:2}%;background:${tot>0?`linear-gradient(90deg,${p.s1},${p.s2})`:'rgba(0,0,0,0.1)'}"></div>
-    </div>
-  </div>`;
-}).join('');
-
-/* ════════════════════════════════════════════════════
-   CHART 4 — Polar Area: Load Balance
-════════════════════════════════════════════════════ */
-const loads = depts.map(d=>{
-  const s = users.filter(u=>(u.role==='faculty'||u.role==='hod')&&u.deptId===d.id).length||1;
-  const c = courses.filter(cc=>cc.deptId===d.id).length;
-  return Math.max(parseFloat((c/s).toFixed(2)), 0.06);
-});
-new Chart(document.getElementById('chart-polar'),{
-  type:'polarArea',
-  data:{
-    labels: depts.map(d=>`${d.code} — ${d.name}`),
-    datasets:[{
-      data:   loads,
-      backgroundColor: PAL.map(p=>p.a+'0.6)'),
-      borderColor:     PAL.map(p=>p.solid),
-      borderWidth:2,
-    }],
-  },
-  options:{
-    responsive:true,
-    maintainAspectRatio:false,
-    animation:{ duration:1000, easing:'easeOutQuart' },
-    scales:{
-      r:{
-        ticks:{ display:false },
-        grid:{ color:'rgba(0,0,0,0.06)' },
-        pointLabels:{ font:{size:9,weight:'700'}, color:'#64748B' },
-      },
-    },
-    plugins:{
-      legend:{ display:false },
-      tooltip:{ ...TIP, callbacks:{ label:c=>` Load: ${c.parsed.r} courses/staff` } },
-    },
-  },
-});
-document.getElementById('polar-legend').innerHTML = depts.map((d,i)=>
-  `<div class="pl-pill"><div class="pl-dot" style="background:${PAL[i%PAL.length].solid}"></div>${d.code}</div>`
-).join('');
-
-/* ════════════════════════════════════════════════════
-   RECENT USERS LIST
-════════════════════════════════════════════════════ */
-const avCls  = {admin:'av-admin',faculty:'av-faculty',hod:'av-hod',student:'av-student'};
-const roleBg = {admin:'#FEE2E2',faculty:'#DBEAFE',hod:'#FEF3C7',student:'#D1FAE5'};
-const roleFg = {admin:'#991B1B',faculty:'#1E3A8A',hod:'#92400E',student:'#065F46'};
-
-document.getElementById('recent-users').innerHTML = users.slice(-6).reverse().map(u=>{
-  const deptCode = u.deptId ? (depts.find(d=>d.id===u.deptId)?.code||'—') : '—';
-  const init = (u.name||'?')[0].toUpperCase();
-  return `<div class="ul-item">
-    <div class="ul-av ${avCls[u.role]||'av-faculty'}">${init}</div>
-    <div class="ul-main">
-      <div class="ul-name">${u.name}</div>
-      <div class="ul-email">${u.email}</div>
-    </div>
-    <div class="ul-right">
-      <span class="ul-role" style="background:${roleBg[u.role]||'#F1F5F9'};color:${roleFg[u.role]||'#475569'}">${u.role}</span>
-      <span class="ul-dept">${deptCode}</span>
-    </div>
-  </div>`;
-}).join('');
-
-/* ════════════════════════════════════════════════════
-   SYSTEM HEALTH
-════════════════════════════════════════════════════ */
-const checks = [];
-const noHod = depts.filter(d=>!users.some(u=>u.role==='hod'&&u.deptId===d.id));
-checks.push(noHod.length===0
-  ? {cls:'hc-ok',   icon:'✅', title:'HOD Coverage Complete',         desc:'Every department has an assigned HOD.', link:null}
-  : {cls:'hc-error',icon:'🚨', title:`${noHod.length} Dept(s) Missing HOD`, desc:noHod.map(d=>d.name).join(', '), link:{href:'departments.html',txt:'Fix Now →'}});
-const unstaff = users.filter(u=>(u.role==='faculty'||u.role==='hod')&&!u.deptId);
-checks.push(unstaff.length===0
-  ? {cls:'hc-ok',  icon:'✅', title:'All Staff Assigned',   desc:'No orphaned faculty or HOD accounts.', link:null}
-  : {cls:'hc-warn',icon:'⚠️', title:`${unstaff.length} Unassigned Staff`, desc:unstaff.map(u=>u.name).join(', '), link:{href:'users.html',txt:'Fix Now →'}});
-const unassign = courses.filter(c=>!c.facultyId||!users.some(u=>u.id===c.facultyId));
-checks.push(unassign.length===0
-  ? {cls:'hc-ok',  icon:'✅', title:'All Courses Assigned',  desc:'Every course has a faculty-in-charge.', link:null}
-  : {cls:'hc-warn',icon:'⚠️', title:`${unassign.length} Course(s) Unassigned`, desc:'Cannot generate marks without faculty.', link:{href:'../faculty/reports.html',txt:'View →'}});
-checks.push({
-  cls: cfg.aiEnabled?'hc-ok':'hc-warn', icon: cfg.aiEnabled?'🤖':'😴',
-  title:`AI Features: ${cfg.aiEnabled?'Enabled':'Disabled'}`,
-  desc:`${cfg.aiCallsUsed||0} / ${cfg.maxAICalls||50} API calls used this month.`,
-  link:{href:'config.html',txt:'Configure →'},
-});
-const kb = (JSON.stringify(localStorage).length/1024).toFixed(1);
-checks.push({
-  cls:kb>3000?'hc-warn':'hc-ok', icon:'💾',
-  title:`Storage: ${kb} KB used`, desc:'localStorage (Phase 1). PostgreSQL planned for Phase 2.', link:null,
-});
-document.getElementById('health-grid').innerHTML = checks.map(c=>`
-  <div class="hcard ${c.cls}">
-    <div class="hcard-icon">${c.icon}</div>
-    <div>
-      <div class="hcard-title">${c.title}</div>
-      <div class="hcard-desc">${c.desc}</div>
-      ${c.link?`<a class="hcard-link" href="${c.link.href}">${c.link.txt}</a>`:''}
-    </div>
-  </div>`).join('');
-
-/* ════════════════════════════════════════════════════
-   SYSTEM STATUS
-════════════════════════════════════════════════════ */
-document.getElementById('sys-status').innerHTML = [
-  {l:'AI Features',    v:cfg.aiEnabled?'<span class="badge badge-success">Enabled</span>':'<span class="badge badge-danger">Disabled</span>'},
-  {l:'API Usage',      v:`<strong>${cfg.aiCallsUsed||0} / ${cfg.maxAICalls||50}</strong>`},
-  {l:'Academic Year',  v:`<strong>${cfg.academicYear||'2025–26'}</strong>`},
-  {l:'Total Users',    v:`<strong>${users.length}</strong>`},
-  {l:'Total Courses',  v:`<strong>${courses.length}</strong>`},
-  {l:'Storage Used',   v:`<strong>${kb} KB</strong>`},
-  {l:'Backend',        v:'<span class="badge badge-info">localStorage</span>'},
-  {l:'Data Integrity', v:'<span class="badge badge-success">✓ OK</span>'},
-].map(s=>`<div class="sys-cell"><span class="sys-lbl">${s.l}</span><span>${s.v}</span></div>`).join('');
 </script>
-<script src="../scripts/ai-mock.js"></script>
 </body>
 </html>

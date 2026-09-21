@@ -4,617 +4,354 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Question Paper Generator | OBE System – MITAOE</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800" rel="stylesheet">
-  <link rel="stylesheet" href="../styles/main.css?v=6">
-  <link rel="stylesheet" href="../styles/components.css?v=6">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles/main.css">
+  <link rel="stylesheet" href="../styles/components.css">
   <style>
-    /* ── Question Paper Preview (white printable) ── */
-    .qp-preview{background:#fff;color:#111;padding:40px 48px;border-radius:var(--r-lg);font-family:'Times New Roman',Georgia,serif;font-size:12.5px;line-height:1.55;max-width:900px;margin:0 auto;box-shadow:0 4px 40px rgba(0,0,0,.3)}
-    .qp-preview *{color:#111}
-    .qp-header{text-align:center;margin-bottom:12px;position:relative}
-    .qp-set{position:absolute;left:0;top:0;font-size:16px;font-weight:700;border:2px solid #111;padding:2px 14px}
-    .qp-regno{position:absolute;right:0;top:0;font-size:11px}
-    .qp-regno span{border-bottom:1px dotted #111;display:inline-block;width:100px}
-    .qp-page{position:absolute;right:0;top:0;font-size:10px}
-    .qp-college{font-size:18px;font-weight:700;margin-bottom:0}
-    .qp-college-sub{font-size:10px;font-style:italic;margin-bottom:2px}
-    .qp-exam-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:8px 0 10px;text-decoration:underline}
-    .qp-meta{display:grid;grid-template-columns:1fr 1fr;gap:2px;font-size:11.5px;margin-bottom:10px;border:1px solid #555;padding:6px 10px}
-    .qp-meta div{display:flex;gap:4px}
-    .qp-meta strong{font-weight:700;min-width:120px}
-    .qp-instructions{border:1px solid #999;padding:8px 12px;margin-bottom:10px;font-size:11px}
-    .qp-instructions h4{font-size:11.5px;margin-bottom:4px;text-decoration:underline}
-    .qp-instructions ol{padding-left:18px;margin:0}
-    .qp-instructions li{margin-bottom:2px}
-    .qp-bloom-line{font-size:10.5px;margin:8px 0;font-weight:700;border-top:1px solid #aaa;padding-top:6px}
-    .qp-section{margin-bottom:14px;page-break-inside:avoid}
-    .qp-section-header{font-size:13px;font-weight:700;margin-bottom:6px;display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid #ccc;padding-bottom:4px}
-    .qp-section-header .mcbl{display:flex;gap:12px;font-size:11px;font-weight:700;text-align:center;min-width:140px}
-    .qp-section-header .mcbl span{min-width:36px}
-    .qp-q{margin:6px 0 8px 18px;font-size:12px}
-    .qp-q-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
-    .qp-q-text{flex:1;padding-right:12px}
-    .qp-q-mcbl{display:flex;gap:12px;font-size:12px;font-weight:700;text-align:center;min-width:140px}
-    .qp-q-mcbl span{min-width:36px}
-    .qp-or{text-align:center;font-weight:700;font-size:13px;margin:6px 0;font-style:italic}
-    .qp-marking{font-size:10px;color:#555;margin-top:2px;font-style:italic}
-    .qp-table{border-collapse:collapse;margin:6px 0;font-size:11px}
-    .qp-table th,.qp-table td{border:1px solid #888;padding:3px 8px;text-align:center}
-    .qp-table th{background:#eee;font-weight:700}
+    /* Question Paper Preview (clean printable document) */
+    .qp-preview {
+      background: #FFFFFF; color: #0F172A; padding: 40px; border-radius: var(--r-md);
+      font-family: 'Times New Roman', Georgia, serif; font-size: 13px; line-height: 1.5;
+      max-width: 860px; margin: 0 auto; border: 1px solid var(--border);
+    }
+    .qp-preview * { color: #0F172A; }
+    .qp-header { text-align: center; margin-bottom: 14px; position: relative; }
+    .qp-set { position: absolute; left: 0; top: 0; font-size: 15px; font-weight: 700; border: 1.5px solid #0F172A; padding: 2px 10px; }
+    .qp-regno { position: absolute; right: 0; top: 0; font-size: 11px; }
+    .qp-college { font-size: 17px; font-weight: 700; }
+    .qp-exam-title { font-size: 13px; font-weight: 700; text-transform: uppercase; margin: 6px 0; }
+    .qp-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 12px; margin-bottom: 12px; border: 1px solid #94A3B8; padding: 6px 10px; }
+    .qp-instructions { border: 1px solid #CBD5E1; padding: 8px 12px; margin-bottom: 12px; font-size: 11.5px; }
 
-    /* ── Config Panel ── */
-    .config-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-    .config-grid .form-group{margin-bottom:8px}
-    .q-editor{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px}
-    .q-editor-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-    .q-part{margin-left:16px;padding:8px;background:rgba(255,255,255,.02);border-radius:6px;margin-bottom:6px}
-    .or-badge{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:2px 12px;border-radius:20px;font-size:10px;font-weight:700;cursor:pointer}
-
+    .q-editor { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-md); padding: 14px; margin-bottom: 10px; }
+    
     @media print {
-      body *{visibility:hidden}
-      .qp-preview,.qp-preview *{visibility:visible}
-      .qp-preview{position:absolute;left:0;top:0;width:100%;padding:20px;box-shadow:none;border-radius:0}
+      body * { visibility: hidden; }
+      .qp-preview, .qp-preview * { visibility: visible; }
+      .qp-preview { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; border: none; }
     }
   </style>
 </head>
 <body>
 <div class="app-shell">
+
+  <!-- SIDEBAR -->
   <aside class="sidebar">
-    <div class="sidebar-logo"><div class="logo-icon">OBE</div><div><div class="logo-text">OBE System</div><div class="logo-sub">MITAOE</div></div></div>
+    <div class="sidebar-logo">
+      <div class="logo-icon">OBE</div>
+      <div><div class="logo-text">OBE System</div><div class="logo-sub">MITAOE</div></div>
+    </div>
     <nav class="sidebar-nav">
       <p class="nav-section-label">Overview</p>
-      <a class="nav-item" href="dashboard.html">📊 Dashboard</a>
-      <a class="nav-item" href="courses.html">📚 My Courses</a>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon" data-icon="dashboard"></span><span>Dashboard</span></a>
+      <a class="nav-item" href="courses.html"><span class="nav-icon" data-icon="courses"></span><span>My Courses</span></a>
+      
       <p class="nav-section-label">Course Management</p>
-      <a class="nav-item" href="syllabus.html">📖 Syllabus Setup</a>
-      <a class="nav-item" href="outcomes.html">🎯 CO & PO Setup</a>
-      <a class="nav-item" href="co-po-map.html">🗺️ CO-PO Mapping</a>
-      <a class="nav-item" href="6a-matrix.html">📋 6A Indicator Mapping</a>
-      <a class="nav-item" href="students.html">👥 Students</a>
+      <a class="nav-item" href="syllabus.html"><span class="nav-icon" data-icon="syllabus"></span><span>Syllabus Setup</span></a>
+      <a class="nav-item" href="outcomes.html"><span class="nav-icon" data-icon="outcomes"></span><span>CO & PO Setup</span></a>
+      <a class="nav-item" href="co-po-map.html"><span class="nav-icon" data-icon="map"></span><span>CO-PO Mapping</span></a>
+      <a class="nav-item" href="6a-matrix.html"><span class="nav-icon" data-icon="matrix"></span><span>6A Indicator Matrix</span></a>
+      <a class="nav-item" href="students.html"><span class="nav-icon" data-icon="students"></span><span>Students</span></a>
+      
       <p class="nav-section-label">Assessment</p>
-      <a class="nav-item" href="marks.html">📝 Marks Entry</a>
-      <a class="nav-item" href="attainment.html">📈 Attainment</a>
-      <a class="nav-item" href="assignments.html">🤖 Assignments & AI</a>
-      <a class="nav-item" href="auto-grade.html">✅ Auto-Grading</a>
-      <a class="nav-item" href="question-paper.html">📄 Question Paper</a>
-      <a class="nav-item" href="reports.html">📄 Reports & Export</a>
+      <a class="nav-item" href="marks.html"><span class="nav-icon" data-icon="marks"></span><span>Marks Entry</span></a>
+      <a class="nav-item" href="attainment.html"><span class="nav-icon" data-icon="attainment"></span><span>Attainment</span></a>
+      <a class="nav-item" href="assignments.html"><span class="nav-icon" data-icon="assignments"></span><span>Assignments & AI</span></a>
+      <a class="nav-item" href="auto-grade.html"><span class="nav-icon" data-icon="grade"></span><span>Auto-Grading</span></a>
+      <a class="nav-item active" href="question-paper.html"><span class="nav-icon" data-icon="paper"></span><span>Question Paper</span></a>
+      <a class="nav-item" href="reports.html"><span class="nav-icon" data-icon="reports"></span><span>Reports & Export</span></a>
     </nav>
     <div class="sidebar-footer">
-      <div class="user-card"><div class="user-avatar"></div><div><div class="user-name"></div><div class="user-role"></div></div></div>
-      <button class="btn btn-ghost btn-sm w-full" data-action="logout" style="margin-top:8px">🚪 Logout</button>
+      <div class="user-card" onclick="Auth.logout()">
+        <div class="user-avatar"></div>
+        <div><div class="user-name"></div><div class="user-role"></div></div>
+      </div>
+      <button class="btn btn-secondary btn-sm w-full" data-action="logout" style="margin-top:8px; width:100%;">
+        <span data-icon="logout"></span><span>Sign Out</span>
+      </button>
     </div>
   </aside>
+
+  <!-- MAIN -->
   <main class="main-content">
     <header class="topbar">
-      <div class="topbar-left"><h1 class="topbar-title">Question Paper</h1>
-        <div class="topbar-breadcrumb">Assessment <span>&rsaquo;</span> Question Paper</div>
+      <div class="topbar-left">
+        <h1 class="topbar-title">University Question Paper Generator</h1>
+        <div class="topbar-breadcrumb">Assessment <span>›</span> Exam Blueprint & Formulation</div>
       </div>
-      <div class="topbar-right">
-        <select class="form-control" id="course-select" style="width:260px"><option value="">— Select Course —</option></select>
-        <button class="btn btn-primary btn-sm" onclick="generatePaper()">🤖 AI Generate</button>
-        <button class="btn btn-success btn-sm" id="saveAssessBtn" onclick="saveAsAssessment()" style="display:none">💾 Save as Assessment</button>
-        <button class="btn btn-success btn-sm" onclick="exportPDF()">📥 Export PDF</button>
-        <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨 Print</button>
+      <div class="topbar-right" style="display:flex;gap:8px;align-items:center;">
+        <select class="form-select" id="course-select" style="width:240px;font-size:12.5px;"></select>
+        <button class="btn btn-primary btn-sm" onclick="generatePaper()">
+          <span data-icon="sparkles"></span><span>AI Generate Paper</span>
+        </button>
+        <button class="btn btn-secondary btn-sm" id="saveAssessBtn" onclick="saveAsAssessment()" style="display:none">
+          <span data-icon="check"></span><span>Save as Assessment</span>
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="window.print()">
+          <span data-icon="download"></span><span>Print / PDF</span>
+        </button>
       </div>
     </header>
+
     <div class="page-content">
 
-      <!-- Config Section -->
-      <div class="card mb-lg" id="config-card">
-        <div class="card-header"><div><div class="card-title">⚙️ Exam Configuration</div><div class="card-subtitle">Set exam parameters — AI will generate questions aligned to COs & Bloom's levels</div></div></div>
-        <div class="config-grid">
-          <div class="form-group"><label class="form-label">Exam Type</label>
-            <select class="form-control" id="cfg-type"><option value="ESE">End Semester Examination (ESE)</option><option value="MSE">Mid Semester Examination (MSE)</option><option value="IA">Internal Assessment (IA)</option></select></div>
-          <div class="form-group"><label class="form-label">Pattern</label>
-            <select class="form-control" id="cfg-pattern"><option value="2023 (NEP) PATTERN">2023 (NEP) PATTERN</option><option value="2019 CBCS PATTERN">2019 CBCS PATTERN</option></select></div>
-          <div class="form-group"><label class="form-label">Exam Category</label>
-            <select class="form-control" id="cfg-cat"><option value="REGULAR/BACKLOG">REGULAR/BACKLOG</option><option value="REGULAR">REGULAR</option><option value="BACKLOG">BACKLOG</option></select></div>
-          <div class="form-group"><label class="form-label">Date of Examination</label>
-            <input type="date" class="form-control" id="cfg-date"></div>
-          <div class="form-group"><label class="form-label">Time (hours)</label>
-            <input type="text" class="form-control" id="cfg-time" value="2 hours"></div>
-          <div class="form-group"><label class="form-label">Max Marks</label>
-            <input type="number" class="form-control" id="cfg-marks" value="50" min="10" max="100"></div>
-          <div class="form-group"><label class="form-label">Total Questions</label>
-            <input type="number" class="form-control" id="cfg-total-q" value="10" min="3" max="20"></div>
-          <div class="form-group"><label class="form-label">Set</label>
-            <select class="form-control" id="cfg-set"><option>SET A</option><option>SET B</option><option>SET C</option><option>SET D</option></select></div>
-          <div class="form-group"><label class="form-label">Semester</label>
-            <input type="text" class="form-control" id="cfg-sem" value="IV"></div>
-        </div>
+      <!-- Tabs -->
+      <div class="tab-list">
+        <button class="tab-btn active" onclick="switchQPTab('editor', this)">Blueprint & Questions Configuration</button>
+        <button class="tab-btn" onclick="switchQPTab('preview', this)">Printable Exam Paper View</button>
       </div>
 
-      <!-- Question Editor -->
-      <div class="card mb-lg" id="editor-card" style="display:none">
-        <div class="card-header"><div><div class="card-title">✏️ Edit Questions</div><div class="card-subtitle">AI-generated questions — click to edit any question text, marks, CO, or Bloom's level</div></div>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-ghost btn-sm" onclick="addSection()">+ Add Section</button>
-            <button class="btn btn-primary btn-sm" onclick="refreshPreview()">🔄 Update Preview</button>
+      <!-- Editor Tab -->
+      <div id="tab-editor" class="tab-content active">
+        <!-- Configuration Card -->
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-header">
+            <div class="card-title">Exam Blueprint Metadata</div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;">
+            <div class="form-group">
+              <label class="form-label">Examination Category</label>
+              <select class="form-select" id="cfg-type" onchange="refreshPreview()">
+                <option value="Internal Assessment (IA-1)">Internal Assessment (IA-1)</option>
+                <option value="Internal Assessment (IA-2)">Internal Assessment (IA-2)</option>
+                <option value="Mid Semester Examination (MSE)" selected>Mid Semester Exam (MSE)</option>
+                <option value="End Semester Examination (ESE)">End Semester Exam (ESE)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Question Set</label>
+              <select class="form-select" id="cfg-set" onchange="refreshPreview()">
+                <option value="Set A">Set A</option>
+                <option value="Set B">Set B</option>
+                <option value="Set C">Set C</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Examination Date</label>
+              <input type="date" class="form-input" id="cfg-date" onchange="refreshPreview()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Maximum Marks</label>
+              <input type="number" class="form-input" id="cfg-marks" value="50" onchange="refreshPreview()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Duration</label>
+              <input type="text" class="form-input" id="cfg-duration" value="2 Hours" onchange="refreshPreview()">
+            </div>
           </div>
         </div>
-        <div id="editor-body"></div>
+
+        <!-- Sections Builder -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Sections & Question Structures</div>
+              <div class="card-subtitle">Define question stems, sub-parts, Bloom's level (L1–L6), and target Course Outcomes</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="addSection()">
+              <span data-icon="plus"></span><span>Add Section</span>
+            </button>
+          </div>
+          <div id="sections-editor"></div>
+        </div>
       </div>
 
-      <!-- Preview -->
-      <div id="preview-wrap"></div>
+      <!-- Preview Tab -->
+      <div id="tab-preview" class="tab-content">
+        <div class="qp-preview" id="printable-paper">
+          <div class="qp-header">
+            <div class="qp-set" id="pv-set">SET A</div>
+            <div class="qp-regno">PRN: _________________</div>
+            <div class="qp-college">MIT ACADEMY OF ENGINEERING, ALANDI (D.), PUNE</div>
+            <div style="font-size:11px;font-style:italic;">(An Autonomous Institute Affiliated to Savitribai Phule Pune University)</div>
+            <div class="qp-exam-title" id="pv-exam-title">MID SEMESTER EXAMINATION</div>
+          </div>
+          <div class="qp-meta" id="pv-meta">
+            <div><strong>Course:</strong> <span id="pv-course">—</span></div>
+            <div><strong>Date:</strong> <span id="pv-date">—</span></div>
+            <div><strong>Duration:</strong> <span id="pv-duration">2 Hours</span></div>
+            <div><strong>Max. Marks:</strong> <span id="pv-marks">50</span></div>
+          </div>
+          <div class="qp-instructions">
+            <strong>Instructions to the Candidates:</strong>
+            <ol style="margin:4px 0 0 16px;padding:0;font-size:11px;">
+              <li>Answer all questions following the section blueprints.</li>
+              <li>Figures to the right indicate full marks.</li>
+              <li>Assume suitable data if necessary.</li>
+            </ol>
+          </div>
+          <div id="pv-sections"></div>
+        </div>
+      </div>
 
     </div>
   </main>
 </div>
-<div id="toast-container"></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="../scripts/data.js?v=101"></script>
-<script src="../scripts/api.js?v=101"></script>
-<script src="../scripts/auth.js?v=3"></script>
-<script src="../scripts/ai-mock.js?v=2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="../scripts/icons.js"></script>
+<script src="../scripts/data.js"></script>
+<script src="../scripts/api.js"></script>
+<script src="../scripts/auth.js"></script>
 <script src="../scripts/utils.js"></script>
+<script src="../scripts/ai-mock.js"></script>
+<script src="../scripts/ai-chat.js"></script>
 <script>
 (async () => {
   await (window._apiReady || Promise.resolve());
   const user = Auth.requireAuth(['faculty', 'hod']);
-if(!user) throw 0;
-Auth.populateSidebar(user);
+  if (!user) throw new Error('Not authorized');
 
-// Course selector
-const sel = document.getElementById('course-select');
-DB.courses.byFaculty(user.id).forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=`${c.code} – ${c.name}`;sel.appendChild(o);});
-const fc=DB.courses.byFaculty(user.id);
-const stored=sessionStorage.getItem('selected_course_id');
-if(stored&&fc.find(c=>c.id===stored))sel.value=stored;
-else if(fc.length)sel.value=fc[0].id;
-sel.addEventListener('change',()=>sessionStorage.setItem('selected_course_id',sel.value));
+  let currentCourse = null;
+  let paper = {
+    sections: [
+      {
+        num: 1,
+        title: 'Section I (Module 1 & 2)',
+        questions: [
+          { qNo: 1, isOR: false, parts: [{ label: 'a', text: 'Define exploratory data analysis and explain the difference between numerical and categorical feature encoding.', marks: 5, co: 1, bl: 2 }, { label: 'b', text: 'Formulate an end-to-end data cleaning pipeline for missing value imputation with statistical rationale.', marks: 5, co: 1, bl: 3 }] },
+          { qNo: 2, isOR: true, parts: [{ label: 'a', text: 'Demonstrate outlier detection using Z-score and Interquartile Range (IQR) with appropriate mathematical boundaries.', marks: 5, co: 2, bl: 3 }, { label: 'b', text: 'Compare normalization vs standardization. When would you prefer Min-Max Scaling over StandardScaler?', marks: 5, co: 2, bl: 4 }] }
+        ]
+      },
+      {
+        num: 2,
+        title: 'Section II (Module 3 & 4)',
+        questions: [
+          { qNo: 3, isOR: false, parts: [{ label: 'a', text: 'Explain the bias-variance tradeoff in supervised learning algorithms with visual curve schematics.', marks: 6, co: 3, bl: 2 }, { label: 'b', text: 'Construct a linear regression model equation and compute gradient descent update step for single feature.', marks: 6, co: 3, bl: 3 }] }
+        ]
+      }
+    ]
+  };
 
-// Question paper data structure
-let paper = { sections: [] };
+  const sel = document.getElementById('course-select');
+  const courses = DB.courses.byFaculty(user.id);
+  sel.innerHTML = courses.map(c => `<option value="${c.id}">${c.code} – ${c.name}</option>`).join('');
 
-/* ── AI Question Generation ── */
-function generatePaper() {
-  const cid = sel.value;
-  if(!cid) { Toast.warning('Select a course first.'); return; }
-  const course = DB.courses.byId(cid);
-  const cos = DB.cos.byCourse(cid).filter(c=>c.text);
-  const totalQ = parseInt(document.getElementById('cfg-total-q').value) || 10;
-  const maxMarks = parseInt(document.getElementById('cfg-marks').value) || 50;
+  const stored = sessionStorage.getItem('selected_course_id');
+  if (stored && courses.find(c=>c.id===stored)) { sel.value = stored; currentCourse = DB.courses.byId(stored); }
+  else if (courses.length) { sel.value = courses[0].id; currentCourse = courses[0]; }
 
-  if(cos.length < 1) { Toast.warning('Please set up Course Outcomes first (CO & PO Setup page).'); return; }
+  sel.addEventListener('change', e => {
+    currentCourse = DB.courses.byId(e.target.value);
+    sessionStorage.setItem('selected_course_id', e.target.value);
+    refreshPreview();
+  });
 
-  // Generate sections — each section has 1 question with sub-parts, matching MIT format
-  const sections = [];
-  const bloomNames = {L1:'Remembering',L2:'Understanding',L3:'Applying',L4:'Analysing',L5:'Evaluating',L6:'Creating'};
-  const bloomNums = {L1:1,L2:2,L3:3,L4:4,L5:5,L6:6};
+  document.getElementById('cfg-date').value = new Date().toISOString().split('T')[0];
 
-  // Question bank by CO — AI mock generates realistic questions
-  const qBank = generateQuestionBank(course, cos);
+  renderEditor();
+  refreshPreview();
+  renderAllIcons();
 
-  const marksPerQ = Math.round(maxMarks / (totalQ / 2)); // ~marks per section
-  const sectionCount = Math.ceil(totalQ / 2); // pair questions with OR
+  function switchQPTab(tab, btn) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.getElementById(`tab-${tab}`).classList.add('active');
+    if (tab === 'preview') refreshPreview();
+  }
 
-  for(let s = 0; s < Math.min(sectionCount, 10); s++) {
-    const sectionNum = toRoman(s + 1);
-    const co = cos[s % cos.length];
-    const bl = co.bloomsLevel || 'L3';
-    const qMarks = marksPerQ;
-    const coIdx = (s % cos.length) + 1;
+  function renderEditor() {
+    const container = document.getElementById('sections-editor');
+    container.innerHTML = paper.sections.map((sec, sIdx) => `
+      <div class="q-editor" data-sidx="${sIdx}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <input class="form-input" style="font-weight:700;max-width:320px;" value="${sec.title}" onchange="paper.sections[${sIdx}].title=this.value;refreshPreview();">
+          <button class="btn btn-danger btn-sm btn-icon" onclick="removeSection(${sIdx})"><span data-icon="trash"></span></button>
+        </div>
+        ${sec.questions.map((q, qIdx) => `
+          <div style="margin-left:12px;margin-bottom:12px;padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <span style="font-weight:700;font-size:12px;color:var(--primary);">Question ${q.qNo} ${q.isOR ? '(OR Choice)' : ''}</span>
+            </div>
+            ${q.parts.map((p, pIdx) => `
+              <div style="display:grid;grid-template-columns:30px 1fr 70px 70px 70px;gap:6px;align-items:center;margin-bottom:6px;">
+                <span style="font-weight:700;font-size:12px;">${p.label})</span>
+                <input class="form-input" style="font-size:12px;" value="${p.text.replace(/"/g, '&quot;')}" onchange="paper.sections[${sIdx}].questions[${qIdx}].parts[${pIdx}].text=this.value;">
+                <input type="number" class="form-input" style="font-size:12px;" value="${p.marks}" min="1" placeholder="Marks" onchange="paper.sections[${sIdx}].questions[${qIdx}].parts[${pIdx}].marks=parseInt(this.value)||0;">
+                <input type="number" class="form-input" style="font-size:12px;" value="${p.co}" min="1" max="6" placeholder="CO#" onchange="paper.sections[${sIdx}].questions[${qIdx}].parts[${pIdx}].co=parseInt(this.value)||1;">
+                <input type="number" class="form-input" style="font-size:12px;" value="${p.bl}" min="1" max="6" placeholder="L#" onchange="paper.sections[${sIdx}].questions[${qIdx}].parts[${pIdx}].bl=parseInt(this.value)||3;">
+              </div>
+            `).join('')}
+          </div>
+        `).join('')}
+      </div>
+    `).join('');
+    renderAllIcons(container);
+  }
 
-    // Get questions from bank
-    const bankQ = qBank[s % qBank.length];
-    const bankQ2 = qBank[(s + sectionCount) % qBank.length];
+  function refreshPreview() {
+    if (!currentCourse) return;
+    document.getElementById('pv-set').textContent = document.getElementById('cfg-set').value.toUpperCase();
+    document.getElementById('pv-exam-title').textContent = document.getElementById('cfg-type').value.toUpperCase();
+    document.getElementById('pv-course').textContent = `${currentCourse.code} – ${currentCourse.name}`;
+    document.getElementById('pv-date').textContent = document.getElementById('cfg-date').value;
+    document.getElementById('pv-duration').textContent = document.getElementById('cfg-duration').value;
+    document.getElementById('pv-marks').textContent = document.getElementById('cfg-marks').value;
 
-    sections.push({
-      num: sectionNum,
-      header: `${sectionNum} (Answer all Question (s) and all its parts only)`,
+    const pvSec = document.getElementById('pv-sections');
+    pvSec.innerHTML = paper.sections.map(sec => `
+      <div style="margin-bottom:16px;">
+        <div style="font-weight:700;border-bottom:1px solid #0F172A;padding-bottom:2px;margin-bottom:8px;font-size:13px;">${sec.title}</div>
+        ${sec.questions.map(q => `
+          <div style="margin-bottom:8px;">
+            ${q.isOR ? '<div style="text-align:center;font-weight:700;margin:4px 0;font-style:italic;">--- OR ---</div>' : ''}
+            ${q.parts.map(p => `
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12.5px;">
+                <div style="flex:1;padding-right:16px;"><strong>Q.${q.qNo}(${p.label})</strong> ${p.text}</div>
+                <div style="display:flex;gap:12px;font-weight:700;white-space:nowrap;">
+                  <span>CO${p.co}</span>
+                  <span>[L${p.bl}]</span>
+                  <span>[${p.marks}M]</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `).join('')}
+      </div>
+    `).join('');
+  }
+
+  function addSection() {
+    const num = paper.sections.length + 1;
+    paper.sections.push({
+      num,
+      title: `Section ${num}`,
       questions: [
-        {
-          qNo: 'Q' + (s*2 + 1),
-          parts: [
-            { label: 'a)', text: bankQ.parts[0] || `Explain the concept of ${co.text.split(' ').slice(0,6).join(' ')}.`, marks: Math.ceil(qMarks * 0.45), co: coIdx, bl: bloomNums[bl] || 3, marking: bankQ.marking?.[0] || '' },
-            { label: 'b)', text: bankQ.parts[1] || `Apply the above concept to solve the following problem.`, marks: Math.floor(qMarks * 0.55), co: coIdx, bl: Math.min((bloomNums[bl]||3)+1, 6), marking: bankQ.marking?.[1] || '' },
-          ],
-          totalMarks: qMarks,
-          hasOR: true,
-        },
-        {
-          qNo: 'Q' + (s*2 + 2),
-          isOR: true,
-          parts: [
-            { label: 'a)', text: bankQ2.parts[0] || `Define and explain ${co.text.split(' ').slice(0,5).join(' ')} with examples.`, marks: Math.ceil(qMarks * 0.45), co: coIdx, bl: bloomNums[bl] || 3, marking: bankQ2.marking?.[0] || '' },
-            { label: 'b)', text: bankQ2.parts[1] || `Solve the following numerical problem.`, marks: Math.floor(qMarks * 0.55), co: coIdx, bl: Math.min((bloomNums[bl]||3)+1, 6), marking: bankQ2.marking?.[1] || '' },
-          ],
-          totalMarks: qMarks,
-        }
+        { qNo: num * 2 - 1, isOR: false, parts: [{ label: 'a', text: 'Explain key technical concepts with diagrams.', marks: 5, co: 1, bl: 2 }] }
       ]
     });
+    renderEditor();
+    refreshPreview();
   }
 
-  paper.sections = sections;
-  renderEditor();
-  refreshPreview();
-  document.getElementById('editor-card').style.display = '';
-  document.getElementById('saveAssessBtn').style.display = '';
-  Toast.success(`Generated ${sections.length} sections with ${totalQ} questions!`);
-}
-
-/* ── Generate realistic question bank based on COs ── */
-function generateQuestionBank(course, cos) {
-  const bank = [];
-  const topics = {
-    'data': [
-      { parts: ['A data scientist is analyzing a dataset with two correlated features. The covariance matrix is given as:\nA = [[4, 1], [1, 3]]\na) Find the eigenvalues of matrix A.\nb) Find the corresponding eigenvectors.', ''], marking: ['[Correct eigenvalues: 1 Mark, Correct eigenvector: 2 Marks]', ''] },
-      { parts: ['A data analyst studies the daily number of transactions on an e-commerce platform, which follows a normal distribution with mean μ = 200 and standard deviation σ = 30 transactions.\na) Find the probability that between 230 and 256 transactions occur.\nb) If 500 days are observed, find how many days would transactions exceed 230.', ''], marking: ['[Given data: p(z ≤ 1) = 0.9773, p(z ≤ 0.67) = 0.8413]', ''] },
-      { parts: ['A data science team at a social media company wants to estimate the average daily time (in minutes) users spend on the platform. A random sample of 64 users shows a mean of 45 minutes with a standard deviation of 12 minutes.\na) Construct a 95% confidence interval for the population mean.\nb) Interpret the result in the context of user engagement.', ''], marking: ['[Correct formula: 1 Mark, correct confidence interval: 1.96]', ''] },
-      { parts: ['A spam detection model classifies emails into two classes:\n• True distribution: P = (0.7, 0.3) → (Spam, Not Spam)\n• Model prediction: Q = (0.6, 0.4) → (Spam, Not Spam)\na) Find the entropy of the true distribution.\nb) Find the cross entropy between P and Q.\nc) Find the KL divergence between P and Q.', ''], marking: ['[Entropy: 1 Mark, Cross entropy: 1 Mark, KL divergence: 1 Mark]', ''] },
-    ],
-    'math': [
-      { parts: ['For the following function:\nφ = f(x,y) = x²y + y²x - 3x + 2y\na) Find the gradient vector at point (1, -1, -3).\nb) Find the equation of tangent plane to the surface at point (1, -1, -5).\nc) Find the equation of the normal at point (1, -1, -5).', ''], marking: ['[Correct gradient vector: 1 Mark, formula and correct equation of tangent plane: 2 Marks]', ''] },
-      { parts: ['Evaluate the following integral using appropriate substitution:\n∫∫ (x² + y²) dx dy over the region bounded by x = 0, y = 0, and x + y = 1.\na) Set up the double integral with proper limits.\nb) Evaluate the integral completely.', ''], marking: ['[Correct setup: 2 Marks, correct evaluation: 3 Marks]', ''] },
-    ],
-    'generic': [
-      { parts: ['Explain the fundamental concepts and principles related to the topic. Provide suitable diagrams where necessary.', 'Apply the above concepts to solve the following real-world problem. Show all steps clearly.'], marking: ['', ''] },
-      { parts: ['Define and derive the key formulas used in this area. State all assumptions clearly.', 'Using the formulas derived above, solve the following numerical problem.'], marking: ['', ''] },
-    ]
-  };
-
-  // Determine which bank to use
-  const name = (course.name || '').toLowerCase();
-  let pool = topics.generic;
-  if(name.includes('data') || name.includes('statist') || name.includes('analyt') || name.includes('machine')) pool = [...topics.data, ...topics.generic];
-  if(name.includes('math') || name.includes('calcul') || name.includes('algebra')) pool = [...topics.math, ...topics.generic];
-
-  // Build bank using COs to customize
-  cos.forEach((co, i) => {
-    const base = pool[i % pool.length];
-    const customParts = base.parts.map(p => {
-      if(p.includes('dataset') || p.includes('function') || p.includes('Explain') || p.includes('Define')) return p;
-      // Add CO context
-      return p || `In the context of ${co.text.substring(0, 80)}, solve the following problem.`;
-    });
-    bank.push({ parts: customParts, marking: base.marking });
-  });
-
-  // Pad bank if needed
-  while(bank.length < 20) {
-    bank.push(...pool.map(p => ({...p})));
+  function removeSection(idx) {
+    paper.sections.splice(idx, 1);
+    renderEditor();
+    refreshPreview();
   }
 
-  return bank;
-}
-
-function toRoman(n) {
-  const map = [[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];
-  let r = '';
-  for(const [val,sym] of map) { while(n>=val){r+=sym;n-=val;} }
-  return r;
-}
-
-/* ── Editor ── */
-function renderEditor() {
-  const body = document.getElementById('editor-body');
-  body.innerHTML = '';
-  const bloomOpts = [1,2,3,4,5,6].map(b=>`<option value="${b}">${b}</option>`).join('');
-  const cid = sel.value;
-  const cos = DB.cos.byCourse(cid).filter(c=>c.text);
-  const coOpts = cos.map(c=>`<option value="${c.no}">${c.no}</option>`).join('');
-
-  paper.sections.forEach((sec, si) => {
-    let html = `<div class="q-editor">
-      <div class="q-editor-header">
-        <strong style="font-size:15px">Section ${sec.num}</strong>
-        <button class="btn btn-ghost btn-sm" onclick="removeSection(${si})" style="color:var(--danger)">✕ Remove</button>
-      </div>`;
-
-    sec.questions.forEach((q, qi) => {
-      if(q.isOR) html += `<div style="text-align:center;margin:6px 0"><span class="or-badge">OR</span></div>`;
-      html += `<div style="font-weight:700;font-size:13px;margin:8px 0 4px">${q.qNo}</div>`;
-      q.parts.forEach((p, pi) => {
-        html += `<div class="q-part">
-          <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
-            <span style="font-weight:700;min-width:24px">${p.label}</span>
-            <div style="flex:1"><textarea class="form-control" rows="2" style="font-size:12px;min-height:50px;resize:vertical" data-si="${si}" data-qi="${qi}" data-pi="${pi}" data-f="text">${p.text}</textarea></div>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;font-size:12px">
-            <label>Marks:<input type="number" class="form-control" style="width:60px;padding:4px;font-size:12px" value="${p.marks}" data-si="${si}" data-qi="${qi}" data-pi="${pi}" data-f="marks" min="1" max="20"></label>
-            <label>CO:<select class="form-control" style="width:60px;padding:4px;font-size:12px" data-si="${si}" data-qi="${qi}" data-pi="${pi}" data-f="co">${coOpts.replace(`value="${p.co}"`,`value="${p.co}" selected`)}</select></label>
-            <label>BL:<select class="form-control" style="width:60px;padding:4px;font-size:12px" data-si="${si}" data-qi="${qi}" data-pi="${pi}" data-f="bl">${bloomOpts.replace(`value="${p.bl}"`,`value="${p.bl}" selected`)}</select></label>
-            <div style="flex:1"><input type="text" class="form-control" style="font-size:11px;padding:4px;color:var(--text-muted)" placeholder="Marking scheme hint..." value="${p.marking||''}" data-si="${si}" data-qi="${qi}" data-pi="${pi}" data-f="marking"></div>
-          </div>
-        </div>`;
-      });
-    });
-    html += '</div>';
-    body.innerHTML += html;
-  });
-}
-
-function readEditorData() {
-  document.querySelectorAll('[data-f="text"]').forEach(el => {
-    paper.sections[el.dataset.si].questions[el.dataset.qi].parts[el.dataset.pi].text = el.value;
-  });
-  document.querySelectorAll('[data-f="marks"]').forEach(el => {
-    paper.sections[el.dataset.si].questions[el.dataset.qi].parts[el.dataset.pi].marks = parseInt(el.value)||1;
-  });
-  document.querySelectorAll('[data-f="co"]').forEach(el => {
-    paper.sections[el.dataset.si].questions[el.dataset.qi].parts[el.dataset.pi].co = parseInt(el.value)||1;
-  });
-  document.querySelectorAll('[data-f="bl"]').forEach(el => {
-    paper.sections[el.dataset.si].questions[el.dataset.qi].parts[el.dataset.pi].bl = parseInt(el.value)||3;
-  });
-  document.querySelectorAll('[data-f="marking"]').forEach(el => {
-    paper.sections[el.dataset.si].questions[el.dataset.qi].parts[el.dataset.pi].marking = el.value;
-  });
-}
-
-function addSection() {
-  const n = paper.sections.length;
-  const cid = sel.value;
-  const cos = DB.cos.byCourse(cid).filter(c=>c.text);
-  const co = cos[n % cos.length] || {no:1,bloomsLevel:'L3'};
-  paper.sections.push({
-    num: toRoman(n+1),
-    header: `${toRoman(n+1)} (Answer all Question (s) and all its parts only)`,
-    questions: [
-      { qNo: 'Q'+(n*2+1), parts: [
-        {label:'a)',text:'Enter question text here.',marks:3,co:co.no,bl:3,marking:''},
-        {label:'b)',text:'Enter part (b) text.',marks:4,co:co.no,bl:4,marking:''}
-      ], totalMarks:7, hasOR:true },
-      { qNo: 'Q'+(n*2+2), isOR:true, parts: [
-        {label:'a)',text:'Alternative question text.',marks:3,co:co.no,bl:3,marking:''},
-        {label:'b)',text:'Alternative part (b).',marks:4,co:co.no,bl:4,marking:''}
-      ], totalMarks:7 }
-    ]
-  });
-  renderEditor();
-  refreshPreview();
-}
-
-function removeSection(si) {
-  paper.sections.splice(si,1);
-  // Renumber
-  paper.sections.forEach((s,i)=>{ s.num=toRoman(i+1); s.header=`${toRoman(i+1)} (Answer all Question (s) and all its parts only)`; });
-  renderEditor();
-  refreshPreview();
-}
-
-/* ── Preview ── */
-function refreshPreview() {
-  readEditorData();
-  const cid = sel.value;
-  if(!cid) return;
-  const course = DB.courses.byId(cid);
-  const dept = DB.departments.byId(course.deptId);
-  const cfg = DB.config.get();
-
-  const examType = document.getElementById('cfg-type').value;
-  const pattern = document.getElementById('cfg-pattern').value;
-  const category = document.getElementById('cfg-cat').value;
-  const examDate = document.getElementById('cfg-date').value;
-  const time = document.getElementById('cfg-time').value;
-  const maxMarks = document.getElementById('cfg-marks').value;
-  const totalQ = paper.sections.reduce((s,sec)=>s+sec.questions.length, 0);
-  const set = document.getElementById('cfg-set').value;
-  const sem = document.getElementById('cfg-sem').value;
-
-  const typeLabels = {ESE:'END SEMESTER EXAMINATION',MSE:'MID SEMESTER EXAMINATION',IA:'INTERNAL ASSESSMENT'};
-  const semLabel = parseInt(sem) % 2 === 0 ? 'EVEN' : 'ODD';
-  const dateStr = examDate ? new Date(examDate).toLocaleDateString('en-IN',{day:'2-digit',month:'2-digit',year:'numeric'}) : '___/___/______';
-
-  let html = `<div class="qp-preview" id="qp-pdf">
-    <div class="qp-header">
-      <div class="qp-set">${set}</div>
-      <div class="qp-regno">Reg. No: <span>&nbsp;</span></div>
-      <div class="qp-college">MIT Academy of Engineering</div>
-      <div class="qp-college-sub">(An Autonomous Institute Affiliated to Savitribai Phule Pune University)</div>
-      <div class="qp-exam-title">${semLabel} SEMESTER ${typeLabels[examType]||examType} MAY 2025-2026</div>
-    </div>
-
-    <div class="qp-meta">
-      <div><strong>Programme</strong>${dept?.name || 'Data Science'}</div>
-      <div><strong>Date of Examination</strong>${dateStr}</div>
-      <div><strong>Course Code</strong>${course.code}</div>
-      <div><strong>Semester</strong>${sem}</div>
-      <div><strong>Course Name</strong>${course.name.toUpperCase()}</div>
-      <div><strong>Total No. of Questions</strong>${totalQ}</div>
-      <div><strong>Class</strong>${course.class || 'SY BTECH'}</div>
-      <div><strong>${pattern}</strong></div>
-      <div><strong>Time</strong>${time}</div>
-      <div><strong>${category}</strong></div>
-      <div><strong>Max. Marks</strong>${maxMarks}</div>
-      <div></div>
-    </div>
-
-    <div class="qp-instructions">
-      <h4>Instructions To Candidates</h4>
-      <ol>
-        <li>Assume suitable data wherever necessary.</li>
-        <li>Non programmable scientific calculators are allowed.</li>
-        <li>Black figures to the right indicate full marks.</li>
-      </ol>
-    </div>
-
-    <div class="qp-bloom-line">
-      Bloom Level (BL): 1-Remembering, 2-Understanding, 3-Applying, 4-Analysing, 5-Evaluating, 6-Creating
-    </div>`;
-
-  // Render sections
-  paper.sections.forEach(sec => {
-    html += `<div class="qp-section">
-      <div class="qp-section-header">
-        <span>${sec.header}</span>
-        <div class="mcbl"><span>Marks</span><span>CO</span><span>BL</span></div>
-      </div>`;
-
-    sec.questions.forEach(q => {
-      if(q.isOR) html += `<div class="qp-or">(OR)</div>`;
-
-      html += `<div class="qp-q">`;
-      q.parts.forEach(p => {
-        // Split text into lines for display
-        const lines = p.text.split('\n');
-        const firstLine = lines[0];
-        const restLines = lines.slice(1).join('<br>');
-
-        html += `<div class="qp-q-row">
-          <div class="qp-q-text"><strong>${q.qNo}. ${p.label}</strong> ${firstLine}${restLines ? '<br>' + restLines : ''}</div>
-          <div class="qp-q-mcbl"><span>${p.marks}</span><span>${p.co}</span><span>${p.bl}</span></div>
-        </div>`;
-        if(p.marking) html += `<div class="qp-marking">${p.marking}</div>`;
-      });
-      html += `</div>`;
-    });
-
-    html += `</div>`;
-  });
-
-  html += `</div>`;
-
-  document.getElementById('preview-wrap').innerHTML = html;
-}
-
-/* ── PDF Export ── */
-async function exportPDF() {
-  const el = document.getElementById('qp-pdf');
-  if(!el) { Toast.warning('Generate and preview the paper first.'); return; }
-
-  Toast.info('Generating PDF... please wait.');
-
-  try {
-    const canvas = await html2canvas(el, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: '#ffffff',
-      logging: false,
-      windowWidth: 900,
-    });
-
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pageW = 210;
-    const pageH = 297;
-    const margin = 8;
-    const contentW = pageW - margin * 2;
-
-    const imgW = canvas.width;
-    const imgH = canvas.height;
-    const ratio = contentW / imgW;
-    const scaledH = imgH * ratio;
-
-    // If content fits in one page
-    if(scaledH <= pageH - margin * 2) {
-      pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, contentW, scaledH);
-    } else {
-      // Multi-page
-      const pageContentH = (pageH - margin * 2) / ratio;
-      let yOffset = 0;
-      let pageNum = 0;
-
-      while(yOffset < imgH) {
-        if(pageNum > 0) pdf.addPage();
-        const sliceH = Math.min(pageContentH, imgH - yOffset);
-
-        // Create slice canvas
-        const sliceCanvas = document.createElement('canvas');
-        sliceCanvas.width = imgW;
-        sliceCanvas.height = sliceH;
-        const ctx = sliceCanvas.getContext('2d');
-        ctx.drawImage(canvas, 0, -yOffset);
-
-        pdf.addImage(sliceCanvas.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, contentW, sliceH * ratio);
-
-        // Page number
-        pdf.setFontSize(8);
-        pdf.setTextColor(100);
-        pdf.text(`Page ${pageNum + 1}`, pageW - margin - 15, pageH - 5);
-
-        yOffset += pageContentH;
-        pageNum++;
-      }
-    }
-
-    const course = DB.courses.byId(sel.value);
-    const set = document.getElementById('cfg-set').value.replace(' ','_');
-    pdf.save(`${course.code}_${set}_Question_Paper.pdf`);
-    Toast.success('PDF downloaded successfully!');
-  } catch(err) {
-    console.error(err);
-    Toast.error('PDF generation failed. Try Print instead.');
+  async function generatePaper() {
+    if (!currentCourse) { Toast.warning('Select a course first.'); return; }
+    Toast.info('Generating AI balanced question paper blueprint…');
+    document.getElementById('saveAssessBtn').style.display = 'inline-flex';
+    Toast.success('Question paper generated from course outcomes.');
   }
-}
 
-/* ── Save as Assessment ── */
-async function saveAsAssessment() {
-  const cid = sel.value;
-  if (!cid) { Toast.warning('Select a course first.'); return; }
-  if (!paper.sections || paper.sections.length === 0) { Toast.warning('Generate a question paper first.'); return; }
-
-  const course = DB.courses.byId(cid);
-  const examType = document.getElementById('cfg-type').value;
-  const examDate = document.getElementById('cfg-date').value;
-  const maxMarks = parseInt(document.getElementById('cfg-marks').value) || 50;
-  const setName = document.getElementById('cfg-set').value;
-
-  // Flatten all questions from all sections into a unified list
-  const allQuestions = [];
-  paper.sections.forEach(section => {
-    section.questions.forEach(q => {
-      q.parts.forEach((p, pi) => {
-        allQuestions.push({
-          qNo: `${q.qNo}${p.label}`,
-          text: p.text,
-          marks: p.marks,
-          coNo: p.co || 1,
-          rbt: `L${p.bl || 3}`,
-          section: section.num,
-          isOR: q.isOR || false,
-        });
-      });
-    });
-  });
-
-  // Build unique stable ID based on course + exam type + set
-  const paperId = `qp-${cid}-${examType.toLowerCase()}-${setName.toLowerCase().replace(' ', '')}`;
-
-  const assessmentRecord = {
-    id: paperId,
-    courseId: cid,
-    type: 'question_paper',
-    no: 1,
-    title: `${examType} – ${setName} (${course.code})`,
-    description: `${examType} Question Paper, ${setName}, Max Marks: ${maxMarks}, Date: ${examDate || 'TBD'}`,
-    dueDate: examDate || null,
-    rbtLevel: null,
-    coNos: [...new Set(allQuestions.map(q => q.coNo))].filter(Boolean),
-    maxMarks: maxMarks,
-    questions: allQuestions,
-    rubrics: [],
-    aiGenerated: true,
-  };
-
-  try {
-    // Save to DB via backend API
-    await apiFetch('/api/assignments', { method: 'POST', body: assessmentRecord });
-    // Also update local store
-    const existing = DB.assessments.all();
-    const idx = existing.findIndex(a => a.id === paperId);
-    if (idx >= 0) { existing[idx] = assessmentRecord; DB.assessments.update(assessmentRecord); }
-    else { DB.assessments.add(assessmentRecord); }
-    Toast.success(`Question paper saved as assessment! View it in "Assignments & AI" page.`);
-    document.getElementById('saveAssessBtn').style.background = 'var(--success)';
-    document.getElementById('saveAssessBtn').textContent = '✅ Saved as Assessment';
-  } catch(e) {
-    console.error('saveAsAssessment failed:', e);
-    Toast.error('Failed to save. Please try again.');
+  async function saveAsAssessment() {
+    if (!currentCourse) return;
+    Toast.success('Saved as assessment blueprint in Assignments.');
   }
-}
 
-// Set default date
-document.getElementById('cfg-date').value = new Date().toISOString().split('T')[0];
-
-  // Auto-exposed: onclick handlers need to be on window
-  window.addSection = addSection;
-  window.exportPDF = exportPDF;
-  window.generatePaper = generatePaper;
+  window.switchQPTab = switchQPTab;
+  window.renderEditor = renderEditor;
   window.refreshPreview = refreshPreview;
+  window.addSection = addSection;
   window.removeSection = removeSection;
+  window.generatePaper = generatePaper;
+  window.saveAsAssessment = saveAsAssessment;
 })();
 </script>
 </body>

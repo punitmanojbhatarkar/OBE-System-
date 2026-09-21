@@ -3,442 +3,241 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Departments | OBE System – MITAOE</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../styles/main.css?v=6">
-  <link rel="stylesheet" href="../styles/components.css?v=6">
+  <title>Departments Management | OBE System – MITAOE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles/main.css">
+  <link rel="stylesheet" href="../styles/components.css">
   <style>
-    /* ── Department Cards ── */
-    .dept-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
-
+    .dept-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px;
+    }
     .dept-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--r-lg);
-      overflow: hidden;
-      transition: transform .2s, box-shadow .2s, border-color .2s;
-      display: flex; flex-direction: column;
-    }
-    .dept-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,.35); border-color: var(--primary); }
-
-    .dept-banner {
-      height: 64px; padding: 16px 20px;
-      display: flex; align-items: flex-end; justify-content: space-between;
-      position: relative; overflow: hidden;
-    }
-    .dept-banner::after {
-      content: ''; position: absolute; inset: 0;
-      background: rgba(0,0,0,.25);
-    }
-    .dept-code-badge {
-      background: rgba(255,255,255,.18); backdrop-filter: blur(4px);
-      border: 1px solid rgba(255,255,255,.3);
-      color: white; font-weight: 800; font-size: 13px;
-      padding: 4px 10px; border-radius: 8px;
-      position: relative; z-index: 1;
-      letter-spacing: .5px;
-    }
-    .dept-banner-icon { font-size: 32px; position: relative; z-index: 1; opacity: .8; }
-
-    .dept-body { padding: 18px 20px; flex: 1; display: flex; flex-direction: column; gap: 14px; }
-    .dept-name { font-size: 17px; font-weight: 700; color: var(--text); margin: 0; }
-    
-    .dept-stats { display: flex; gap: 8px; flex-wrap: wrap; }
-    .dept-stat {
-      display: flex; align-items: center; gap: 6px;
-      background: var(--bg-deep); border: 1px solid var(--border);
-      border-radius: 8px; padding: 6px 10px; font-size: 12px;
-    }
-    .dept-stat .stat-num { font-weight: 700; color: var(--text); font-size: 14px; }
-    .dept-stat .stat-lbl { color: var(--text-muted); }
-
-    .hod-row {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px 12px; background: rgba(99,102,241,.08);
-      border: 1px solid rgba(99,102,241,.2); border-radius: 10px;
-    }
-    .hod-avatar {
-      width: 32px; height: 32px; border-radius: 50%;
-      background: rgba(99,102,241,.2); color: var(--primary);
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 13px; flex-shrink: 0;
-      border: 1px solid rgba(99,102,241,.3);
-    }
-    .hod-info { flex: 1; min-width: 0; }
-    .hod-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .hod-label { font-size: 10px; color: var(--text-muted); }
-
-    .no-hod-row {
-      display: flex; align-items: center; gap: 8px;
-      padding: 8px 12px; background: rgba(239,68,68,.06);
-      border: 1px dashed rgba(239,68,68,.3); border-radius: 10px;
-      font-size: 12px; color: #f87171;
-    }
-
-    .dept-footer { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
-    .dept-footer .btn { flex: 1; font-size: 12px; }
-
-    /* Gradient palettes for dept banners */
-    .dg-0 { background: linear-gradient(135deg, #1e3a8a, #2563EB, #06b6d4); }
-    .dg-1 { background: linear-gradient(135deg, #064e3b, #059669, #34d399); }
-    .dg-2 { background: linear-gradient(135deg, #4c1d95, #7c3aed, #a855f7); }
-    .dg-3 { background: linear-gradient(135deg, #7c2d12, #c2410c, #f97316); }
-    .dg-4 { background: linear-gradient(135deg, #134e4a, #0f766e, #14b8a6); }
-    .dg-5 { background: linear-gradient(135deg, #1e1b4b, #3730a3, #6366f1); }
-
-    /* ── Stats Summary ── */
-    .summary-strip {
-      display: flex; gap: 16px; flex-wrap: wrap;
-      margin-bottom: 24px;
-    }
-    .ss-card {
-      flex: 1; min-width: 120px;
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--r-md); padding: 14px 18px;
-      display: flex; align-items: center; gap: 12px;
+      border-radius: var(--r-md); overflow: hidden; display: flex; flex-direction: column;
     }
-    .ss-icon { font-size: 24px; }
-    .ss-val { font-size: 22px; font-weight: 800; color: var(--text); line-height: 1; }
-    .ss-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-
-    .modal select { width: 100%; }
+    .dept-card:hover { border-color: var(--primary); }
+    .dept-card-header {
+      padding: 16px; border-bottom: 1px solid var(--border); display: flex;
+      justify-content: space-between; align-items: center; background: var(--surface-2);
+    }
+    .dept-card-body { padding: 16px; flex: 1; display: flex; flex-direction: column; gap: 12px; }
   </style>
 </head>
 <body>
 <div class="app-shell">
+
+  <!-- SIDEBAR -->
   <aside class="sidebar">
-    <div class="sidebar-logo"><div class="logo-icon">OBE</div><div><div class="logo-text">OBE System</div><div class="logo-sub">MITAOE</div></div></div>
+    <div class="sidebar-logo">
+      <div class="logo-icon">OBE</div>
+      <div><div class="logo-text">OBE System</div><div class="logo-sub">MITAOE</div></div>
+    </div>
     <nav class="sidebar-nav">
-      <p class="nav-section-label">System</p>
-      <a class="nav-item" href="dashboard.html">📊 Dashboard</a>
-      <a class="nav-item active" href="departments.html">🏛️ Departments</a>
-      <a class="nav-item" href="users.html">👤 Users &amp; Roles</a>
-      <a class="nav-item" href="config.html">⚙️ Configuration</a>
+      <p class="nav-section-label">Institutional Management</p>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon" data-icon="dashboard"></span><span>Admin Dashboard</span></a>
+      <a class="nav-item active" href="departments.html"><span class="nav-icon" data-icon="matrix"></span><span>Departments</span></a>
+      <a class="nav-item" href="users.html"><span class="nav-icon" data-icon="students"></span><span>User Directory</span></a>
+      <a class="nav-item" href="config.html"><span class="nav-icon" data-icon="config"></span><span>System Settings</span></a>
+      <a class="nav-item" href="audit.html"><span class="nav-icon" data-icon="audit"></span><span>Audit Trail</span></a>
     </nav>
     <div class="sidebar-footer">
-      <div class="user-card"><div class="user-avatar"></div><div><div class="user-name"></div><div class="user-role"></div></div></div>
-      <button class="btn btn-ghost btn-sm w-full" data-action="logout" style="margin-top:8px">🚪 Logout</button>
+      <div class="user-card" onclick="Auth.logout()">
+        <div class="user-avatar"></div>
+        <div><div class="user-name"></div><div class="user-role"></div></div>
+      </div>
+      <button class="btn btn-secondary btn-sm w-full" data-action="logout" style="margin-top:8px; width:100%;">
+        <span data-icon="logout"></span><span>Sign Out</span>
+      </button>
     </div>
   </aside>
 
+  <!-- MAIN -->
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
-        <h1 class="topbar-title">🏛️ Departments</h1>
-        <div class="topbar-breadcrumb">Admin <span>&rsaquo;</span> Departments</div>
+        <h1 class="topbar-title">Academic Departments Directory</h1>
+        <div class="topbar-breadcrumb">Admin Console <span>›</span> Engineering Departments</div>
       </div>
       <div class="topbar-right">
-        <button class="btn btn-primary btn-sm" onclick="openAdd()">+ Add Department</button>
+        <button class="btn btn-primary btn-sm" onclick="openAddDeptModal()">
+          <span data-icon="plus"></span><span>Add Department</span>
+        </button>
       </div>
     </header>
 
     <div class="page-content">
-      <!-- Summary strip -->
-      <div class="summary-strip" id="summary-strip"></div>
-      <!-- Department Cards -->
-      <div class="dept-grid" id="dept-grid"></div>
+
+      <!-- Department Cards Grid -->
+      <div id="deptGrid" class="dept-grid"></div>
+
     </div>
   </main>
 </div>
 
-<div id="toast-container"></div>
-
-<!-- Add/Edit Department Modal -->
-<div id="modal-backdrop" class="modal-backdrop" style="display:none">
-  <div class="modal" style="max-width:500px;width:100%">
-    <div class="modal-header">
-      <h3 class="modal-title" id="modal-title">Add Department</h3>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <form id="dept-form" autocomplete="off">
-      <div class="form-group">
-        <label class="form-label">Department Name <span style="color:#f87171">*</span></label>
-        <input type="text" class="form-control" id="f-name" required placeholder="e.g. Computer Engineering">
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Short Code <span style="color:#f87171">*</span></label>
-          <input type="text" class="form-control" id="f-code" required maxlength="6" placeholder="e.g. CS" style="text-transform:uppercase">
-          <div style="font-size:11px;color:#f87171;margin-top:4px;display:none" id="err-code">Code already exists.</div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">HOD (select existing user)</label>
-          <select class="form-control" id="f-hod-select">
-            <option value="">— No HOD assigned —</option>
-          </select>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Or type new HOD name below to auto-create account</div>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">New HOD Name (auto-creates HOD account)</label>
-        <input type="text" class="form-control" id="f-hod" placeholder="Leave blank to use selected HOD above">
-        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Will create: hod.code@mitaoe.ac.in / hod123</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Vision Statement <span style="color:#f87171">*</span></label>
-        <textarea class="form-control" id="f-vision" rows="2" placeholder="e.g. To be a center of excellence..." required></textarea>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Mission Statement <span style="color:#f87171">*</span></label>
-        <textarea class="form-control" id="f-mission" rows="2" placeholder="e.g. To foster innovation..." required></textarea>
-      </div>
-      <input type="hidden" id="f-id">
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-        <button type="submit" class="btn btn-primary">💾 Save Department</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<script src="../scripts/data.js?v=101"></script>
-<script src="../scripts/api.js?v=101"></script>
-<script src="../scripts/auth.js?v=3"></script>
+<script src="../scripts/icons.js"></script>
+<script src="../scripts/data.js"></script>
+<script src="../scripts/api.js"></script>
+<script src="../scripts/auth.js"></script>
 <script src="../scripts/utils.js"></script>
 <script>
 (async () => {
   await (window._apiReady || Promise.resolve());
   const user = Auth.requireAuth(['admin']);
-if(!user) throw 0;
-Auth.populateSidebar(user);
+  if (!user) throw new Error('Not authorized');
 
-const GRADIENTS = ['dg-0','dg-1','dg-2','dg-3','dg-4','dg-5'];
-const DEPT_ICONS = ['💻','🔬','🤖','📡','🧪','⚙️','📊','🧬'];
+  renderDepts();
+  renderAllIcons();
 
-function populateHodSelect(excludeDeptId) {
-  const sel = document.getElementById('f-hod-select');
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">— No HOD assigned —</option>';
-  // Show existing HOD users + faculty who could become HOD
-  DB.users.all().filter(u => u.role === 'hod' || u.role === 'faculty').forEach(u => {
-    const o = document.createElement('option');
-    o.value = u.id;
-    const dept = u.deptId ? DB.departments.byId(u.deptId)?.name : null;
-    o.textContent = `${u.name} (${u.role}${dept ? ' – ' + dept : ''})`;
-    sel.appendChild(o);
-  });
-  sel.value = cur;
-}
+  function renderDepts() {
+    const grid = document.getElementById('deptGrid');
+    const depts = DB.departments.all();
+    const users = DB.users.all();
+    const courses = DB.courses.all();
 
-function render() {
-  const depts = DB.departments.all();
-  const allCourses = DB.courses.all();
-  const allUsers = DB.users.all();
+    grid.innerHTML = depts.map(d => {
+      const hod = users.find(u => u.id === d.hodId);
+      const fCount = users.filter(u => u.deptId === d.id && (u.role === 'faculty' || u.role === 'hod')).length;
+      const cCount = courses.filter(c => c.deptId === d.id).length;
 
-  // Summary strip
-  const totalFaculty = allUsers.filter(u => u.role === 'faculty').length;
-  const totalHods = allUsers.filter(u => u.role === 'hod').length;
-  const totalCourses = allCourses.length;
-  const missingHod = depts.filter(d => !allUsers.some(u => u.role === 'hod' && u.deptId === d.id)).length;
-  document.getElementById('summary-strip').innerHTML = `
-    <div class="ss-card"><div class="ss-icon">🏛️</div><div><div class="ss-val">${depts.length}</div><div class="ss-label">Departments</div></div></div>
-    <div class="ss-card"><div class="ss-icon">🎓</div><div><div class="ss-val">${totalHods}</div><div class="ss-label">HODs</div></div></div>
-    <div class="ss-card"><div class="ss-icon">👨‍🏫</div><div><div class="ss-val">${totalFaculty}</div><div class="ss-label">Faculty</div></div></div>
-    <div class="ss-card"><div class="ss-icon">📚</div><div><div class="ss-val">${totalCourses}</div><div class="ss-label">Courses</div></div></div>
-    ${missingHod > 0 ? `<div class="ss-card" style="border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.05)"><div class="ss-icon">⚠️</div><div><div class="ss-val" style="color:#f87171">${missingHod}</div><div class="ss-label" style="color:#f87171">Missing HOD</div></div></div>` : ''}
-  `;
-
-  const grid = document.getElementById('dept-grid');
-  if (!depts.length) {
-    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--text-muted)">
-      <div style="font-size:48px;margin-bottom:12px">🏛️</div>
-      <h3 style="color:var(--text);margin-bottom:6px">No Departments Yet</h3>
-      <p>Add your first department to get started.</p>
-    </div>`;
-    return;
+      return `
+        <div class="dept-card">
+          <div class="dept-card-header">
+            <div>
+              <span class="badge badge-primary font-mono" style="font-size:12px;">${d.code}</span>
+            </div>
+            <div style="font-size:12px;color:var(--text-secondary);font-weight:600;">${cCount} Courses</div>
+          </div>
+          <div class="dept-card-body">
+            <h3 style="font-size:16px;font-weight:700;color:var(--text-primary);margin:0;">${d.name}</h3>
+            <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;font-size:12.5px;">
+              <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;margin-bottom:2px;">Head of Department</div>
+              <div style="font-weight:600;color:var(--text-primary);">${hod ? hod.name : 'Not Assigned'}</div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <span class="badge badge-neutral">${fCount} Faculty Members</span>
+              <span class="badge badge-success">Accredited</span>
+            </div>
+          </div>
+          <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;">
+            <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="openEditDeptModal('${d.id}')">
+              <span data-icon="edit"></span><span>Edit</span>
+            </button>
+            <button class="btn btn-danger btn-sm btn-icon" onclick="deleteDept('${d.id}')">
+              <span data-icon="trash"></span>
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+    renderAllIcons(grid);
   }
 
-  let tableHtml = `<table style="width:100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden;">
-    <thead>
-      <tr style="background: rgba(0,0,0,0.02); border-bottom: 1px solid var(--border); text-align: left;">
-        <th style="padding: 12px 16px; font-weight: 600; color: var(--text-secondary); font-size: 12px; text-transform: uppercase;">Code</th>
-        <th style="padding: 12px 16px; font-weight: 600; color: var(--text-secondary); font-size: 12px; text-transform: uppercase;">Department Name</th>
-        <th style="padding: 12px 16px; font-weight: 600; color: var(--text-secondary); font-size: 12px; text-transform: uppercase;">HOD</th>
-        <th style="padding: 12px 16px; font-weight: 600; color: var(--text-secondary); font-size: 12px; text-transform: uppercase;">Stats</th>
-        <th style="padding: 12px 16px; font-weight: 600; color: var(--text-secondary); font-size: 12px; text-transform: uppercase; text-align: right;">Actions</th>
-      </tr>
-    </thead>
-    <tbody>`;
+  function openAddDeptModal() {
+    const users = DB.users.all().filter(u => u.role === 'hod' || u.role === 'faculty');
+    const hodOptions = users.map(u => `<option value="${u.id}">${u.name} (${u.email})</option>`).join('');
 
-  tableHtml += depts.map((d, i) => {
-    const courses = allCourses.filter(c => c.deptId === d.id).length;
-    const faculty = allUsers.filter(u => u.role === 'faculty' && u.deptId === d.id).length;
-    const hod = allUsers.find(u => u.role === 'hod' && u.deptId === d.id);
-    
-    const hodHtml = hod
-      ? `<div style="display:flex;align-items:center;gap:8px;"><div style="width:24px;height:24px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">${hod.name[0]?.toUpperCase()}</div><span style="font-size:13px;font-weight:500;">${hod.name}</span></div>`
-      : `<span style="color:var(--danger);font-size:12px;">⚠️ Unassigned</span>`;
-      
-    return `
-      <tr style="border-bottom: 1px solid var(--border);">
-        <td style="padding: 12px 16px;"><span class="badge" style="background:var(--primary-alpha);color:var(--primary);font-family:monospace;font-size:13px;">${d.code}</span></td>
-        <td style="padding: 12px 16px;">
-          <div style="font-weight:600;color:var(--text);font-size:14px;">${d.name}</div>
-          ${d.vision ? `<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${d.vision.substring(0,60)}${d.vision.length>60?'…':''}</div>` : ''}
-        </td>
-        <td style="padding: 12px 16px;">${hodHtml}</td>
-        <td style="padding: 12px 16px;font-size:12px;color:var(--text-secondary);">
-          <span style="margin-right:8px;">📚 ${courses}</span>
-          <span>👨‍🏫 ${faculty}</span>
-        </td>
-        <td style="padding: 12px 16px; text-align: right; white-space: nowrap;">
-          <button class="btn btn-secondary btn-sm" onclick="openEdit('${d.id}')" style="padding: 4px 8px; font-size: 12px; margin-right: 4px;">✏️ Edit</button>
-          <button class="btn btn-ghost btn-sm" onclick="del('${d.id}','${d.name}')" style="padding: 4px 8px; font-size: 12px; color: var(--danger);">🗑 Delete</button>
-        </td>
-      </tr>`;
-  }).join('');
-
-  tableHtml += `</tbody></table>`;
-  
-  // Make grid 1 column for table
-  grid.style.gridTemplateColumns = "1fr";
-  grid.innerHTML = tableHtml;
-}
-
-function openAdd() {
-  document.getElementById('modal-title').textContent = '➕ Add Department';
-  document.getElementById('dept-form').reset();
-  document.getElementById('f-id').value = '';
-  document.getElementById('err-code').style.display = 'none';
-  populateHodSelect();
-  document.getElementById('modal-backdrop').style.display = 'flex';
-}
-
-function openEdit(id) {
-  const d = DB.departments.byId(id);
-  if (!d) return;
-  document.getElementById('modal-title').textContent = '✏️ Edit Department';
-  document.getElementById('f-id').value = d.id;
-  document.getElementById('f-name').value = d.name;
-  document.getElementById('f-code').value = d.code;
-  document.getElementById('f-hod').value = '';
-  document.getElementById('f-vision').value = d.vision || '';
-  document.getElementById('f-mission').value = d.mission || '';
-  document.getElementById('err-code').style.display = 'none';
-  populateHodSelect(id);
-  // Pre-select current HOD in dropdown if they exist as user
-  const hodUser = DB.users.all().find(u => u.role === 'hod' && u.deptId === id);
-  document.getElementById('f-hod-select').value = hodUser ? hodUser.id : '';
-  document.getElementById('modal-backdrop').style.display = 'flex';
-}
-
-function closeModal() { document.getElementById('modal-backdrop').style.display = 'none'; }
-
-function del(id, name) {
-  const courses = DB.courses.all().filter(c => c.deptId === id);
-  if (courses.length > 0) {
-    return Toast.warning(`Cannot delete "${name}" — it has ${courses.length} active course(s). Delete or reassign courses first.`);
+    const html = `
+      <div class="modal-header">
+        <h3 class="modal-title">Add Academic Department</h3>
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="Modal.close()"><span data-icon="close"></span></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Department Code *</label>
+          <input class="form-input" id="d-code" placeholder="e.g. COMP, MECH, ENTC">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Department Full Name *</label>
+          <input class="form-input" id="d-name" placeholder="e.g. Computer Engineering">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Assigned Head of Department</label>
+          <select class="form-select" id="d-hod">
+            <option value="">-- None --</option>
+            ${hodOptions}
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveDept()">Create Department</button>
+      </div>
+    `;
+    Modal.open(html);
+    renderAllIcons();
   }
-  Modal.confirm('Delete Department',
-    `Delete <strong>${name}</strong>? All associated users (faculty, HOD, students) will also be removed. This cannot be undone.`,
-    () => {
-      // Delete all users in this dept
-      DB.users.all().filter(u => u.deptId === id).forEach(u => DB.users.delete(u.id));
+
+  function openEditDeptModal(id) {
+    const d = DB.departments.byId(id);
+    if (!d) return;
+    const users = DB.users.all().filter(u => u.role === 'hod' || u.role === 'faculty');
+    const hodOptions = users.map(u => `<option value="${u.id}" ${u.id===d.hodId?'selected':''}>${u.name} (${u.email})</option>`).join('');
+
+    const html = `
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Department</h3>
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="Modal.close()"><span data-icon="close"></span></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Department Code *</label>
+          <input class="form-input" id="d-code" value="${d.code}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Department Full Name *</label>
+          <input class="form-input" id="d-name" value="${d.name}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Assigned Head of Department</label>
+          <select class="form-select" id="d-hod">
+            <option value="">-- None --</option>
+            ${hodOptions}
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveDept('${d.id}')">Save Changes</button>
+      </div>
+    `;
+    Modal.open(html);
+    renderAllIcons();
+  }
+
+  function saveDept(id) {
+    const code = document.getElementById('d-code').value.trim();
+    const name = document.getElementById('d-name').value.trim();
+    const hodId = document.getElementById('d-hod').value || null;
+
+    if (!code || !name) { Toast.error('Code and Name are required.'); return; }
+
+    if (id) {
+      DB.departments.update({ id, code, name, hodId });
+      Toast.success('Department updated.');
+    } else {
+      DB.departments.add({ code, name, hodId });
+      Toast.success('Department added.');
+    }
+    Modal.close();
+    renderDepts();
+  }
+
+  function deleteDept(id) {
+    const d = DB.departments.byId(id);
+    if (!d) return;
+    Modal.confirm('Delete Department', `Remove department ${d.name} (${d.code})?`, () => {
       DB.departments.delete(id);
-      render();
-      Toast.success('Department deleted.');
-    }
-  );
-}
-
-document.getElementById('dept-form').addEventListener('submit', e => {
-  e.preventDefault();
-  const id      = document.getElementById('f-id').value;
-  const name    = document.getElementById('f-name').value.trim();
-  const code    = document.getElementById('f-code').value.trim().toUpperCase();
-  const hodName = document.getElementById('f-hod').value.trim();
-  const hodUserId = document.getElementById('f-hod-select').value;
-  const vision  = document.getElementById('f-vision').value.trim();
-  const mission = document.getElementById('f-mission').value.trim();
-
-  if (!vision || !mission) {
-    Toast.error('Vision and Mission statements are required.');
-    return;
+      renderDepts();
+      Toast.success('Department removed.');
+    }, 'Delete', true);
   }
 
-  // Code uniqueness
-  const codeExists = DB.departments.all().find(d => d.code === code && d.id !== id);
-  if (codeExists) {
-    document.getElementById('err-code').style.display = 'block';
-    document.getElementById('f-code').focus();
-    return;
-  }
-  document.getElementById('err-code').style.display = 'none';
-
-  const obj = { name, code, vision, mission };
-
-  if (id) {
-    obj.id = id;
-    // Handle HOD: if a new name was typed, create/update; if a user was selected, promote them
-    if (hodName) {
-      obj.hod = hodName;
-      // Remove existing HODs from this dept
-      DB.users.all().filter(u => u.role === 'hod' && u.deptId === id).forEach(u => { u.role = 'faculty'; DB.users.update(u); });
-      // Check if a user with this name already exists as faculty in this dept
-      let existingUser = DB.users.all().find(u => u.deptId === id && u.name === hodName);
-      if (existingUser) {
-        existingUser.role = 'hod'; DB.users.update(existingUser);
-      } else {
-        DB.users.add({ name: hodName, email: `hod.${code.toLowerCase()}@mitaoe.ac.in`, password: 'hod123', role: 'hod', deptId: id, avatar: hodName[0]?.toUpperCase() || 'H' });
-      }
-    } else if (hodUserId) {
-      const selectedUser = DB.users.byId(hodUserId);
-      if (selectedUser) {
-        obj.hod = selectedUser.name;
-        // Demote existing HODs in this dept
-        DB.users.all().filter(u => u.role === 'hod' && u.deptId === id && u.id !== hodUserId).forEach(u => { u.role = 'faculty'; DB.users.update(u); });
-        
-        // Clear HOD from old department
-        const oldDept = DB.departments.byId(selectedUser.deptId);
-        if (oldDept && oldDept.id !== id) {
-          oldDept.hod = '';
-          DB.departments.update(oldDept);
-        }
-
-        // Promote selected user
-        selectedUser.role = 'hod'; selectedUser.deptId = id; DB.users.update(selectedUser);
-      }
-    }
-    DB.departments.update(obj);
-    Toast.success('Department updated.');
-  } else {
-    const newDept = DB.departments.add(obj);
-    if (hodName) {
-      newDept.hod = hodName;
-      DB.users.add({ name: hodName, email: `hod.${code.toLowerCase()}@mitaoe.ac.in`, password: 'hod123', role: 'hod', deptId: newDept.id, avatar: hodName[0]?.toUpperCase() || 'H' });
-      DB.departments.update(newDept);
-    } else if (hodUserId) {
-      const selectedUser = DB.users.byId(hodUserId);
-      if (selectedUser) {
-        newDept.hod = selectedUser.name;
-        // Demote existing HODs in target dept if any
-        DB.users.all().filter(u => u.role === 'hod' && u.deptId === selectedUser.deptId && u.id !== hodUserId).forEach(u => { u.role = 'faculty'; DB.users.update(u); });
-        
-        // Clear HOD from old department
-        const oldDept = DB.departments.byId(selectedUser.deptId);
-        if (oldDept && oldDept.id !== newDept.id) {
-          oldDept.hod = '';
-          DB.departments.update(oldDept);
-        }
-
-        selectedUser.role = 'hod'; selectedUser.deptId = newDept.id; DB.users.update(selectedUser);
-        DB.departments.update(newDept);
-      }
-    }
-    Toast.success('Department added.');
-  }
-  closeModal(); render();
-});
-
-render();
-
-  // Auto-exposed: onclick handlers need to be on window
-  window.closeModal = closeModal;
-  window.del = del;
-  window.openAdd = openAdd;
-  window.openEdit = openEdit;
+  window.openAddDeptModal = openAddDeptModal;
+  window.openEditDeptModal = openEditDeptModal;
+  window.saveDept = saveDept;
+  window.deleteDept = deleteDept;
 })();
 </script>
-<script src="../scripts/ai-mock.js"></script>
 </body>
 </html>

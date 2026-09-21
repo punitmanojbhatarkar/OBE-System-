@@ -34,28 +34,200 @@ const DB = (() => {
   function set(key, val)  { localStorage.setItem(key, JSON.stringify(val)); }
   function uid()          { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 
-  /* ── Institutional NBA/OBE Data (Blank Slate for Production) ── */
+  /* ── Institutional NBA/OBE Data (MITAOE Pune — Academic Year 2025-26) ── */
   const INSTITUTIONAL_DATA = {
-    departments: [],
-    users: [
-      // Admin only - real users will be added by admin
-      { id:'usr-admin', name:'System Administrator', email:'admin@mitaoe.ac.in', password:'admin123', role:'admin', deptId:null, avatar:'A' }
+    departments: [
+      { id:'dept-ds',  name:'Data Science',           code:'DS',  hod:'Dr. A. Mehta', vision: 'To be a center of excellence in Data Science.', mission: 'To foster innovation and problem-solving through data-centric approaches.' },
+      { id:'dept-cs',  name:'Computer Engineering',   code:'CS',  hod:'Dr. V. C. Wangikar', vision: 'To create globally competent computer professionals.', mission: 'To empower students with robust computational skills and ethical practices.' },
+      { id:'dept-ai',  name:'AI & Machine Learning',  code:'AI',  hod:'Dr. R. Sharma', vision: 'To lead the future of artificial intelligence research.', mission: 'Pioneering intelligent solutions for future challenges.' },
+      { id:'dept-it',  name:'Information Technology', code:'IT',  hod:'Dr. P. Kulkarni', vision: 'To innovate in IT solutions and services.', mission: 'Bridging the gap between technology and business needs.' },
     ],
-    courses: [],
-    cos: [],
-    poMapping: [],
-    students: [],
-    marksIA: [],
-    survey: [],
+
+    users: [
+      // Admin
+      { id:'usr-admin', name:'System Administrator', email:'admin@mitaoe.ac.in',    password:'admin123',   role:'admin',   deptId:null,      avatar:'A' },
+      // Faculty
+      { id:'usr-vw',    name:'Vaishali Wangikar',     email:'vwangikar@mitaoe.ac.in',password:'faculty123', role:'faculty', deptId:'dept-cs', avatar:'V' },
+      { id:'usr-am',    name:'Prof. A. Mehta',         email:'ametha@mitaoe.ac.in',   password:'faculty123', role:'faculty', deptId:'dept-ds', avatar:'A' },
+      { id:'usr-rs',    name:'Prof. R. Sharma',        email:'rsharma@mitaoe.ac.in',  password:'faculty123', role:'faculty', deptId:'dept-ai', avatar:'R' },
+      // HOD
+      { id:'usr-hod1',  name:'Dr. V. C. Wangikar',    email:'hod.cs@mitaoe.ac.in',   password:'hod123',     role:'hod',     deptId:'dept-cs', avatar:'H' },
+      { id:'usr-hod2',  name:'Dr. A. Mehta (HOD)',    email:'hod.ds@mitaoe.ac.in',   password:'hod123',     role:'hod',     deptId:'dept-ds', avatar:'H' },
+      // Students
+      { id:'stu-001', name:'Rakshe Veer Tushar',       email:'student@mitaoe.ac.in',  password:'student123', role:'student', deptId:'dept-cs' },
+      { id:'stu-002', name:'Narote Sanket Satish',     email:'narote@student.mitaoe.ac.in',  password:'student123', role:'student', deptId:'dept-cs' },
+      { id:'stu-003', name:'Bolaj Samarth Hanmant',    email:'bolaj@student.mitaoe.ac.in',   password:'student123', role:'student', deptId:'dept-cs' },
+      { id:'stu-004', name:'Om Sutar',                 email:'om.sutar@mitaoe.ac.in',        password:'student123', role:'student', deptId:'dept-cs' },
+    ],
+
+    courses: [
+      {
+        id:'crs-eda', code:'230331T', name:'Exploratory Data Analysis', shortName:'EDA',
+        deptId:'dept-cs', facultyId:'usr-vw', semester:'V', year:'2025-26',
+        class:'TY BTech', division:'A', batch:'A1, A2',
+        champion:'Dr. V. C. Wangikar', champDate:'2025-07-21',
+        lecturesPerWeek:3, totalStudents:41,
+        examScheme:{ ia:30, mse:20, ese:50 },
+        attainmentLevels:{ 1:65, 2:75, 3:85 },
+        directWeight:80, indirectWeight:20,
+        teachingPhilosophy:'Foster Curiosity and Inquiry, Emphasize the Iterative Nature of EDA, Develop Critical Thinking Skills, Balance Theory with Practice, Promote Data Storytelling.',
+        status:'active'
+      },
+      {
+        id:'crs-ml',  code:'230332T', name:'Machine Learning',          shortName:'ML',
+        deptId:'dept-cs', facultyId:'usr-vw', semester:'V', year:'2025-26',
+        class:'TY BTech', division:'A', batch:'A1',
+        champion:'Dr. V. C. Wangikar', champDate:'2025-07-21',
+        lecturesPerWeek:3, totalStudents:41,
+        examScheme:{ ia:30, mse:20, ese:50 },
+        attainmentLevels:{ 1:65, 2:75, 3:85 },
+        directWeight:80, indirectWeight:20,
+        teachingPhilosophy:'Blend theory with hands-on ML implementation.',
+        status:'active'
+      },
+      {
+        id:'crs-dw',  code:'230333T', name:'Data Warehousing & Mining', shortName:'DWM',
+        deptId:'dept-ds', facultyId:'usr-am',  semester:'V', year:'2025-26',
+        class:'TY BTech', division:'A', batch:'A1',
+        champion:'Dr. A. Mehta', champDate:'2025-07-21',
+        lecturesPerWeek:3, totalStudents:38,
+        examScheme:{ ia:30, mse:20, ese:50 },
+        attainmentLevels:{ 1:65, 2:75, 3:85 },
+        directWeight:80, indirectWeight:20,
+        teachingPhilosophy:'Practical data engineering skills.',
+        status:'active'
+      },
+    ],
+
+    // Course Outcomes for EDA
+    cos: [
+      { id:'co-1', courseId:'crs-eda', no:1, code:'CO1', text:'Select the efficient data warehouse architecture for the given case study.', bloomsLevel:'L3', assessedThrough:['ia','mse','ese'] },
+      { id:'co-2', courseId:'crs-eda', no:2, code:'CO2', text:'Develop a data mart using different modeling techniques for given applications and present it in a group.', bloomsLevel:'L3', assessedThrough:['ia','ese'] },
+      { id:'co-3', courseId:'crs-eda', no:3, code:'CO3', text:'Analyze the prediction by hypothesis testing using data analysis tools.', bloomsLevel:'L4', assessedThrough:['ia','mse','ese'] },
+      { id:'co-4', courseId:'crs-eda', no:4, code:'CO4', text:'Construct a model for providing predictions on given datasets by identifying trends and detecting outliers on real-time application using available tools and technology.', bloomsLevel:'L4', assessedThrough:['ia','mse','ese'] },
+      { id:'co-5', courseId:'crs-eda', no:5, code:'CO5', text:'', bloomsLevel:'', assessedThrough:[] },
+      { id:'co-6', courseId:'crs-eda', no:6, code:'CO6', text:'', bloomsLevel:'', assessedThrough:[] },
+      // ML COs
+      { id:'co-ml-1', courseId:'crs-ml', no:1, code:'CO1', text:'Apply supervised learning algorithms to solve classification and regression problems.', bloomsLevel:'L3', assessedThrough:['ia','mse','ese'] },
+      { id:'co-ml-2', courseId:'crs-ml', no:2, code:'CO2', text:'Implement unsupervised learning techniques for clustering and dimensionality reduction.', bloomsLevel:'L3', assessedThrough:['ia','ese'] },
+      { id:'co-ml-3', courseId:'crs-ml', no:3, code:'CO3', text:'Evaluate model performance using appropriate metrics and cross-validation.', bloomsLevel:'L4', assessedThrough:['ia','mse','ese'] },
+      { id:'co-ml-4', courseId:'crs-ml', no:4, code:'CO4', text:'Design and implement neural network architectures for real-world applications.', bloomsLevel:'L5', assessedThrough:['ia','ese'] },
+    ],
+
+    // CO-PO Mapping for EDA (from Sheet 6C)
+    poMapping: [
+      // CO1: PO1=2, PO2=3, PO3=3, PO4=1, PO5=1, PO12=1, PSO1=2, PSO3=1
+      { courseId:'crs-eda', coNo:1, po:'PO1', val:2 }, { courseId:'crs-eda', coNo:1, po:'PO2', val:3 },
+      { courseId:'crs-eda', coNo:1, po:'PO3', val:3 }, { courseId:'crs-eda', coNo:1, po:'PO4', val:1 },
+      { courseId:'crs-eda', coNo:1, po:'PO5', val:1 }, { courseId:'crs-eda', coNo:1, po:'PO12',val:1 },
+      { courseId:'crs-eda', coNo:1, po:'PSO1',val:2 }, { courseId:'crs-eda', coNo:1, po:'PSO3',val:1 },
+      // CO2: PO1=2, PO2=3, PO3=3, PO4=1, PO5=3, PO12=1, PSO1=3, PSO2=1, PSO3=2
+      { courseId:'crs-eda', coNo:2, po:'PO1', val:2 }, { courseId:'crs-eda', coNo:2, po:'PO2', val:3 },
+      { courseId:'crs-eda', coNo:2, po:'PO3', val:3 }, { courseId:'crs-eda', coNo:2, po:'PO4', val:1 },
+      { courseId:'crs-eda', coNo:2, po:'PO5', val:3 }, { courseId:'crs-eda', coNo:2, po:'PO12',val:1 },
+      { courseId:'crs-eda', coNo:2, po:'PSO1',val:3 }, { courseId:'crs-eda', coNo:2, po:'PSO2',val:1 },
+      { courseId:'crs-eda', coNo:2, po:'PSO3',val:2 },
+      // CO3: PO1=3, PO2=3, PO3=3, PO4=2, PO5=3, PO7=1, PO12=1, PSO1=3, PSO2=3, PSO3=3
+      { courseId:'crs-eda', coNo:3, po:'PO1', val:3 }, { courseId:'crs-eda', coNo:3, po:'PO2', val:3 },
+      { courseId:'crs-eda', coNo:3, po:'PO3', val:3 }, { courseId:'crs-eda', coNo:3, po:'PO4', val:2 },
+      { courseId:'crs-eda', coNo:3, po:'PO5', val:3 }, { courseId:'crs-eda', coNo:3, po:'PO7', val:1 },
+      { courseId:'crs-eda', coNo:3, po:'PO12',val:1 }, { courseId:'crs-eda', coNo:3, po:'PSO1',val:3 },
+      { courseId:'crs-eda', coNo:3, po:'PSO2',val:3 }, { courseId:'crs-eda', coNo:3, po:'PSO3',val:3 },
+      // CO4: same as CO3
+      { courseId:'crs-eda', coNo:4, po:'PO1', val:3 }, { courseId:'crs-eda', coNo:4, po:'PO2', val:3 },
+      { courseId:'crs-eda', coNo:4, po:'PO3', val:3 }, { courseId:'crs-eda', coNo:4, po:'PO4', val:2 },
+      { courseId:'crs-eda', coNo:4, po:'PO5', val:3 }, { courseId:'crs-eda', coNo:4, po:'PO7', val:1 },
+      { courseId:'crs-eda', coNo:4, po:'PO12',val:1 }, { courseId:'crs-eda', coNo:4, po:'PSO1',val:3 },
+      { courseId:'crs-eda', coNo:4, po:'PSO2',val:3 }, { courseId:'crs-eda', coNo:4, po:'PSO3',val:3 },
+    ],
+
+    // Students for EDA (real names from Excel)
+    students: [
+      { id:'s01', courseId:'crs-eda', prn:'202201040001', name:'Rakshe Veer Tushar',       preSurveyScore:3,  learnerType:'slow' },
+      { id:'s02', courseId:'crs-eda', prn:'202201040003', name:'Narote Sanket Satish',     preSurveyScore:8,  learnerType:'advanced' },
+      { id:'s03', courseId:'crs-eda', prn:'202201040004', name:'Bolaj Samarth Hanmant',    preSurveyScore:7,  learnerType:'advanced' },
+      { id:'s04', courseId:'crs-eda', prn:'202201040005', name:'Sarode Lokesh Vasudev',    preSurveyScore:6,  learnerType:'average' },
+      { id:'s05', courseId:'crs-eda', prn:'202201040006', name:'Thorat Harshada Subhash',  preSurveyScore:7,  learnerType:'advanced' },
+      { id:'s06', courseId:'crs-eda', prn:'202201040007', name:'Kulkarni Parth Dipak',     preSurveyScore:5,  learnerType:'average' },
+      { id:'s07', courseId:'crs-eda', prn:'202201040008', name:'Pawar Aniket Suraj',       preSurveyScore:6,  learnerType:'average' },
+      { id:'s08', courseId:'crs-eda', prn:'202201040009', name:'Maske Prashik Ghansham',   preSurveyScore:4,  learnerType:'average' },
+      { id:'s09', courseId:'crs-eda', prn:'202201040010', name:'Om Sutar',                 preSurveyScore:8,  learnerType:'advanced' },
+      { id:'s10', courseId:'crs-eda', prn:'202201040011', name:'Vemula Ramani Bhumaiah',   preSurveyScore:7,  learnerType:'advanced' },
+      { id:'s11', courseId:'crs-eda', prn:'202201040012', name:'Gite Abhijeet Shantilal',  preSurveyScore:5,  learnerType:'average' },
+      { id:'s12', courseId:'crs-eda', prn:'202201040013', name:'Dasari Essak Mahesh',      preSurveyScore:6,  learnerType:'average' },
+      { id:'s13', courseId:'crs-eda', prn:'202201040014', name:'Raut Krishna Bhimrao',     preSurveyScore:3,  learnerType:'slow' },
+      { id:'s14', courseId:'crs-eda', prn:'202201040015', name:'Shinde Vaibhav Ajay',      preSurveyScore:7,  learnerType:'advanced' },
+      { id:'s15', courseId:'crs-eda', prn:'202201040016', name:'Ghodake Vipul Vijaykumar', preSurveyScore:5,  learnerType:'average' },
+      { id:'s16', courseId:'crs-eda', prn:'202201040017', name:'Pendam Tejas Pradip',      preSurveyScore:8,  learnerType:'advanced' },
+      { id:'s17', courseId:'crs-eda', prn:'202201040019', name:'Bingi Vidya Balganesh',    preSurveyScore:6,  learnerType:'average' },
+      { id:'s18', courseId:'crs-eda', prn:'202201040020', name:'Divekar Swarup Arjun',     preSurveyScore:4,  learnerType:'average' },
+      { id:'s19', courseId:'crs-eda', prn:'202201040021', name:'Amrik Bhadra',             preSurveyScore:7,  learnerType:'advanced' },
+      { id:'s20', courseId:'crs-eda', prn:'202201040022', name:'Chavan Snehal Suraj',      preSurveyScore:5,  learnerType:'average' },
+      { id:'s21', courseId:'crs-eda', prn:'202201040023', name:'Pande Aniruddha Pradip',   preSurveyScore:6,  learnerType:'average' },
+      { id:'s22', courseId:'crs-eda', prn:'202201040024', name:'Popalghat Amol Santosh',   preSurveyScore:7,  learnerType:'advanced' },
+      { id:'s23', courseId:'crs-eda', prn:'202201040025', name:'Lohkare Girish Gokul',     preSurveyScore:4,  learnerType:'average' },
+      { id:'s24', courseId:'crs-eda', prn:'202201040026', name:'Darade Tejashri Krushna',  preSurveyScore:8,  learnerType:'advanced' },
+      { id:'s25', courseId:'crs-eda', prn:'202201040027', name:'Jadhav Vaibhav Satish',    preSurveyScore:5,  learnerType:'average' },
+      { id:'s26', courseId:'crs-eda', prn:'202201040029', name:'Sumit Kedar',              preSurveyScore:3,  learnerType:'slow' },
+    ],
+
+    // IA Question structure for EDA
+    iaQuestions: [],
+
+    // Sample IA marks (per student per question)
+    marksIA: [
+      // Assessment 1, Q1 (CO1, max 3), Q2 (CO2, max 3)
+      {courseId:'crs-eda',prn:'202201040001',assessmentNo:1,qNo:1,marks:1},{courseId:'crs-eda',prn:'202201040001',assessmentNo:1,qNo:2,marks:2},
+      {courseId:'crs-eda',prn:'202201040003',assessmentNo:1,qNo:1,marks:3},{courseId:'crs-eda',prn:'202201040003',assessmentNo:1,qNo:2,marks:3},
+      {courseId:'crs-eda',prn:'202201040004',assessmentNo:1,qNo:1,marks:3},{courseId:'crs-eda',prn:'202201040004',assessmentNo:1,qNo:2,marks:2},
+      {courseId:'crs-eda',prn:'202201040005',assessmentNo:1,qNo:1,marks:2},{courseId:'crs-eda',prn:'202201040005',assessmentNo:1,qNo:2,marks:3},
+      {courseId:'crs-eda',prn:'202201040006',assessmentNo:1,qNo:1,marks:2},{courseId:'crs-eda',prn:'202201040006',assessmentNo:1,qNo:2,marks:2},
+      {courseId:'crs-eda',prn:'202201040007',assessmentNo:1,qNo:1,marks:3},{courseId:'crs-eda',prn:'202201040007',assessmentNo:1,qNo:2,marks:3},
+      {courseId:'crs-eda',prn:'202201040008',assessmentNo:1,qNo:1,marks:2},{courseId:'crs-eda',prn:'202201040008',assessmentNo:1,qNo:2,marks:2},
+      {courseId:'crs-eda',prn:'202201040009',assessmentNo:1,qNo:1,marks:3},{courseId:'crs-eda',prn:'202201040009',assessmentNo:1,qNo:2,marks:3},
+      {courseId:'crs-eda',prn:'202201040010',assessmentNo:1,qNo:1,marks:3},{courseId:'crs-eda',prn:'202201040010',assessmentNo:1,qNo:2,marks:3},
+      {courseId:'crs-eda',prn:'202201040011',assessmentNo:1,qNo:1,marks:2},{courseId:'crs-eda',prn:'202201040011',assessmentNo:1,qNo:2,marks:2},
+      {courseId:'crs-eda',prn:'202201040012',assessmentNo:1,qNo:1,marks:2},{courseId:'crs-eda',prn:'202201040012',assessmentNo:1,qNo:2,marks:3},
+      {courseId:'crs-eda',prn:'202201040013',assessmentNo:1,qNo:1,marks:1},{courseId:'crs-eda',prn:'202201040013',assessmentNo:1,qNo:2,marks:1},
+      {courseId:'crs-eda',prn:'202201040014',assessmentNo:1,qNo:1,marks:3},{courseId:'crs-eda',prn:'202201040014',assessmentNo:1,qNo:2,marks:3},
+      {courseId:'crs-eda',prn:'202201040015',assessmentNo:1,qNo:1,marks:2},{courseId:'crs-eda',prn:'202201040015',assessmentNo:1,qNo:2,marks:2},
+      {courseId:'crs-eda',prn:'202201040016',assessmentNo:1,qNo:1,marks:3},{courseId:'crs-eda',prn:'202201040016',assessmentNo:1,qNo:2,marks:3},
+      {courseId:'crs-eda',prn:'202201040019',assessmentNo:1,qNo:1,marks:2},{courseId:'crs-eda',prn:'202201040019',assessmentNo:1,qNo:2,marks:2},
+      {courseId:'crs-eda',prn:'202201040020',assessmentNo:1,qNo:1,marks:2},{courseId:'crs-eda',prn:'202201040020',assessmentNo:1,qNo:2,marks:3},
+      {courseId:'crs-eda',prn:'202201040021',assessmentNo:1,qNo:1,marks:3},{courseId:'crs-eda',prn:'202201040021',assessmentNo:1,qNo:2,marks:3},
+      {courseId:'crs-eda',prn:'202201040022',assessmentNo:1,qNo:1,marks:2},{courseId:'crs-eda',prn:'202201040022',assessmentNo:1,qNo:2,marks:2},
+      {courseId:'crs-eda',prn:'202201040023',assessmentNo:1,qNo:1,marks:3},{courseId:'crs-eda',prn:'202201040023',assessmentNo:1,qNo:2,marks:3},
+      {courseId:'crs-eda',prn:'202201040024',assessmentNo:1,qNo:1,marks:3},{courseId:'crs-eda',prn:'202201040024',assessmentNo:1,qNo:2,marks:2},
+      {courseId:'crs-eda',prn:'202201040025',assessmentNo:1,qNo:1,marks:2},{courseId:'crs-eda',prn:'202201040025',assessmentNo:1,qNo:2,marks:2},
+      {courseId:'crs-eda',prn:'202201040026',assessmentNo:1,qNo:1,marks:3},{courseId:'crs-eda',prn:'202201040026',assessmentNo:1,qNo:2,marks:3},
+      {courseId:'crs-eda',prn:'202201040027',assessmentNo:1,qNo:1,marks:2},{courseId:'crs-eda',prn:'202201040027',assessmentNo:1,qNo:2,marks:3},
+      {courseId:'crs-eda',prn:'202201040029',assessmentNo:1,qNo:1,marks:1},{courseId:'crs-eda',prn:'202201040029',assessmentNo:1,qNo:2,marks:1},
+    ],
+
+    // Exit survey data (from Sheet 14H, 5-point scale per CO)
+    survey: [
+      {courseId:'crs-eda',prn:'202201040001',co:1,score:1},{courseId:'crs-eda',prn:'202201040001',co:2,score:1},{courseId:'crs-eda',prn:'202201040001',co:3,score:1},{courseId:'crs-eda',prn:'202201040001',co:4,score:1},
+      {courseId:'crs-eda',prn:'202201040003',co:1,score:4},{courseId:'crs-eda',prn:'202201040003',co:2,score:4},{courseId:'crs-eda',prn:'202201040003',co:3,score:4},{courseId:'crs-eda',prn:'202201040003',co:4,score:4},
+      {courseId:'crs-eda',prn:'202201040004',co:1,score:4},{courseId:'crs-eda',prn:'202201040004',co:2,score:4},{courseId:'crs-eda',prn:'202201040004',co:3,score:4},{courseId:'crs-eda',prn:'202201040004',co:4,score:4},
+      {courseId:'crs-eda',prn:'202201040005',co:1,score:4},{courseId:'crs-eda',prn:'202201040005',co:2,score:4},{courseId:'crs-eda',prn:'202201040005',co:3,score:4},{courseId:'crs-eda',prn:'202201040005',co:4,score:4},
+      {courseId:'crs-eda',prn:'202201040006',co:1,score:4},{courseId:'crs-eda',prn:'202201040006',co:2,score:4},{courseId:'crs-eda',prn:'202201040006',co:3,score:4},{courseId:'crs-eda',prn:'202201040006',co:4,score:4},
+      {courseId:'crs-eda',prn:'202201040007',co:1,score:4},{courseId:'crs-eda',prn:'202201040007',co:2,score:4},{courseId:'crs-eda',prn:'202201040007',co:3,score:4},{courseId:'crs-eda',prn:'202201040007',co:4,score:4},
+      {courseId:'crs-eda',prn:'202201040008',co:1,score:4},{courseId:'crs-eda',prn:'202201040008',co:2,score:4},{courseId:'crs-eda',prn:'202201040008',co:3,score:4},{courseId:'crs-eda',prn:'202201040008',co:4,score:4},
+      {courseId:'crs-eda',prn:'202201040009',co:1,score:4},{courseId:'crs-eda',prn:'202201040009',co:2,score:4},{courseId:'crs-eda',prn:'202201040009',co:3,score:4},{courseId:'crs-eda',prn:'202201040009',co:4,score:4},
+      {courseId:'crs-eda',prn:'202201040010',co:1,score:4},{courseId:'crs-eda',prn:'202201040010',co:2,score:4},{courseId:'crs-eda',prn:'202201040010',co:3,score:4},{courseId:'crs-eda',prn:'202201040010',co:4,score:4},
+      {courseId:'crs-eda',prn:'202201040011',co:1,score:4},{courseId:'crs-eda',prn:'202201040011',co:2,score:4},{courseId:'crs-eda',prn:'202201040011',co:3,score:4},{courseId:'crs-eda',prn:'202201040011',co:4,score:4},
+    ],
+
+    // Assignments
     assignments: [],
 
     config: {
-      aiEnabled: true,
-      aiModel: 'Gemini 1.5 Pro',
-      aiApiKey: '', // Add via UI Settings
+      aiEnabled: false,   // will be true in Phase 2
+      aiModel: 'claude-3-5-sonnet',
+      aiApiKey: '',
       s3Bucket: '',
       maxAICalls: 50,
-      aiCallsUsed: 0,
+      aiCallsUsed: 3,
       attainmentDefaultLevels: { 1:65, 2:75, 3:85 },
       directWeight: 80,
       indirectWeight: 20,
@@ -69,14 +241,7 @@ const DB = (() => {
 
   /* ── Initialize DB with Institutional NBA/OBE Data ── */
   function init() {
-    if (localStorage.getItem('obe_initialized_v3')) return;
-    
-    // Force clear all old local data to guarantee a clean slate
-    for (let i = localStorage.length - 1; i >= 0; i--) {
-      const k = localStorage.key(i);
-      if (k && k.startsWith('obe_')) localStorage.removeItem(k);
-    }
-
+    if (localStorage.getItem(KEYS.initialized)) return;
     set(KEYS.departments, INSTITUTIONAL_DATA.departments);
     set(KEYS.users,       INSTITUTIONAL_DATA.users);
     set(KEYS.courses,     INSTITUTIONAL_DATA.courses);
@@ -92,10 +257,33 @@ const DB = (() => {
     set(KEYS.submissions, []);
     set(KEYS.config,      INSTITUTIONAL_DATA.config);
     set(KEYS.syllabus,    []);
-    set(KEYS.assessments, []);
-    set(KEYS.marksUnified, []);
 
-    localStorage.setItem('obe_initialized_v3', '1');
+    const initialAssessments = (INSTITUTIONAL_DATA.assignments || []).map(a => ({
+      id: a.id,
+      courseId: a.courseId,
+      type: 'assignment',
+      no: a.no || 1,
+      title: a.title,
+      description: a.description || '',
+      maxMarks: a.maxMarks || 10,
+      questions: a.questions || [],
+      rubrics: a.rubrics || [],
+      createdAt: a.createdAt || new Date().toISOString()
+    }));
+    const initialMarksUnified = (INSTITUTIONAL_DATA.marksIA || []).map(m => ({
+      courseId: m.courseId,
+      prn: m.prn,
+      assessId: `iaq-${m.courseId}-ia-${m.assessmentNo || 1}`,
+      qNo: m.qNo,
+      marks: m.marks
+    }));
+    set(KEYS.assessments, initialAssessments);
+    set(KEYS.marksUnified, initialMarksUnified);
+    // Store IA question structures in config
+    const cfg = getObj(KEYS.config);
+
+    set(KEYS.config, cfg);
+    localStorage.setItem(KEYS.initialized, '1');
   }
 
   /* ── Departments ── */
@@ -141,7 +329,37 @@ const DB = (() => {
   /* ── Course Outcomes ── */
   const cos = {
     all()              { return get(KEYS.cos); },
-    byCourse(cid)      { return cos.all().filter(c=>c.courseId===cid).sort((a,b)=>a.no-b.no); },
+    byCourse(cid)      { 
+      const raw = cos.all().filter(c => c.courseId === cid);
+      const seen = new Set();
+      const unique = raw.filter(c => {
+        const n = parseInt(c.no) || 1;
+        if (seen.has(n)) return false;
+        seen.add(n);
+        return true;
+      }).sort((a,b) => (a.no || 1) - (b.no || 1));
+
+      if (!unique.length) {
+        const defaultCOs = [
+          { id: `co-${cid}-1`, courseId: cid, no: 1, code: 'CO1', text: 'Understand core domain concepts and fundamental principles.', bloomsLevel: 'L3', blooms: 'L3', studentThreshold: 60 },
+          { id: `co-${cid}-2`, courseId: cid, no: 2, code: 'CO2', text: 'Apply analytical techniques and algorithmic approaches.', bloomsLevel: 'L3', blooms: 'L3', studentThreshold: 60 },
+          { id: `co-${cid}-3`, courseId: cid, no: 3, code: 'CO3', text: 'Analyze engineering problems and design efficient solutions.', bloomsLevel: 'L4', blooms: 'L4', studentThreshold: 60 },
+          { id: `co-${cid}-4`, courseId: cid, no: 4, code: 'CO4', text: 'Evaluate system performance against benchmark metrics.', bloomsLevel: 'L5', blooms: 'L5', studentThreshold: 60 },
+          { id: `co-${cid}-5`, courseId: cid, no: 5, code: 'CO5', text: 'Design and synthesize innovative real-world components.', bloomsLevel: 'L6', blooms: 'L6', studentThreshold: 60 },
+          { id: `co-${cid}-6`, courseId: cid, no: 6, code: 'CO6', text: 'Formulate and defend end-to-end practical implementations.', bloomsLevel: 'L6', blooms: 'L6', studentThreshold: 60 }
+        ];
+        return defaultCOs;
+      }
+
+      return unique.map(c => ({
+        ...c,
+        code: c.code || `CO${c.no || 1}`,
+        text: (c.text && c.text.trim()) ? c.text : `Master and apply core competencies for CO${c.no || 1}`,
+        bloomsLevel: c.bloomsLevel || c.blooms || 'L3',
+        blooms: c.bloomsLevel || c.blooms || 'L3',
+        studentThreshold: c.studentThreshold || 60
+      }));
+    },
     byId(id)           { return cos.all().find(c=>c.id===id); },
     add(c)             { const all=cos.all(); c.id=uid(); all.push(c); set(KEYS.cos,all); return c; },
     update(c)          { const all=cos.all().map(x=>x.id===c.id?c:x); set(KEYS.cos,all); return c; },
@@ -201,6 +419,9 @@ const DB = (() => {
     saveAll(cid, list) { 
       const others = get(KEYS.marksUnified).filter(m=>m.courseId!==cid); 
       set(KEYS.marksUnified, [...others, ...list]); 
+    },
+    save(cid, list) {
+      marks.saveAll(cid, list);
     }
   };
 
@@ -221,7 +442,85 @@ const DB = (() => {
   const assessments = {
     all()              { return get(KEYS.assessments); },
     byCourse(cid) {
+      if (!cid) return [];
       let found = assessments.all().filter(a=>a.courseId===cid);
+      if (!found || found.length === 0) {
+        const standard = [
+          {
+            id: `asgn-${cid}-ia1`,
+            courseId: cid,
+            type: 'ia',
+            no: 1,
+            title: 'IA 1',
+            maxMarks: 20,
+            questions: [
+              { qNo: 1, desc: 'Question 1', bloomsLevel: 'L3', coNo: 1, maxMarks: 10 },
+              { qNo: 2, desc: 'Question 2', bloomsLevel: 'L3', coNo: 2, maxMarks: 10 }
+            ],
+            createdAt: new Date().toISOString()
+          },
+          {
+            id: `asgn-${cid}-ia2`,
+            courseId: cid,
+            type: 'ia',
+            no: 2,
+            title: 'IA 2',
+            maxMarks: 20,
+            questions: [
+              { qNo: 1, desc: 'Question 1', bloomsLevel: 'L4', coNo: 3, maxMarks: 10 },
+              { qNo: 2, desc: 'Question 2', bloomsLevel: 'L4', coNo: 4, maxMarks: 10 }
+            ],
+            createdAt: new Date().toISOString()
+          },
+          {
+            id: `asgn-${cid}-mse`,
+            courseId: cid,
+            type: 'mse',
+            no: 1,
+            title: 'MSE',
+            maxMarks: 30,
+            questions: [
+              { qNo: 1, desc: 'Question 1', bloomsLevel: 'L3', coNo: 1, maxMarks: 10 },
+              { qNo: 2, desc: 'Question 2', bloomsLevel: 'L3', coNo: 2, maxMarks: 10 },
+              { qNo: 3, desc: 'Question 3', bloomsLevel: 'L4', coNo: 3, maxMarks: 10 }
+            ],
+            createdAt: new Date().toISOString()
+          },
+          {
+            id: `asgn-${cid}-ese`,
+            courseId: cid,
+            type: 'ese',
+            no: 1,
+            title: 'ESE',
+            maxMarks: 60,
+            questions: [
+              { qNo: 1, desc: 'Q1 (CO1)', bloomsLevel: 'L3', coNo: 1, maxMarks: 10 },
+              { qNo: 2, desc: 'Q2 (CO2)', bloomsLevel: 'L3', coNo: 2, maxMarks: 10 },
+              { qNo: 3, desc: 'Q3 (CO3)', bloomsLevel: 'L4', coNo: 3, maxMarks: 10 },
+              { qNo: 4, desc: 'Q4 (CO4)', bloomsLevel: 'L4', coNo: 4, maxMarks: 10 },
+              { qNo: 5, desc: 'Q5 (CO5)', bloomsLevel: 'L5', coNo: 5, maxMarks: 10 },
+              { qNo: 6, desc: 'Q6 (CO6)', bloomsLevel: 'L6', coNo: 6, maxMarks: 10 }
+            ],
+            createdAt: new Date().toISOString()
+          },
+          {
+            id: `asgn-${cid}-asgn1`,
+            courseId: cid,
+            type: 'assignment',
+            no: 1,
+            title: 'Assignment 1',
+            maxMarks: 25,
+            questions: [
+              { qNo: 1, desc: 'Practical / Problem Solving Assignment', bloomsLevel: 'L3', coNo: 1, maxMarks: 25 }
+            ],
+            createdAt: new Date().toISOString()
+          }
+        ];
+        const all = assessments.all();
+        all.push(...standard);
+        set(KEYS.assessments, all);
+        found = standard;
+      }
       return found.sort((a,b) => {
         const order = { 'IA 1': 1, 'IA 2': 2, 'MSE': 3, 'ESE': 4, 'Assignment 1': 5 };
         return (order[a.title] || 99) - (order[b.title] || 99);

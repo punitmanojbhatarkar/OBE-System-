@@ -3,51 +3,71 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Course Feedback | OBE System – MITAOE</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800" rel="stylesheet">
-  <link rel="stylesheet" href="../styles/main.css?v=6">
-  <link rel="stylesheet" href="../styles/components.css?v=6">
+  <title>Course Exit Survey | OBE System – MITAOE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles/main.css">
+  <link rel="stylesheet" href="../styles/components.css">
   <style>
-    .scale-group{display:flex;gap:8px;align-items:center}
-    .scale-opt{width:42px;height:42px;border-radius:50%;border:2px solid var(--border);background:rgba(255,255,255,.04);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--text-secondary);cursor:pointer;transition:all .15s}
-    .scale-opt:hover{border-color:var(--primary);color:var(--text-primary);transform:scale(1.1)}
-    .scale-opt.selected{background:linear-gradient(135deg,#2563EB,#3B82F6);border-color:transparent;color:#fff;box-shadow:0 4px 12px rgba(99,102,241,.4)}
-    .co-card{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;margin-bottom:16px;transition:all .2s}
-    .co-card:hover{border-color:rgba(99,102,241,.3)}
-    .co-badge{display:inline-block;background:var(--primary);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:var(--r-full);margin-bottom:8px}
-    .scale-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:4px;width:250px}
+    .scale-group { display: flex; gap: 8px; align-items: center; }
+    .scale-opt {
+      width: 36px; height: 36px; border-radius: var(--r-sm); border: 1px solid var(--border);
+      background: var(--surface); display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; color: var(--text-primary); cursor: pointer;
+      transition: all var(--t-fast);
+    }
+    .scale-opt:hover { border-color: var(--primary); }
+    .scale-opt.selected {
+      background: var(--primary); border-color: var(--primary); color: #FFFFFF;
+    }
   </style>
 </head>
 <body>
 <div class="app-shell">
+
+  <!-- SIDEBAR -->
   <aside class="sidebar">
-    <div class="sidebar-logo"><div class="logo-icon">OBE</div><div><div class="logo-text">OBE System</div><div class="logo-sub">MITAOE</div></div></div>
+    <div class="sidebar-logo">
+      <div class="logo-icon">OBE</div>
+      <div><div class="logo-text">Student Portal</div><div class="logo-sub">MITAOE</div></div>
+    </div>
     <nav class="sidebar-nav">
       <p class="nav-section-label">My Learning</p>
-      <a class="nav-item" href="dashboard.html">📊 My Dashboard</a>
-      <a class="nav-item" href="assignments.html">📝 Assignments</a>
-      <a class="nav-item" href="feedback.html">💬 Course Feedback</a>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon" data-icon="dashboard"></span><span>Learning Analytics</span></a>
+      <a class="nav-item" href="assignments.html"><span class="nav-icon" data-icon="assignments"></span><span>My Assignments</span></a>
+      <a class="nav-item active" href="feedback.html"><span class="nav-icon" data-icon="feedback"></span><span>Course Exit Surveys</span></a>
     </nav>
     <div class="sidebar-footer">
-      <div class="user-card"><div class="user-avatar"></div><div><div class="user-name"></div><div class="user-role"></div></div></div>
-      <button class="btn btn-ghost btn-sm w-full" data-action="logout" style="margin-top:8px">🚪 Logout</button>
+      <div class="user-card" onclick="Auth.logout()">
+        <div class="user-avatar"></div>
+        <div><div class="user-name"></div><div class="user-role"></div></div>
+      </div>
+      <button class="btn btn-secondary btn-sm w-full" data-action="logout" style="margin-top:8px; width:100%;">
+        <span data-icon="logout"></span><span>Sign Out</span>
+      </button>
     </div>
   </aside>
+
+  <!-- MAIN -->
   <main class="main-content">
     <header class="topbar">
-      <div class="topbar-left"><h1 class="topbar-title">💬 Course Feedback</h1>
-        <div class="topbar-breadcrumb">Student <span>&rsaquo;</span> Exit Survey</div></div>
+      <div class="topbar-left">
+        <h1 class="topbar-title">Course Exit Survey</h1>
+        <div class="topbar-breadcrumb">Student <span>›</span> Indirect Outcome Feedback</div>
+      </div>
       <div class="topbar-right">
-        <select class="form-control" id="course-select" style="width:280px"><option value="">— Select Course —</option></select>
+        <select class="form-select" id="course-select" style="width:260px;font-size:12.5px;"></select>
       </div>
     </header>
+
     <div class="page-content">
+
       <!-- Course info -->
-      <div class="card mb-lg" id="course-info" style="display:none">
-        <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="card" id="course-info" style="margin-bottom:16px;display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
           <div>
-            <div style="font-size:18px;font-weight:700" id="crs-name"></div>
-            <div style="font-size:13px;color:var(--text-secondary)" id="crs-meta"></div>
+            <div style="font-size:16px;font-weight:700;color:var(--text-primary);" id="crs-name"></div>
+            <div style="font-size:12px;color:var(--text-secondary);" id="crs-meta"></div>
           </div>
           <div id="submit-status"></div>
         </div>
@@ -57,133 +77,129 @@
       <div id="survey-form"></div>
 
       <!-- Submit button -->
-      <div id="submit-area" style="display:none;margin-top:20px;text-align:center">
-        <button class="btn btn-primary btn-lg" onclick="submitFeedback()" style="padding:14px 40px;font-size:16px">
-          📤 Submit Feedback
+      <div id="submit-area" style="display:none;margin-top:20px;text-align:right;">
+        <button class="btn btn-primary" onclick="submitFeedback()">
+          <span data-icon="check"></span><span>Submit Exit Survey</span>
         </button>
-        <p style="font-size:12px;color:var(--text-muted);margin-top:8px">Your feedback is anonymous and helps improve course delivery.</p>
       </div>
 
       <!-- Empty state -->
-      <div id="empty-state" class="card">
-        <div class="empty-state"><div class="empty-icon">💬</div><h3>Course Feedback</h3><p>Select a course to provide your exit survey feedback.</p></div>
+      <div id="empty-state" class="card" style="text-align:center;padding:48px 20px;">
+        <div style="margin-bottom:8px;color:var(--text-muted);"><span data-icon="feedback" data-icon-size="32"></span></div>
+        <h3 style="font-size:16px;font-weight:700;">Select a Course</h3>
+        <p style="font-size:13px;color:var(--text-secondary);">Choose a course above to provide your outcome feedback.</p>
       </div>
+
     </div>
   </main>
 </div>
-<div id="toast-container"></div>
-<script src="../scripts/data.js?v=101"></script>
-<script src="../scripts/api.js?v=101"></script>
-<script src="../scripts/auth.js?v=3"></script>
+
+<script src="../scripts/icons.js"></script>
+<script src="../scripts/data.js"></script>
+<script src="../scripts/api.js"></script>
+<script src="../scripts/auth.js"></script>
 <script src="../scripts/utils.js"></script>
 <script>
 (async () => {
   await (window._apiReady || Promise.resolve());
   const user = Auth.requireAuth(['student']);
-if(!user) throw 0;
-Auth.populateSidebar(user);
+  if (!user) throw new Error('Not authorized');
 
-const myEnrollments = DB.students.all().filter(s=>s.prn===user.prn);
-const myCourseIds = [...new Set(myEnrollments.map(s=>s.courseId))];
-const sel = document.getElementById('course-select');
-myCourseIds.forEach(cid=>{const c=DB.courses.byId(cid);if(c){const o=document.createElement('option');o.value=c.id;o.textContent=`${c.code} – ${c.name}`;sel.appendChild(o);}});
-if(myCourseIds.length){sel.value=myCourseIds[0];loadFeedback(myCourseIds[0]);}
-sel.addEventListener('change',e=>{if(e.target.value)loadFeedback(e.target.value);});
+  const myEnrollments = DB.students.all().filter(s => s.prn === user.prn);
+  const myCourseIds = [...new Set(myEnrollments.map(s => s.courseId))];
+  const sel = document.getElementById('course-select');
 
-let selectedScores = {};
-let readOnly = false;
-
-function loadFeedback(cid){
-  const course = DB.courses.byId(cid);
-  if(!course) return;
-  const cos = DB.cos.byCourse(cid).filter(c=>c.text);
-  const faculty = DB.users.byId(course.facultyId);
-
-  document.getElementById('empty-state').style.display='none';
-  document.getElementById('course-info').style.display='';
-  document.getElementById('submit-area').style.display='';
-  document.getElementById('crs-name').textContent = course.name;
-  document.getElementById('crs-meta').textContent = `${course.code} · Sem ${course.semester} · Faculty: ${faculty?.name||'—'}`;
-
-  // Check existing submissions
-  const existing = {};
-  let hasExisting = false;
-  cos.forEach(co=>{
-    const score = DB.survey.getScore(cid, user.prn, co.no);
-    if(score!==null && score!==undefined) { existing[co.no] = score; hasExisting = true; }
+  myCourseIds.forEach(cid => {
+    const c = DB.courses.byId(cid);
+    if (c) {
+      const o = document.createElement('option');
+      o.value = c.id;
+      o.textContent = `${c.code} – ${c.name}`;
+      sel.appendChild(o);
+    }
   });
 
-  readOnly = hasExisting;
-  selectedScores = {...existing};
-
-  if(hasExisting){
-    document.getElementById('submit-status').innerHTML='<span class="badge badge-success" style="font-size:13px;padding:8px 16px">✅ Feedback Submitted</span>';
-    document.getElementById('submit-area').innerHTML='<button class="btn btn-secondary btn-lg" onclick="enableEdit()" style="padding:14px 40px;font-size:16px">✏️ Edit Response</button>';
-  } else {
-    document.getElementById('submit-status').innerHTML='<span class="badge badge-warning" style="font-size:13px;padding:8px 16px">⏳ Pending</span>';
-    document.getElementById('submit-area').innerHTML='<button class="btn btn-primary btn-lg" onclick="submitFeedback()" style="padding:14px 40px;font-size:16px">📤 Submit Feedback</button><p style="font-size:12px;color:var(--text-muted);margin-top:8px">Rate each Course Outcome on a scale of 1-5</p>';
+  if (myCourseIds.length) {
+    sel.value = myCourseIds[0];
+    loadFeedback(myCourseIds[0]);
   }
 
-  // Render COs
-  const form = document.getElementById('survey-form');
-  form.innerHTML = '';
-  cos.forEach(co=>{
-    const val = existing[co.no] || 0;
-    let html = `<div class="co-card">
-      <div class="co-badge">${co.code} · ${Fmt.bloom(co.bloomsLevel)}</div>
-      <p style="font-size:14px;font-weight:500;margin-bottom:12px">${co.surveyQuestion || co.text}</p>
-      <div style="display:flex;align-items:center;gap:16px">
-        <span style="font-size:13px;color:var(--text-secondary);min-width:80px">Your Rating:</span>
-        <div class="scale-group" data-co="${co.no}">`;
-    for(let i=1;i<=5;i++){
-      html += `<div class="scale-opt ${val===i?'selected':''}" data-val="${i}" onclick="selectScore(${co.no},${i},this)" ${readOnly?'style="pointer-events:none;opacity:0.7"':''}>${i}</div>`;
-    }
-    html += `</div>
-        <span class="text-muted text-sm">${val?'Selected: '+val+'/5':'Not rated yet'}</span>
-      </div>
-      <div class="scale-labels" style="margin-left:96px">
-        <span>Strongly Disagree</span><span>Strongly Agree</span>
-      </div>
-    </div>`;
-    form.innerHTML += html;
+  sel.addEventListener('change', e => {
+    if (e.target.value) loadFeedback(e.target.value);
   });
-}
+  renderAllIcons();
 
-function selectScore(coNo, val, el){
-  if(readOnly) return;
-  selectedScores[coNo] = val;
-  // Update UI
-  const group = el.closest('.scale-group');
-  group.querySelectorAll('.scale-opt').forEach(o=>o.classList.remove('selected'));
-  el.classList.add('selected');
-  const infoSpan = group.nextElementSibling;
-  if(infoSpan) infoSpan.textContent = 'Selected: '+val+'/5';
-}
+  let selectedScores = {};
 
-function enableEdit(){
-  readOnly = false;
-  document.querySelectorAll('.scale-opt').forEach(o=>{o.style.pointerEvents='';o.style.opacity='';});
-  document.getElementById('submit-area').innerHTML='<button class="btn btn-primary btn-lg" onclick="submitFeedback()" style="padding:14px 40px;font-size:16px">💾 Update Feedback</button>';
-  Toast.info('You can now edit your responses.');
-}
+  function loadFeedback(cid) {
+    const course = DB.courses.byId(cid);
+    if (!course) return;
+    const cos = DB.cos.byCourse(cid).filter(c => c.text);
+    const faculty = DB.users.byId(course.facultyId);
 
-function submitFeedback(){
-  const cid = sel.value;
-  if(!cid) return;
-  const cos = DB.cos.byCourse(cid).filter(c=>c.text);
-  let allFilled = true;
-  cos.forEach(co=>{
-    if(!selectedScores[co.no]) allFilled = false;
-  });
-  if(!allFilled){Toast.warning('Please rate all Course Outcomes before submitting.');return;}
+    document.getElementById('empty-state').style.display = 'none';
+    document.getElementById('course-info').style.display = 'block';
+    document.getElementById('crs-name').textContent = `${course.code} – ${course.name}`;
+    document.getElementById('crs-meta').textContent = `Instructor: ${faculty ? faculty.name : 'Faculty'} | Semester ${course.semester}`;
 
-  cos.forEach(co=>{
-    DB.survey.setScore(cid, user.prn, co.no, selectedScores[co.no]);
-  });
+    const existingSurveys = DB.surveys.get(cid).filter(s => s.prn === user.prn);
+    selectedScores = {};
+    existingSurveys.forEach(s => selectedScores[s.coNo] = s.score);
 
-  Toast.success('Thank you for your feedback! 🎉');
-  loadFeedback(cid);
-}
+    const isSubmitted = existingSurveys.length > 0;
+    document.getElementById('submit-status').innerHTML = isSubmitted
+      ? '<span class="badge badge-success">Survey Completed</span>'
+      : '<span class="badge badge-warning">Feedback Pending</span>';
+
+    const form = document.getElementById('survey-form');
+    form.innerHTML = cos.map(co => {
+      const currentVal = selectedScores[co.no] || null;
+      return `
+        <div class="card" style="margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <span class="badge badge-primary font-mono">${co.code}</span>
+            <span class="badge badge-neutral">${co.bloomsLevel || '—'}</span>
+          </div>
+          <p style="font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:12px;">${co.surveyQuestion || co.text}</p>
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+            <div style="font-size:11.5px;color:var(--text-secondary);">1 (Low Understanding) to 5 (Mastered Competency)</div>
+            <div class="scale-group">
+              ${[1,2,3,4,5].map(v => `
+                <div class="scale-opt ${currentVal === v ? 'selected' : ''}" onclick="setScore(${co.no}, ${v}, this)">${v}</div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    document.getElementById('submit-area').style.display = 'block';
+  }
+
+  function setScore(coNo, val, el) {
+    selectedScores[coNo] = val;
+    el.parentElement.querySelectorAll('.scale-opt').forEach(opt => opt.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function submitFeedback() {
+    const cid = sel.value;
+    if (!cid) return;
+    const cos = DB.cos.byCourse(cid).filter(c => c.text);
+
+    const allSurveys = DB.surveys.get(cid).filter(s => s.prn !== user.prn);
+    cos.forEach(co => {
+      const score = selectedScores[co.no] || 4;
+      allSurveys.push({ courseId: cid, prn: user.prn, coNo: co.no, score: score });
+    });
+
+    DB.surveys.save(cid, allSurveys);
+    Toast.success('Thank you! Your outcome feedback has been submitted.');
+    loadFeedback(cid);
+  }
+
+  window.setScore = setScore;
+  window.submitFeedback = submitFeedback;
 })();
 </script>
 </body>

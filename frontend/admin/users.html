@@ -3,510 +3,299 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Users & Roles | OBE System – MITAOE</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../styles/main.css?v=6">
-  <link rel="stylesheet" href="../styles/components.css?v=6">
+  <title>User Accounts & Roles | OBE System – MITAOE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles/main.css">
+  <link rel="stylesheet" href="../styles/components.css">
   <style>
-    /* ── User Cards Grid ── */
-    .users-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 16px; }
-
+    .users-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;
+    }
     .user-card-item {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--r-lg);
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      transition: box-shadow .2s, transform .2s, border-color .2s;
-      position: relative;
-      overflow: hidden;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md);
+      padding: 16px; display: flex; flex-direction: column; gap: 12px;
     }
-    .user-card-item::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 3px;
-      border-radius: var(--r-lg) var(--r-lg) 0 0;
-    }
-    .role-admin::before   { background: linear-gradient(90deg, #ef4444, #f97316); }
-    .role-faculty::before { background: linear-gradient(90deg, #2563EB, #06b6d4); }
-    .role-hod::before     { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
-    .role-student::before { background: linear-gradient(90deg, #10b981, #34d399); }
-
-    .user-card-item:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.3); border-color: var(--primary); }
-
-    .uc-header { display: flex; align-items: center; gap: 14px; }
+    .user-card-item:hover { border-color: var(--primary); }
     .uc-avatar {
-      width: 48px; height: 48px;
-      border-radius: 50%;
+      width: 40px; height: 40px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-weight: 800; font-size: 18px; flex-shrink: 0;
-      letter-spacing: -1px;
+      font-weight: 700; font-size: 15px; background: var(--surface-2);
+      border: 1px solid var(--border); color: var(--text-primary);
     }
-    .av-admin   { background: rgba(239,68,68,.18);  color: #f87171; border: 1.5px solid rgba(239,68,68,.35); }
-    .av-faculty { background: rgba(37,99,235,.18);  color: #60a5fa; border: 1.5px solid rgba(37,99,235,.35); }
-    .av-hod     { background: rgba(245,158,11,.18); color: #fbbf24; border: 1.5px solid rgba(245,158,11,.35); }
-    .av-student { background: rgba(16,185,129,.18); color: #34d399; border: 1.5px solid rgba(16,185,129,.35); }
-
-    .uc-info { flex: 1; min-width: 0; }
-    .uc-name { font-weight: 700; font-size: 15px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .uc-email { font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
-
-    .uc-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-    .uc-dept { font-size: 11px; color: var(--text-secondary); background: var(--bg-deep); padding: 3px 8px; border-radius: 20px; border: 1px solid var(--border); }
-
-    .uc-actions { display: flex; gap: 8px; margin-top: auto; padding-top: 4px; border-top: 1px solid var(--border); }
-    .uc-actions .btn { flex: 1; font-size: 12px; }
-
-    /* ── Filter Tabs ── */
-    .filter-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
-    .role-tab {
-      padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
-      border: 1.5px solid var(--border); background: transparent; color: var(--text-secondary);
-      cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 6px;
+    .filter-bar {
+      display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 16px;
     }
-    .role-tab:hover { border-color: var(--primary); color: var(--primary); }
-    .role-tab.active { background: var(--primary); border-color: var(--primary); color: white; }
-    .role-tab .count { background: rgba(255,255,255,.2); padding: 1px 6px; border-radius: 10px; font-size: 11px; }
-    .role-tab:not(.active) .count { background: var(--bg-deep); }
-
-    /* ── Form Extras ── */
-    .pw-wrap { position: relative; }
-    .pw-wrap input { padding-right: 42px; }
-    .pw-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 16px; padding: 2px; }
-    .field-error { font-size: 11px; color: #f87171; margin-top: 4px; display: none; }
-    .field-error.show { display: block; }
-    .form-control.error { border-color: #ef4444 !important; }
-
-    /* ── Empty State ── */
-    .users-empty { text-align: center; padding: 60px 24px; }
-    .users-empty .ei { font-size: 48px; margin-bottom: 12px; }
-    .users-empty h3 { font-size: 18px; color: var(--text); margin-bottom: 6px; }
-    .users-empty p { color: var(--text-muted); font-size: 13px; }
-
-    /* ── Alert Banner ── */
-    .alert-banner {
-      padding: 10px 16px; border-radius: var(--r-md); font-size: 12px; font-weight: 500;
-      display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
-      border: 1px solid;
+    .role-filter-btn {
+      padding: 6px 14px; border-radius: var(--r-full); font-size: 12.5px; font-weight: 600;
+      border: 1px solid var(--border); background: var(--surface); color: var(--text-secondary);
+      cursor: pointer; transition: all var(--t-fast);
     }
-    .alert-warning { background: rgba(245,158,11,.1); border-color: rgba(245,158,11,.35); color: #fbbf24; }
-    .self-tag { font-size: 10px; background: rgba(99,102,241,.2); color: var(--primary); padding: 2px 7px; border-radius: 10px; border: 1px solid rgba(99,102,241,.3); }
+    .role-filter-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .role-filter-btn.active { background: var(--primary); border-color: var(--primary); color: #FFFFFF; }
   </style>
 </head>
 <body>
 <div class="app-shell">
+
+  <!-- SIDEBAR -->
   <aside class="sidebar">
-    <div class="sidebar-logo"><div class="logo-icon">OBE</div><div><div class="logo-text">OBE System</div><div class="logo-sub">MITAOE</div></div></div>
+    <div class="sidebar-logo">
+      <div class="logo-icon">OBE</div>
+      <div><div class="logo-text">OBE System</div><div class="logo-sub">MITAOE</div></div>
+    </div>
     <nav class="sidebar-nav">
-      <p class="nav-section-label">System</p>
-      <a class="nav-item" href="dashboard.html">📊 Dashboard</a>
-      <a class="nav-item" href="departments.html">🏛️ Departments</a>
-      <a class="nav-item active" href="users.html">👤 Users &amp; Roles</a>
-      <a class="nav-item" href="config.html">⚙️ Configuration</a>
+      <p class="nav-section-label">Institutional Management</p>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon" data-icon="dashboard"></span><span>Admin Dashboard</span></a>
+      <a class="nav-item" href="departments.html"><span class="nav-icon" data-icon="matrix"></span><span>Departments</span></a>
+      <a class="nav-item active" href="users.html"><span class="nav-icon" data-icon="students"></span><span>User Directory</span></a>
+      <a class="nav-item" href="config.html"><span class="nav-icon" data-icon="config"></span><span>System Settings</span></a>
+      <a class="nav-item" href="audit.html"><span class="nav-icon" data-icon="audit"></span><span>Audit Trail</span></a>
     </nav>
     <div class="sidebar-footer">
-      <div class="user-card"><div class="user-avatar"></div><div><div class="user-name"></div><div class="user-role"></div></div></div>
-      <button class="btn btn-ghost btn-sm w-full" data-action="logout" style="margin-top:8px">🚪 Logout</button>
+      <div class="user-card" onclick="Auth.logout()">
+        <div class="user-avatar"></div>
+        <div><div class="user-name"></div><div class="user-role"></div></div>
+      </div>
+      <button class="btn btn-secondary btn-sm w-full" data-action="logout" style="margin-top:8px; width:100%;">
+        <span data-icon="logout"></span><span>Sign Out</span>
+      </button>
     </div>
   </aside>
 
+  <!-- MAIN -->
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
-        <h1 class="topbar-title">👤 Users &amp; Roles</h1>
-        <div class="topbar-breadcrumb">Admin <span>&rsaquo;</span> Users</div>
+        <h1 class="topbar-title">Institutional User Directory</h1>
+        <div class="topbar-breadcrumb">Admin Console <span>›</span> Accounts & Permissions</div>
       </div>
       <div class="topbar-right">
-        <input type="text" class="form-control" id="search" placeholder="🔍 Search by name or email..." style="width:240px" oninput="render()">
-        <button class="btn btn-primary btn-sm" onclick="openAdd()">+ Add User</button>
+        <button class="btn btn-primary btn-sm" onclick="openAddUserModal()">
+          <span data-icon="plus"></span><span>Add User</span>
+        </button>
       </div>
     </header>
 
     <div class="page-content">
-      <!-- System Alerts -->
-      <div id="system-alerts"></div>
 
-      <!-- Role Filter Tabs -->
-      <div class="filter-bar" id="role-tabs">
-        <button class="role-tab active" data-role="all" onclick="setFilter('all',this)">All <span class="count" id="cnt-all">0</span></button>
-        <button class="role-tab" data-role="admin" onclick="setFilter('admin',this)">🛡️ Admin <span class="count" id="cnt-admin">0</span></button>
-        <button class="role-tab" data-role="hod" onclick="setFilter('hod',this)">🎓 HOD <span class="count" id="cnt-hod">0</span></button>
-        <button class="role-tab" data-role="faculty" onclick="setFilter('faculty',this)">👨‍🏫 Faculty <span class="count" id="cnt-faculty">0</span></button>
-        <button class="role-tab" data-role="student" onclick="setFilter('student',this)">🎒 Student <span class="count" id="cnt-student">0</span></button>
+      <!-- Role Filter Pills -->
+      <div class="filter-bar">
+        <button class="role-filter-btn active" onclick="setRoleFilter('all', this)">All Accounts</button>
+        <button class="role-filter-btn" onclick="setRoleFilter('faculty', this)">Faculty</button>
+        <button class="role-filter-btn" onclick="setRoleFilter('hod', this)">HODs</button>
+        <button class="role-filter-btn" onclick="setRoleFilter('admin', this)">Admins</button>
+        <button class="role-filter-btn" onclick="setRoleFilter('student', this)">Students</button>
       </div>
 
-      <!-- Cards Grid -->
-      <div class="users-grid" id="users-grid"></div>
+      <!-- Users Grid -->
+      <div id="usersGrid" class="users-grid"></div>
+
     </div>
   </main>
 </div>
 
-<div id="toast-container"></div>
-
-<!-- Add/Edit Modal -->
-<div id="modal-backdrop" class="modal-backdrop" style="display:none">
-  <div class="modal" style="max-width:480px;width:100%">
-    <div class="modal-header">
-      <h3 class="modal-title" id="modal-title">Add User</h3>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <form id="user-form" autocomplete="off">
-      <div class="form-group">
-        <label class="form-label">Full Name <span style="color:#f87171">*</span></label>
-        <input type="text" class="form-control" id="f-name" required placeholder="e.g. Dr. Priya Sharma">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Email Address <span style="color:#f87171">*</span></label>
-        <input type="email" class="form-control" id="f-email" required placeholder="e.g. priya@mitaoe.ac.in">
-        <div class="field-error" id="err-email">This email is already registered.</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Password</label>
-        <div class="pw-wrap">
-          <input type="password" class="form-control" id="f-pass" placeholder="Leave blank to keep existing" minlength="6">
-          <button type="button" class="pw-toggle" onclick="togglePw()" title="Toggle visibility">👁️</button>
-        </div>
-        <div class="field-error" id="err-pw">Password must be at least 6 characters.</div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Role <span style="color:#f87171">*</span></label>
-          <select class="form-control" id="f-role" onchange="onRoleChange()">
-            <option value="admin">🛡️ Admin</option>
-            <option value="hod">🎓 HOD</option>
-            <option value="faculty" selected>👨‍🏫 Faculty</option>
-            <option value="student">🎒 Student</option>
-          </select>
-        </div>
-        <div class="form-group" id="dept-group">
-          <label class="form-label">Department <span style="color:#f87171" id="dept-required-star">*</span></label>
-          <select class="form-control" id="f-dept">
-            <option value="">— None —</option>
-          </select>
-          <div class="field-error" id="err-dept">Department is required for this role.</div>
-        </div>
-      </div>
-      <div class="form-group" id="prn-group" style="display:none">
-        <label class="form-label">PRN (Student ID) <span style="color:#f87171">*</span></label>
-        <input type="text" class="form-control" id="f-prn" placeholder="e.g. 202201040001">
-        <div class="field-error" id="err-prn">This PRN is already registered.</div>
-      </div>
-      <div id="hod-warn" class="alert-banner alert-warning" style="display:none">
-        ⚠️ This department already has an HOD. Saving will demote the current HOD to Faculty.
-      </div>
-      <input type="hidden" id="f-id">
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-        <button type="submit" class="btn btn-primary" id="save-btn">💾 Save User</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<script src="../scripts/data.js?v=101"></script>
-<script src="../scripts/api.js?v=101"></script>
-<script src="../scripts/auth.js?v=3"></script>
+<script src="../scripts/icons.js"></script>
+<script src="../scripts/data.js"></script>
+<script src="../scripts/api.js"></script>
+<script src="../scripts/auth.js"></script>
 <script src="../scripts/utils.js"></script>
 <script>
-const currentUser = Auth.requireAuth(['admin']);
-if(!currentUser) throw 0;
-Auth.populateSidebar(currentUser);
+(async () => {
+  await (window._apiReady || Promise.resolve());
+  const currentUser = Auth.requireAuth(['admin']);
+  if (!currentUser) throw new Error('Not authorized');
 
-let roleFilter = 'all';
+  let activeRole = 'all';
 
-// Populate dept dropdown
-function populateDepts() {
-  const deptSel = document.getElementById('f-dept');
-  const cur = deptSel.value;
-  deptSel.innerHTML = '<option value="">— None —</option>';
-  DB.departments.all().forEach(d => {
-    const o = document.createElement('option');
-    o.value = d.id; o.textContent = d.name;
-    deptSel.appendChild(o);
-  });
-  deptSel.value = cur;
-}
-populateDepts();
+  renderUsers();
+  renderAllIcons();
 
-// Role tab filter
-function setFilter(role, btn) {
-  roleFilter = role;
-  document.querySelectorAll('.role-tab').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  render();
-}
-
-// System alerts (HODs missing per dept, etc.)
-function renderAlerts() {
-  const depts = DB.departments.all();
-  const alerts = [];
-  depts.forEach(d => {
-    const hodUsers = DB.users.all().filter(u => u.role === 'hod' && u.deptId === d.id);
-    if (hodUsers.length === 0) alerts.push(`<strong>${d.name}</strong> has no HOD assigned.`);
-    if (hodUsers.length > 1) alerts.push(`<strong>${d.name}</strong> has ${hodUsers.length} HODs — this should not happen.`);
-  });
-  const el = document.getElementById('system-alerts');
-  el.innerHTML = alerts.length
-    ? `<div class="alert-banner alert-warning" style="margin-bottom:16px;flex-wrap:wrap;gap:6px">⚠️ ${alerts.join(' &nbsp;|&nbsp; ')}</div>`
-    : '';
-}
-
-// Update tab counts
-function updateCounts(all) {
-  document.getElementById('cnt-all').textContent    = all.length;
-  document.getElementById('cnt-admin').textContent  = all.filter(u=>u.role==='admin').length;
-  document.getElementById('cnt-hod').textContent    = all.filter(u=>u.role==='hod').length;
-  document.getElementById('cnt-faculty').textContent= all.filter(u=>u.role==='faculty').length;
-  document.getElementById('cnt-student').textContent= all.filter(u=>u.role==='student').length;
-}
-
-// Render user cards
-function render() {
-  const q = document.getElementById('search').value.toLowerCase();
-  const all = DB.users.all();
-  updateCounts(all);
-  renderAlerts();
-
-  let list = all;
-  if (roleFilter !== 'all') list = list.filter(u => u.role === roleFilter);
-  if (q) list = list.filter(u => (u.name + u.email + (u.prn||'')).toLowerCase().includes(q));
-
-  const grid = document.getElementById('users-grid');
-  if (!list.length) {
-    grid.innerHTML = `<div class="users-empty" style="grid-column:1/-1">
-      <div class="ei">👤</div><h3>No users found</h3><p>Try adjusting your search or filter.</p>
-    </div>`;
-    return;
+  function setRoleFilter(role, btn) {
+    document.querySelectorAll('.role-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeRole = role;
+    renderUsers();
   }
 
-  const roleIcon  = { admin:'🛡️', faculty:'👨‍🏫', hod:'🎓', student:'🎒' };
-  const badgeClass = { admin:'badge-danger', faculty:'badge-primary', hod:'badge-warning', student:'badge-info' };
+  function renderUsers() {
+    const grid = document.getElementById('usersGrid');
+    let users = DB.users.all();
+    if (activeRole !== 'all') {
+      users = users.filter(u => u.role === activeRole);
+    }
+    const depts = DB.departments.all();
 
-  grid.innerHTML = list.map(u => {
-    const dept = u.deptId ? DB.departments.byId(u.deptId)?.name : null;
-    const isSelf = u.id === currentUser.id;
-    const initials = u.name.split(' ').map(w=>w[0]).join('').toUpperCase().substring(0,2);
-    return `
-    <div class="user-card-item role-${u.role}">
-      <div class="uc-header">
-        <div class="uc-avatar av-${u.role}">${initials}</div>
-        <div class="uc-info">
-          <div class="uc-name">${u.name} ${isSelf ? '<span class="self-tag">You</span>' : ''}</div>
-          <div class="uc-email">${u.email}</div>
+    grid.innerHTML = users.map(u => {
+      const dept = depts.find(d => d.id === u.deptId);
+      const isSelf = u.id === currentUser.id;
+
+      let roleBadge = 'badge-neutral';
+      if (u.role === 'admin') roleBadge = 'badge-danger';
+      else if (u.role === 'hod') roleBadge = 'badge-warning';
+      else if (u.role === 'faculty') roleBadge = 'badge-primary';
+      else if (u.role === 'student') roleBadge = 'badge-success';
+
+      return `
+        <div class="user-card-item">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="uc-avatar">${(u.name || u.email || 'U')[0].toUpperCase()}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:700;font-size:14px;color:var(--text-primary);">${u.name || 'User'}</div>
+              <div style="font-size:12px;color:var(--text-secondary);">${u.email}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <span class="badge ${roleBadge}">${u.role.toUpperCase()}</span>
+            <span class="badge badge-neutral">${dept ? dept.code : 'All Depts'}</span>
+            ${isSelf ? '<span class="badge badge-primary">Current Session</span>' : ''}
+          </div>
+          <div style="display:flex;gap:8px;border-top:1px solid var(--border);padding-top:10px;margin-top:auto;">
+            <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="openEditUserModal('${u.id}')">
+              <span data-icon="edit"></span><span>Edit</span>
+            </button>
+            ${!isSelf ? `
+              <button class="btn btn-danger btn-sm btn-icon" onclick="deleteUser('${u.id}')">
+                <span data-icon="trash"></span>
+              </button>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+    renderAllIcons(grid);
+  }
+
+  function openAddUserModal() {
+    const depts = DB.departments.all();
+    const deptOpts = depts.map(d => `<option value="${d.id}">${d.name} (${d.code})</option>`).join('');
+
+    const html = `
+      <div class="modal-header">
+        <h3 class="modal-title">Create User Account</h3>
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="Modal.close()"><span data-icon="close"></span></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Full Name *</label>
+          <input class="form-input" id="u-name" placeholder="Dr. Jane Smith">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address *</label>
+          <input class="form-input" id="u-email" type="email" placeholder="faculty@mitaoe.ac.in">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-group">
+            <label class="form-label">System Role *</label>
+            <select class="form-select" id="u-role">
+              <option value="faculty" selected>Faculty</option>
+              <option value="hod">Head of Department (HOD)</option>
+              <option value="admin">Administrator</option>
+              <option value="student">Student</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Department</label>
+            <select class="form-select" id="u-dept">
+              <option value="">-- Institutional --</option>
+              ${deptOpts}
+            </select>
+          </div>
         </div>
       </div>
-      <div class="uc-meta">
-        <span class="badge ${badgeClass[u.role]||'badge-muted'}">${roleIcon[u.role]||''} ${u.role.charAt(0).toUpperCase()+u.role.slice(1)}</span>
-        ${dept ? `<span class="uc-dept">🏛️ ${dept}</span>` : ''}
-        ${u.prn ? `<span class="uc-dept">🪪 ${u.prn}</span>` : ''}
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveUser()">Create Account</button>
       </div>
-      <div class="uc-actions">
-        <button class="btn btn-secondary btn-sm" onclick="openEdit('${u.id}')">✏️ Edit</button>
-        ${isSelf ? `<button class="btn btn-ghost btn-sm" disabled title="Cannot delete yourself" style="opacity:.4;flex:1">🗑 Delete</button>`
-                 : `<button class="btn btn-ghost btn-sm" onclick="del('${u.id}','${u.name}')" style="color:var(--danger);flex:1">🗑 Delete</button>`}
+    `;
+    Modal.open(html);
+    renderAllIcons();
+  }
+
+  function openEditUserModal(id) {
+    const u = DB.users.byId(id);
+    if (!u) return;
+    const depts = DB.departments.all();
+    const deptOpts = depts.map(d => `<option value="${d.id}" ${d.id===u.deptId?'selected':''}>${d.name} (${d.code})</option>`).join('');
+
+    const html = `
+      <div class="modal-header">
+        <h3 class="modal-title">Edit User Account</h3>
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="Modal.close()"><span data-icon="close"></span></button>
       </div>
-    </div>`;
-  }).join('');
-}
-
-// Toggle password visibility
-function togglePw() {
-  const f = document.getElementById('f-pass');
-  f.type = f.type === 'password' ? 'text' : 'password';
-}
-
-// Handle role change in form
-function onRoleChange() {
-  const role = document.getElementById('f-role').value;
-  const isStudent = role === 'student';
-  const isAdmin = role === 'admin';
-  document.getElementById('prn-group').style.display = isStudent ? '' : 'none';
-  document.getElementById('dept-group').style.display = isAdmin ? 'none' : '';
-  document.getElementById('dept-required-star').style.display = (role === 'faculty' || role === 'hod') ? '' : 'none';
-  checkHodConflict();
-}
-
-// Check if selected dept already has an HOD
-function checkHodConflict() {
-  const role = document.getElementById('f-role').value;
-  const deptId = document.getElementById('f-dept').value;
-  const editId = document.getElementById('f-id').value;
-  const warn = document.getElementById('hod-warn');
-  if (role !== 'hod' || !deptId) { warn.style.display = 'none'; return; }
-  const existingHod = DB.users.all().find(u => u.role === 'hod' && u.deptId === deptId && u.id !== editId);
-  warn.style.display = existingHod ? 'flex' : 'none';
-}
-document.getElementById('f-dept').addEventListener('change', checkHodConflict);
-
-function clearErrors() {
-  ['err-email','err-pw','err-dept','err-prn'].forEach(id => {
-    document.getElementById(id).classList.remove('show');
-  });
-  ['f-email','f-pass','f-dept','f-prn'].forEach(id => {
-    document.getElementById(id).classList.remove('error');
-  });
-}
-
-function openAdd() {
-  clearErrors();
-  document.getElementById('modal-title').textContent = '➕ Add New User';
-  document.getElementById('user-form').reset();
-  document.getElementById('f-id').value = '';
-  document.getElementById('f-pass').placeholder = 'Set a password (min 6 chars)';
-  document.getElementById('hod-warn').style.display = 'none';
-  populateDepts();
-  onRoleChange();
-  document.getElementById('modal-backdrop').style.display = 'flex';
-}
-
-function openEdit(id) {
-  clearErrors();
-  const u = DB.users.byId(id);
-  if (!u) return;
-  document.getElementById('modal-title').textContent = '✏️ Edit User';
-  document.getElementById('f-id').value = u.id;
-  document.getElementById('f-name').value = u.name;
-  document.getElementById('f-email').value = u.email;
-  document.getElementById('f-pass').value = '';
-  document.getElementById('f-pass').placeholder = 'Leave blank to keep current password';
-  document.getElementById('f-role').value = u.role;
-  populateDepts();
-  document.getElementById('f-dept').value = u.deptId || '';
-  document.getElementById('f-prn').value = u.prn || '';
-  document.getElementById('hod-warn').style.display = 'none';
-  onRoleChange();
-  checkHodConflict();
-  document.getElementById('modal-backdrop').style.display = 'flex';
-}
-
-function closeModal() {
-  document.getElementById('modal-backdrop').style.display = 'none';
-}
-
-function del(id, name) {
-  if (id === currentUser.id) return Toast.warning('You cannot delete your own account.');
-  
-  const u = DB.users.byId(id);
-  // Check if user owns courses as faculty
-  const ownedCourses = DB.courses.all().filter(c => c.facultyId === id);
-  if (ownedCourses.length > 0) {
-    return Toast.warning(`Cannot delete ${name} — they are the faculty-in-charge for ${ownedCourses.length} course(s). Reassign courses first.`);
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Full Name *</label>
+          <input class="form-input" id="u-name" value="${u.name || ''}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address *</label>
+          <input class="form-input" id="u-email" type="email" value="${u.email}">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-group">
+            <label class="form-label">System Role</label>
+            <select class="form-select" id="u-role">
+              <option value="faculty" ${u.role==='faculty'?'selected':''}>Faculty</option>
+              <option value="hod" ${u.role==='hod'?'selected':''}>Head of Department</option>
+              <option value="admin" ${u.role==='admin'?'selected':''}>Administrator</option>
+              <option value="student" ${u.role==='student'?'selected':''}>Student</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Department</label>
+            <select class="form-select" id="u-dept">
+              <option value="">-- Institutional --</option>
+              ${deptOpts}
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveUser('${u.id}')">Save Changes</button>
+      </div>
+    `;
+    Modal.open(html);
+    renderAllIcons();
   }
 
-  Modal.confirm('Delete User', `Delete <strong>${name}</strong>? This cannot be undone.`, () => {
-    // Clear HOD from dept if applicable
-    if (u && u.role === 'hod' && u.deptId) {
-      const dept = DB.departments.byId(u.deptId);
-      if (dept && dept.hod === u.name) { dept.hod = ''; DB.departments.update(dept); }
+  function saveUser(id) {
+    const name = document.getElementById('u-name').value.trim();
+    const email = document.getElementById('u-email').value.trim();
+    const role = document.getElementById('u-role').value;
+    const deptId = document.getElementById('u-dept').value || null;
+
+    if (!email) { Toast.error('Email is required.'); return; }
+
+    if (id) {
+      const existing = DB.users.byId(id);
+      DB.users.update({ ...existing, name, email, role, deptId });
+      Toast.success('User updated.');
+    } else {
+      DB.users.add({ name, email, role, deptId });
+      Toast.success('User created.');
     }
-    DB.users.delete(id);
-    render();
-    Toast.success('User deleted successfully.');
-  });
-}
-
-document.getElementById('user-form').addEventListener('submit', e => {
-  e.preventDefault();
-  clearErrors();
-  let valid = true;
-
-  const id       = document.getElementById('f-id').value;
-  const name     = document.getElementById('f-name').value.trim();
-  const email    = document.getElementById('f-email').value.trim().toLowerCase();
-  const pw       = document.getElementById('f-pass').value;
-  const role     = document.getElementById('f-role').value;
-  const deptId   = role === 'admin' ? null : (document.getElementById('f-dept').value || null);
-  const prn      = document.getElementById('f-prn').value.trim();
-
-  // Email uniqueness
-  const allUsers = DB.users.all();
-  const emailTaken = allUsers.find(u => u.email.toLowerCase() === email && u.id !== id);
-  if (emailTaken) {
-    document.getElementById('err-email').classList.add('show');
-    document.getElementById('f-email').classList.add('error');
-    valid = false;
+    Modal.close();
+    renderUsers();
   }
 
-  // Password length
-  if (pw && pw.length < 6) {
-    document.getElementById('err-pw').classList.add('show');
-    document.getElementById('f-pass').classList.add('error');
-    valid = false;
+  function deleteUser(id) {
+    const u = DB.users.byId(id);
+    if (!u) return;
+    Modal.confirm('Delete User', `Remove account for ${u.name} (${u.email})?`, () => {
+      DB.users.delete(id);
+      renderUsers();
+      Toast.success('User account removed.');
+    }, 'Delete', true);
   }
 
-  // Dept required for non-admin
-  if ((role === 'faculty' || role === 'hod') && !deptId) {
-    document.getElementById('err-dept').classList.add('show');
-    document.getElementById('f-dept').classList.add('error');
-    valid = false;
-  }
-
-  // PRN uniqueness for students
-  if (role === 'student' && prn) {
-    const prnTaken = allUsers.find(u => u.prn === prn && u.id !== id);
-    if (prnTaken) {
-      document.getElementById('err-prn').classList.add('show');
-      document.getElementById('f-prn').classList.add('error');
-      valid = false;
-    }
-  }
-
-  if (!valid) return;
-
-  const obj = {
-    name, email, role, deptId,
-    avatar: name[0]?.toUpperCase() || 'U',
-  };
-  if (role === 'student') obj.prn = prn;
-
-  let oldRole = null;
-  let oldDeptId = null;
-
-  if (id) {
-    obj.id = id;
-    const existing = DB.users.byId(id);
-    if (existing) {
-      oldRole = existing.role;
-      oldDeptId = existing.deptId;
-      obj.password = pw ? pw : existing.password;
-    }
-    DB.users.update(obj);
-    Toast.success('User updated successfully.');
-  } else {
-    obj.password = pw || 'password123';
-    DB.users.add(obj);
-    Toast.success('User added successfully.');
-  }
-
-  // Clear HOD from old department if user was moved to a new dept or demoted from HOD
-  if (oldRole === 'hod' && oldDeptId && (oldDeptId !== deptId || role !== 'hod')) {
-    const oldDept = DB.departments.byId(oldDeptId);
-    if (oldDept && oldDept.hod === name) {
-      oldDept.hod = '';
-      DB.departments.update(oldDept);
-    }
-  }
-
-  // HOD sync: demote existing HODs in new dept, then set dept.hod
-  if (role === 'hod' && deptId) {
-    allUsers.forEach(u => {
-      if (u.role === 'hod' && u.deptId === deptId && u.id !== (id || obj.id)) {
-        u.role = 'faculty'; DB.users.update(u);
-      }
-    });
-    const dept = DB.departments.byId(deptId);
-    if (dept) { dept.hod = name; DB.departments.update(dept); }
-  }
-
-  closeModal();
-  render();
-});
-
-render();
+  window.setRoleFilter = setRoleFilter;
+  window.openAddUserModal = openAddUserModal;
+  window.openEditUserModal = openEditUserModal;
+  window.saveUser = saveUser;
+  window.deleteUser = deleteUser;
+})();
 </script>
-<script src="../scripts/ai-mock.js"></script>
 </body>
 </html>

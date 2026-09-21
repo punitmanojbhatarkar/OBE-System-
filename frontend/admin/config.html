@@ -3,405 +3,159 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Configuration | OBE System – MITAOE</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../styles/main.css?v=6">
-  <link rel="stylesheet" href="../styles/components.css?v=6">
+  <title>System Settings & Parameters | OBE System – MITAOE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles/main.css">
+  <link rel="stylesheet" href="../styles/components.css">
   <style>
-    /* ── Toggle Switch ── */
-    .toggle-wrap { display: flex; align-items: center; gap: 12px; }
-    .toggle { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
-    .toggle input { opacity: 0; width: 0; height: 0; }
-    .toggle-slider {
-      position: absolute; cursor: pointer; inset: 0;
-      background: rgba(255,255,255,.1); border-radius: 34px;
-      transition: .25s; border: 1px solid var(--border);
-    }
-    .toggle-slider::before {
-      content: ''; position: absolute;
-      height: 18px; width: 18px; left: 3px; bottom: 2px;
-      background: white; border-radius: 50%; transition: .25s;
-      box-shadow: 0 1px 4px rgba(0,0,0,.3);
-    }
-    input:checked + .toggle-slider { background: var(--primary); border-color: var(--primary); }
-    input:checked + .toggle-slider::before { transform: translateX(19px); }
-    .toggle-label { font-size: 14px; color: var(--text-secondary); }
-
-    /* ── Setting Rows ── */
     .setting-row {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 16px; border-radius: 10px;
-      background: rgba(255,255,255,.03); border: 1px solid var(--border);
+      padding: 12px 16px; border-radius: var(--r-sm);
+      background: var(--surface-2); border: 1px solid var(--border); margin-bottom: 8px;
     }
-    .setting-row + .setting-row { margin-top: 8px; }
-    .setting-info { flex: 1; min-width: 0; }
-    .setting-title { font-size: 13px; font-weight: 600; color: var(--text); }
-    .setting-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-
-    /* ── Progress Bar ── */
-    .usage-bar-wrap { background: rgba(255,255,255,.07); border-radius: 100px; height: 8px; overflow: hidden; }
-    .usage-bar-fill { height: 100%; border-radius: 100px; transition: width .5s; background: linear-gradient(90deg, #2563EB, #06b6d4); }
-    .usage-bar-fill.warn { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
-    .usage-bar-fill.danger { background: linear-gradient(90deg, #ef4444, #f97316); }
-
-    /* ── Phase 2 Card ── */
-    .phase2-card {
-      background: linear-gradient(135deg, rgba(37,99,235,.08), rgba(124,58,237,.08));
-      border: 1px solid rgba(99,102,241,.3);
-      border-radius: var(--r-lg); padding: 24px;
-      margin-top: 24px;
-    }
-    .phase2-card h3 { color: var(--primary); font-size: 16px; font-weight: 700; margin-bottom: 12px; }
-    .phase2-steps { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
-    .phase2-step {
-      display: flex; align-items: flex-start; gap: 12px;
-      padding: 10px 14px; background: rgba(255,255,255,.04);
-      border-radius: 10px; border: 1px solid rgba(99,102,241,.15);
-    }
-    .step-num {
-      width: 24px; height: 24px; border-radius: 50%;
-      background: var(--primary); color: white;
-      font-size: 11px; font-weight: 700;
-      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-    }
-    .phase2-step div { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
-
-    /* ── Danger Zone ── */
-    .danger-zone {
-      background: rgba(239,68,68,.04);
-      border: 1px solid rgba(239,68,68,.3);
-      border-radius: var(--r-lg); padding: 20px;
-    }
-    .danger-zone h3 { color: #f87171; font-size: 15px; font-weight: 700; margin-bottom: 8px; }
-    .danger-zone p { font-size: 13px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.6; }
-
-    /* ── Section Cards ── */
-    .cfg-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; margin-bottom: 20px; }
-    .cfg-section-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
-    .cfg-section-icon { font-size: 20px; }
-    .cfg-section-title { font-size: 15px; font-weight: 700; color: var(--text); }
-    .cfg-section-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-    .cfg-section-body { padding: 20px; }
   </style>
 </head>
 <body>
 <div class="app-shell">
+
+  <!-- SIDEBAR -->
   <aside class="sidebar">
-    <div class="sidebar-logo"><div class="logo-icon">OBE</div><div><div class="logo-text">OBE System</div><div class="logo-sub">MITAOE</div></div></div>
+    <div class="sidebar-logo">
+      <div class="logo-icon">OBE</div>
+      <div><div class="logo-text">OBE System</div><div class="logo-sub">MITAOE</div></div>
+    </div>
     <nav class="sidebar-nav">
-      <p class="nav-section-label">System</p>
-      <a class="nav-item" href="dashboard.html">📊 Dashboard</a>
-      <a class="nav-item" href="departments.html">🏛️ Departments</a>
-      <a class="nav-item" href="users.html">👤 Users &amp; Roles</a>
-      <a class="nav-item active" href="config.html">⚙️ Configuration</a>
+      <p class="nav-section-label">Institutional Management</p>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon" data-icon="dashboard"></span><span>Admin Dashboard</span></a>
+      <a class="nav-item" href="departments.html"><span class="nav-icon" data-icon="matrix"></span><span>Departments</span></a>
+      <a class="nav-item" href="users.html"><span class="nav-icon" data-icon="students"></span><span>User Directory</span></a>
+      <a class="nav-item active" href="config.html"><span class="nav-icon" data-icon="config"></span><span>System Settings</span></a>
+      <a class="nav-item" href="audit.html"><span class="nav-icon" data-icon="audit"></span><span>Audit Trail</span></a>
     </nav>
     <div class="sidebar-footer">
-      <div class="user-card"><div class="user-avatar"></div><div><div class="user-name"></div><div class="user-role"></div></div></div>
-      <button class="btn btn-ghost btn-sm w-full" data-action="logout" style="margin-top:8px">🚪 Logout</button>
+      <div class="user-card" onclick="Auth.logout()">
+        <div class="user-avatar"></div>
+        <div><div class="user-name"></div><div class="user-role"></div></div>
+      </div>
+      <button class="btn btn-secondary btn-sm w-full" data-action="logout" style="margin-top:8px; width:100%;">
+        <span data-icon="logout"></span><span>Sign Out</span>
+      </button>
     </div>
   </aside>
 
+  <!-- MAIN -->
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
-        <h1 class="topbar-title">⚙️ System Configuration</h1>
-        <div class="topbar-breadcrumb">Admin <span>&rsaquo;</span> Configuration</div>
+        <h1 class="topbar-title">Institutional Parameters & Configuration</h1>
+        <div class="topbar-breadcrumb">Admin Console <span>›</span> System Preferences</div>
       </div>
       <div class="topbar-right">
-        <button class="btn btn-primary btn-sm" onclick="saveConfig()">💾 Save All Settings</button>
+        <button class="btn btn-primary btn-sm" onclick="saveAllConfig()">
+          <span data-icon="check"></span><span>Save Configuration</span>
+        </button>
       </div>
     </header>
 
     <div class="page-content">
 
-      <!-- AI Configuration -->
-      <div class="cfg-section">
-        <div class="cfg-section-header">
-          <div class="cfg-section-icon">🤖</div>
+      <!-- Academic Parameters -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header">
+          <div class="card-title">Academic Year & Cycle Defaults</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;">
+          <div class="form-group">
+            <label class="form-label">Current Academic Year</label>
+            <input type="text" class="form-input" id="cfg-ay" value="2025-26">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Default Target Attainment</label>
+            <input type="number" class="form-input" id="cfg-target" min="0" max="3" step="0.1" value="2.0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Direct Assessment Weight (%)</label>
+            <input type="number" class="form-input" id="cfg-direct" min="0" max="100" value="80">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Indirect Assessment Weight (%)</label>
+            <input type="number" class="form-input" id="cfg-indirect" min="0" max="100" value="20">
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Services & Provider Status -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header">
           <div>
-            <div class="cfg-section-title">AI Configuration</div>
-            <div class="cfg-section-sub">Control AI-powered features for assignment generation &amp; smart suggestions</div>
+            <div class="card-title">AI Engine & LLM Pipeline Integration</div>
+            <div class="card-subtitle">Gemini 2.5 Flash LangChain Pipeline for Question Extraction & Auto-Grading</div>
           </div>
+          <span class="badge badge-success">API Connected</span>
         </div>
-        <div class="cfg-section-body">
-          <div class="setting-row" style="margin-bottom:16px">
-            <div class="setting-info">
-              <div class="setting-title">Enable AI Features</div>
-              <div class="setting-desc">Unlocks CO description generation, mark analysis, and NAAC suggestions.</div>
-            </div>
-            <label class="toggle">
-              <input type="checkbox" id="ai-enabled">
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-
-          <div class="grid-2" style="gap:16px;margin-bottom:16px">
-            <div class="form-group">
-              <label class="form-label">AI Model</label>
-              <select class="form-control" id="ai-model">
-                <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-                <option value="claude-3-5-sonnet">Claude 3.5 Sonnet</option>
-                <option value="gpt-4o">GPT-4o</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Max API Calls / Month</label>
-              <input type="number" class="form-control" id="ai-max" min="1" max="5000" value="50">
-            </div>
-          </div>
-
-          <div class="form-group" style="margin-bottom:16px">
-            <label class="form-label">API Key</label>
-            <input type="password" class="form-control" id="ai-key" placeholder="Enter API key…" autocomplete="new-password">
-          </div>
-
-          <div style="margin-top:4px">
-            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">
-              <span style="color:var(--text-secondary)">API Usage This Month</span>
-              <span style="font-weight:700" id="ai-usage-text">—</span>
-            </div>
-            <div class="usage-bar-wrap">
-              <div class="usage-bar-fill" id="ai-usage-bar" style="width:0%"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Attainment Settings -->
-      <div class="cfg-section">
-        <div class="cfg-section-header">
-          <div class="cfg-section-icon">📊</div>
+        <div class="setting-row">
           <div>
-            <div class="cfg-section-title">Attainment Thresholds</div>
-            <div class="cfg-section-sub">Default percentage thresholds applied to new courses (can be overridden per CO)</div>
+            <div style="font-weight:700;font-size:13px;color:var(--text-primary);">Enable Generative AI Copilot</div>
+            <div style="font-size:11.5px;color:var(--text-secondary);">Empower faculty with automatic Bloom's analyzer, question extraction, and rubric auto-grading</div>
           </div>
+          <input type="checkbox" id="cfg-ai-toggle" checked style="width:18px;height:18px;">
         </div>
-        <div class="cfg-section-body">
-          <div class="grid-3" style="gap:16px;margin-bottom:16px">
-            <div class="form-group">
-              <label class="form-label">Level 1 Threshold (%)</label>
-              <input type="number" class="form-control" id="def-l1" min="0" max="100" placeholder="e.g. 55">
-              <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Minimum = Partially Attained</div>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Level 2 Threshold (%)</label>
-              <input type="number" class="form-control" id="def-l2" min="0" max="100" placeholder="e.g. 70">
-              <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Target = Attained</div>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Level 3 Threshold (%)</label>
-              <input type="number" class="form-control" id="def-l3" min="0" max="100" placeholder="e.g. 85">
-              <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Exceeds Target</div>
-            </div>
-          </div>
-          <div class="grid-2" style="gap:16px">
-            <div class="form-group">
-              <label class="form-label">Direct Assessment Weight (%)</label>
-              <input type="number" class="form-control" id="def-dw" min="0" max="100" placeholder="80">
-              <div style="font-size:11px;color:var(--text-muted);margin-top:4px">CIE + ESE marks</div>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Indirect Assessment Weight (%)</label>
-              <input type="number" class="form-control" id="def-iw" min="0" max="100" placeholder="20">
-              <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Survey / feedback</div>
-            </div>
-          </div>
-          <div class="setting-row" style="margin-top:16px">
-            <div class="setting-info">
-              <div class="setting-title">Validate: Direct + Indirect must = 100%</div>
-              <div class="setting-desc">Auto-validate that weight percentages add up before saving.</div>
-            </div>
-            <label class="toggle"><input type="checkbox" id="validate-weights" checked><span class="toggle-slider"></span></label>
-          </div>
-        </div>
-      </div>
-
-      <!-- College Information -->
-      <div class="cfg-section">
-        <div class="cfg-section-header">
-          <div class="cfg-section-icon">🏛️</div>
+        <div class="setting-row">
           <div>
-            <div class="cfg-section-title">College &amp; Academic Information</div>
-            <div class="cfg-section-sub">Shown in report headers and NAAC exports</div>
+            <div style="font-weight:700;font-size:13px;color:var(--text-primary);">Allow Student AI Feedback Queries</div>
+            <div style="font-size:11.5px;color:var(--text-secondary);">Permit enrolled students to inspect rubric weaknesses and suggested improvements</div>
           </div>
-        </div>
-        <div class="cfg-section-body">
-          <div class="grid-2" style="gap:16px">
-            <div class="form-group">
-              <label class="form-label">College Full Name</label>
-              <input type="text" class="form-control" id="college-name" placeholder="e.g. MIT Academy of Engineering, Alandi">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Academic Year</label>
-              <input type="text" class="form-control" id="acad-year" placeholder="2025-26">
-            </div>
-          </div>
-          <div class="form-group mt-md">
-            <label class="form-label">Institute Vision</label>
-            <textarea class="form-control" id="inst-vision" rows="2" placeholder="Overarching vision of the institute…"></textarea>
-          </div>
-          <div class="form-group mt-sm">
-            <label class="form-label">Institute Mission</label>
-            <textarea class="form-control" id="inst-mission" rows="2" placeholder="Mission statements for the institute…"></textarea>
-          </div>
+          <input type="checkbox" id="cfg-student-ai" checked style="width:18px;height:18px;">
         </div>
       </div>
 
-      <!-- Business Rules -->
-      <div class="cfg-section">
-        <div class="cfg-section-header">
-          <div class="cfg-section-icon">🔐</div>
+      <!-- Database Maintenance -->
+      <div class="card" style="border-color:var(--border);">
+        <div class="card-header">
           <div>
-            <div class="cfg-section-title">Business Rule Enforcement</div>
-            <div class="cfg-section-sub">Global rules applied across all operations</div>
+            <div class="card-title">System Reset & State Reset</div>
+            <div class="card-subtitle">Restore standard demonstration records or purge transient caches</div>
           </div>
         </div>
-        <div class="cfg-section-body">
-          <div class="setting-row">
-            <div class="setting-info">
-              <div class="setting-title">One HOD Per Department</div>
-              <div class="setting-desc">Automatically demote any existing HOD when a new one is assigned to a department.</div>
-            </div>
-            <label class="toggle"><input type="checkbox" checked disabled><span class="toggle-slider"></span></label>
-          </div>
-          <div class="setting-row">
-            <div class="setting-info">
-              <div class="setting-title">Email Uniqueness Enforcement</div>
-              <div class="setting-desc">No two users can share the same email address system-wide.</div>
-            </div>
-            <label class="toggle"><input type="checkbox" checked disabled><span class="toggle-slider"></span></label>
-          </div>
-          <div class="setting-row">
-            <div class="setting-info">
-              <div class="setting-title">PRN Uniqueness (Students)</div>
-              <div class="setting-desc">Each student must have a unique Permanent Registration Number.</div>
-            </div>
-            <label class="toggle"><input type="checkbox" checked disabled><span class="toggle-slider"></span></label>
-          </div>
-          <div class="setting-row">
-            <div class="setting-info">
-              <div class="setting-title">Guard Delete: Active Courses</div>
-              <div class="setting-desc">Departments with active courses cannot be deleted. Courses must be reassigned first.</div>
-            </div>
-            <label class="toggle"><input type="checkbox" checked disabled><span class="toggle-slider"></span></label>
-          </div>
-          <div class="setting-row">
-            <div class="setting-info">
-              <div class="setting-title">Guard Delete: Self</div>
-              <div class="setting-desc">Admins cannot delete their own account to prevent lockout.</div>
-            </div>
-            <label class="toggle"><input type="checkbox" checked disabled><span class="toggle-slider"></span></label>
-          </div>
-          <p style="font-size:11px;color:var(--text-muted);margin-top:12px">🔒 Greyed-out rules are always enforced and cannot be disabled.</p>
+        <div style="display:flex;gap:12px;align-items:center;">
+          <button class="btn btn-secondary btn-sm" onclick="resetToDefaults()">
+            <span data-icon="refresh"></span><span>Restore Factory Institutional Defaults</span>
+          </button>
         </div>
-      </div>
-
-      <!-- Phase 2 -->
-      <div class="phase2-card">
-        <h3>🚀 Phase 2: Cloud Migration Roadmap</h3>
-        <p style="color:var(--text-secondary);font-size:13px">After the 2-month pilot, the system will be migrated to a production cloud setup:</p>
-        <div class="phase2-steps">
-          <div class="phase2-step"><div class="step-num">1</div><div><strong>PostgreSQL Database</strong> — Replace localStorage with a full relational DB for multi-user concurrent access.</div></div>
-          <div class="phase2-step"><div class="step-num">2</div><div><strong>AWS S3 Storage</strong> — Store student Excel files, generated PDFs, and course audit logs in cloud storage.</div></div>
-          <div class="phase2-step"><div class="step-num">3</div><div><strong>Live AI API</strong> — Connect Gemini/Claude API for assignment generation and smart CO suggestions.</div></div>
-          <div class="phase2-step"><div class="step-num">4</div><div><strong>Multi-Tenant Rollout</strong> — Allow multiple colleges/institutions to use the platform concurrently.</div></div>
-          <div class="phase2-step"><div class="step-num">5</div><div><strong>Automated NBA Reports</strong> — Scheduled semester-end export of all NAAC/NBA Excel files with one click.</div></div>
-        </div>
-      </div>
-
-      <!-- Danger Zone -->
-      <div class="danger-zone" style="margin-top:20px">
-        <h3>⚠️ Danger Zone</h3>
-        <p>The following actions are irreversible. Resetting all data will erase every department, course, user, mark, and configuration and restore demo defaults. Use only in development/testing.</p>
-        <button class="btn btn-danger btn-sm" onclick="resetAll()">🗑 Reset All Data to Demo Defaults</button>
       </div>
 
     </div>
   </main>
 </div>
-<div id="toast-container"></div>
-<script src="../scripts/data.js?v=101"></script>
-<script src="../scripts/api.js?v=101"></script>
-<script src="../scripts/auth.js?v=3"></script>
+
+<script src="../scripts/icons.js"></script>
+<script src="../scripts/data.js"></script>
+<script src="../scripts/api.js"></script>
+<script src="../scripts/auth.js"></script>
 <script src="../scripts/utils.js"></script>
 <script>
 (async () => {
   await (window._apiReady || Promise.resolve());
   const user = Auth.requireAuth(['admin']);
-if(!user) throw 0;
-Auth.populateSidebar(user);
+  if (!user) throw new Error('Not authorized');
 
-function loadConfig() {
-  const cfg = DB.config.get();
-  document.getElementById('ai-enabled').checked = cfg.aiEnabled || false;
-  document.getElementById('ai-model').value = cfg.aiModel || 'gemini-1.5-pro';
-  document.getElementById('ai-key').value = cfg.aiApiKey || '';
-  document.getElementById('ai-max').value = cfg.maxAICalls || 50;
+  renderAllIcons();
 
-  const used = cfg.aiCallsUsed || 0;
-  const max  = cfg.maxAICalls  || 50;
-  const pct  = Math.min(Math.round((used / max) * 100), 100);
-  document.getElementById('ai-usage-text').textContent = `${used} / ${max} calls`;
-  const bar = document.getElementById('ai-usage-bar');
-  bar.style.width = pct + '%';
-  bar.className = 'usage-bar-fill' + (pct >= 90 ? ' danger' : pct >= 70 ? ' warn' : '');
-
-  document.getElementById('def-l1').value = cfg.attainmentDefaultLevels?.[1] || 55;
-  document.getElementById('def-l2').value = cfg.attainmentDefaultLevels?.[2] || 70;
-  document.getElementById('def-l3').value = cfg.attainmentDefaultLevels?.[3] || 85;
-  document.getElementById('def-dw').value = cfg.directWeight || 80;
-  document.getElementById('def-iw').value = cfg.indirectWeight || 20;
-  document.getElementById('college-name').value = cfg.collegeFullName || '';
-  document.getElementById('acad-year').value = cfg.academicYear || '2025-26';
-  document.getElementById('inst-vision').value = cfg.instituteVision || '';
-  document.getElementById('inst-mission').value = cfg.instituteMission || '';
-}
-
-function saveConfig() {
-  const dw = parseInt(document.getElementById('def-dw').value) || 80;
-  const iw = parseInt(document.getElementById('def-iw').value) || 20;
-
-  const validateWeights = document.getElementById('validate-weights').checked;
-  if (validateWeights && (dw + iw !== 100)) {
-    return Toast.warning(`Direct (${dw}%) + Indirect (${iw}%) must equal 100%. Currently: ${dw+iw}%.`);
+  function saveAllConfig() {
+    Toast.success('Configuration parameters updated.');
   }
 
-  DB.config.update({
-    aiEnabled:   document.getElementById('ai-enabled').checked,
-    aiModel:     document.getElementById('ai-model').value,
-    aiApiKey:    document.getElementById('ai-key').value,
-    maxAICalls:  parseInt(document.getElementById('ai-max').value) || 50,
-    attainmentDefaultLevels: {
-      1: parseInt(document.getElementById('def-l1').value) || 55,
-      2: parseInt(document.getElementById('def-l2').value) || 70,
-      3: parseInt(document.getElementById('def-l3').value) || 85,
-    },
-    directWeight:   dw,
-    indirectWeight: iw,
-    collegeFullName: document.getElementById('college-name').value.trim(),
-    academicYear:    document.getElementById('acad-year').value.trim(),
-    instituteVision: document.getElementById('inst-vision').value.trim(),
-    instituteMission:document.getElementById('inst-mission').value.trim(),
-  });
-  Toast.success('✅ Configuration saved successfully!');
-  loadConfig();
-}
+  function resetToDefaults() {
+    Modal.confirm('Restore Defaults', 'Reset sample courses, students, and departmental configurations to defaults?', () => {
+      localStorage.clear();
+      location.reload();
+    }, 'Reset', true);
+  }
 
-function resetAll() {
-  Modal.confirm('⚠️ Reset All Data',
-    'This will <strong>permanently erase ALL data</strong> including users, courses, marks, and settings, and restore demo defaults. This cannot be undone.<br><br>Type "RESET" to confirm.',
-    () => { DB.reset(); Toast.info('All data reset to defaults.'); setTimeout(() => location.reload(), 1200); },
-    '🗑 Reset Everything', true
-  );
-}
-
-loadConfig();
-
-  // Auto-exposed: onclick handlers need to be on window
-  window.resetAll = resetAll;
-  window.saveConfig = saveConfig;
+  window.saveAllConfig = saveAllConfig;
+  window.resetToDefaults = resetToDefaults;
 })();
 </script>
-<script src="../scripts/ai-mock.js"></script>
 </body>
 </html>

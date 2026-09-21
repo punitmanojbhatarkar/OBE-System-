@@ -5,12 +5,9 @@
    Also overrides all DB write methods to POST/PUT/DELETE to the backend.
    ============================================================ */
 
-// Change this URL to your live Render backend URL after deploying it
-const PROD_API_URL = 'https://obe-system-backend-t0ri.onrender.com';
-
-// Auto-detect: if served locally, use local backend. Otherwise, use Render backend.
-const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const API_BASE = isLocal ? 'http://127.0.0.1:8080' : PROD_API_URL;
+// Auto-detect: if served from the backend (same origin), use relative URLs.
+// If opened as file:// or from a different server (like npx serve), use hardcoded URL.
+const API_BASE = (window.location.port === '8080') ? '' : 'http://127.0.0.1:8080';
 window.API_BASE = API_BASE;
 
 let apiQueue = Promise.resolve();
@@ -49,13 +46,9 @@ async function apiFetch(path, opts = {}) {
           window.location.href = 'login.html';
         }
         const err = await res.json().catch(() => ({ detail: res.statusText }));
-        throw new Error(err.message || err.error || err.detail || res.statusText);
+        throw new Error(err.detail || res.statusText);
       }
-      const json = await res.json();
-      if (json && json.success === false) {
-        throw new Error(json.error || 'Unknown API Error');
-      }
-      return json;
+      return await res.json();
     } catch (e) {
       console.error('[API]', path, e.message);
       throw e;
@@ -102,7 +95,13 @@ function showOfflineError(err) {
   const el = document.getElementById('api-sync-overlay');
   if (el) {
     el.innerHTML = `
-      <div style="font-size:40px;">⚠️</div>
+      <div style="color:#EF4444;margin-bottom:12px;">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+      </div>
       <div style="font-size:20px;font-weight:700;color:#EF4444;">Backend Not Running</div>
       <div style="font-size:14px;color:rgba(255,255,255,0.7);max-width:420px;text-align:center;">
         Could not connect to the Python backend at <strong>${API_BASE}</strong>.<br>
@@ -111,8 +110,8 @@ function showOfflineError(err) {
           cd backend && .\\venv\\Scripts\\activate && uvicorn main:app --reload
         </code>
       </div>
-      <button onclick="location.reload()" style="margin-top:16px;padding:10px 24px;background:#3B82F6;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;">
-        Retry
+      <button onclick="location.reload()" style="margin-top:16px;padding:10px 24px;background:#2563EB;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;">
+        Retry Connection
       </button>
     `;
   }
@@ -177,27 +176,14 @@ async function syncFromBackend() {
 
     overlay.msg('Loading departments…');
     const depts = await apiFetch('/api/departments');
-    mergeLocalStore('obe_departments', depts, (a, b) => a.id === b.id);
+    localStorage.setItem('obe_departments', JSON.stringify(depts || []));
 
     overlay.msg('Loading users…');
     const users = await apiFetch('/api/users');
-    mergeLocalStore('obe_users', users, (a, b) => a.id === b.id || a.email === b.email);
+    localStorage.setItem('obe_users', JSON.stringify(users || []));
 
-    overlay.msg('Loading courses...');
+    overlay.msg('Loading courses…');
     const courses = await apiFetch('/api/courses');
-    
-    const localCourses = JSON.parse(localStorage.getItem('obe_courses') || '[]');
-    if (courses.length === 0 && localCourses.length > 0) {
-      overlay.msg('Restoring database...');
-      for (const c of localCourses) {
-        await apiFetch('/api/courses', { method: 'POST', body: c }).catch(() => {});
-      }
-      // Re-fetch courses after restoring
-      const restored = await apiFetch('/api/courses');
-      courses.length = 0;
-      courses.push(...restored);
-    }
-    
     mergeLocalStore('obe_courses', courses.map(normalizeCourse), (a, b) => a.id === b.id);
 
     overlay.msg('Loading course outcomes…');
@@ -337,7 +323,7 @@ async function syncFromBackend() {
     mergeLocalStore('obe_survey', allSurvey, (a, b) => a.courseId === b.courseId && a.prn === b.prn && String(a.co) === String(b.co));
 
     // Mark as initialized so data.js doesn't re-seed with initial institutional data
-    localStorage.setItem('obe_initialized_v3', '1');
+    localStorage.setItem('obe_initialized_v2', '1');
 
     overlay.done();
     console.log('[API] Sync complete — all data loaded from backend.');
@@ -620,45 +606,45 @@ function patchDBWriteMethods() {
     };
   }
 
-  // ── Action Plans ──
-  if (typeof DB !== 'undefined' && DB.actionPlans && DB.actionPlans.savePlan) {
-    const _apSave = DB.actionPlans.savePlan.bind(DB.actionPlans);
-    DB.actionPlans.savePlan = function(plan) {
-      _apSave(plan);
-      apiFetch('/api/actionplans', { method: 'POST', body: plan })
-        .catch(e => console.warn('[API] action plan save failed', e));
-    };
+    // ── Action Plans ──
+    if (DB.actionPlans && DB.actionPlans.savePlan) {
+      const _apSave = DB.actionPlans.savePlan.bind(DB.actionPlans);
+      DB.actionPlans.savePlan = function(plan) {
+        _apSave(plan);
+        apiFetch('/api/actionplans', { method: 'POST', body: plan })
+          .catch(e => console.warn('[API] action plan save failed', e));
+      };
+    }
+
+    console.log('[API] DB write methods patched to persist to backend.');
   }
 
-  console.log('[API] DB write methods patched to persist to backend.');
-}
+  /* ════════════════════════════════════════════
+     GLOBALS — expose helpers so page scripts can use them
+     ════════════════════════════════════════════ */
+  window.apiFetch = apiFetch;
+  window.mergeLocalStore = mergeLocalStore;
 
-/* ════════════════════════════════════════════
-   GLOBALS — expose helpers so page scripts can use them
-   ════════════════════════════════════════════ */
-window.apiFetch = apiFetch;
-window.mergeLocalStore = mergeLocalStore;
+  /* ════════════════════════════════════════════
+     BOOTSTRAP — exposes window._apiReady Promise
+     All protected pages await this before init.
+     _apiReady now AWAITS the full backend sync so
+     all localStorage data is ready before pages run.
+     ════════════════════════════════════════════ */
+  window._apiReady = (async function bootstrap() {
+    const sessionRaw = sessionStorage.getItem('obe_session');
+    if (!sessionRaw) {
+      // Login page — no sync needed
+      return;
+    }
 
-/* ════════════════════════════════════════════
-   BOOTSTRAP — exposes window._apiReady Promise
-   All protected pages await this before init.
-   _apiReady now AWAITS the full backend sync so
-   all localStorage data is ready before pages run.
-   ════════════════════════════════════════════ */
-window._apiReady = (async function bootstrap() {
-  const sessionRaw = sessionStorage.getItem('obe_session');
-  if (!sessionRaw) {
-    // Login page — no sync needed
-    return;
-  }
+    // Patch write methods immediately so local DB writes persist
+    patchDBWriteMethods();
 
-  // Patch write methods immediately so local DB writes persist
-  patchDBWriteMethods();
-
-  // AWAIT full sync — pages should not render until data is ready
-  try {
-    await syncFromBackend();
-  } catch(e) {
-    console.warn('[API] Sync failed, pages will use cached localStorage data:', e);
-  }
-})();
+    // AWAIT full sync — pages should not render until data is ready
+    try {
+      await syncFromBackend();
+    } catch(e) {
+      console.warn('[API] Sync failed, pages will use cached localStorage data:', e);
+    }
+  })();

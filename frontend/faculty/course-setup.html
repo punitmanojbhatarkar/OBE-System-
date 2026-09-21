@@ -6,70 +6,32 @@
   <title>Course Setup | OBE System – MITAOE</title>
   <meta name="description" content="Configure course details, exam scheme and internal assessment">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800" rel="stylesheet">
-  <link rel="stylesheet" href="../styles/main.css?v=6">
-  <link rel="stylesheet" href="../styles/components.css?v=6">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles/main.css">
+  <link rel="stylesheet" href="../styles/components.css">
   <style>
-    .section-card {
+    .course-selector-bar {
+      display: flex; align-items: center; justify-content: space-between;
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--r-lg); padding: var(--sp-xl);
-      margin-bottom: var(--sp-lg);
+      border-radius: var(--r-lg); padding: 12px 18px; margin-bottom: var(--sp-lg);
+      flex-wrap: wrap; gap: 12px;
     }
-    .section-card-title {
-      font-size: 16px; font-weight: 700; margin-bottom: var(--sp-lg);
-      padding-bottom: var(--sp-md); border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; gap: 10px;
+    .form-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;
     }
-    .scheme-block {
-      display: flex; gap: var(--sp-md); align-items: center;
-      background: rgba(37,99,235,0.15); border: 1px solid rgba(37,99,235,0.15);
-      border-radius: var(--r-md); padding: var(--sp-md);
+    .scheme-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+      margin-bottom: 16px;
     }
-    .scheme-block-label { font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px; }
-    .scheme-val-display {
-      font-size: 28px; font-weight: 800; color: var(--primary);
-      text-align: center;
+    @media (max-width: 768px) {
+      .scheme-grid { grid-template-columns: 1fr 1fr; }
     }
-    .marks-total-pill {
-      background: var(--primary); color: #fff;
-      padding: 6px 14px; border-radius: var(--r-full);
-      font-size: 13px; font-weight: 700;
+    .scheme-stat {
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: var(--r-md); padding: 12px; text-align: center;
     }
-    .ia-table-wrap { overflow-x: auto; border-radius: var(--r-md); border: 1px solid var(--border); }
-    .ia-table-wrap table { font-size: 13px; }
-    .ia-table-wrap thead th { background: rgba(37,99,235,0.15); }
-    .ia-table-wrap td input { 
-      background: transparent; border: none; outline: none; color: var(--text-primary);
-      width: 100%; padding: 4px 0; font-size: 13px;
-    }
-    .ia-table-wrap td input:focus { color: var(--primary); }
-    .add-row-btn {
-      margin-top: 10px; font-size: 13px; color: var(--primary);
-      background: none; border: 1px dashed rgba(37,99,235,0.15);
-      border-radius: var(--r-md); padding: 8px 16px; cursor: pointer;
-      transition: all var(--t-fast); width: 100%; text-align: center;
-    }
-    .add-row-btn:hover { background: rgba(37,99,235,0.15); border-color: var(--primary); }
-    .scheme-ring {
-      display: flex; align-items: center; justify-content: center; gap: var(--sp-xl);
-      padding: var(--sp-lg); flex-wrap: wrap;
-    }
-    .ring-item {
-      display: flex; flex-direction: column; align-items: center; gap: 6px;
-    }
-    .ring-circle {
-      width: 80px; height: 80px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 22px; font-weight: 800;
-      border: 4px solid transparent; position: relative;
-    }
-    .ring-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
-    .course-selector-row {
-      display: flex; align-items: center; gap: var(--sp-md);
-      background: rgba(37,99,235,0.15); border: 1px solid rgba(37,99,235,0.15);
-      border-radius: var(--r-md); padding: var(--sp-md) var(--sp-lg);
-      margin-bottom: var(--sp-xl);
-    }
+    .scheme-stat-lbl { font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; }
+    .scheme-stat-val { font-size: 24px; font-weight: 800; color: var(--primary); margin-top: 2px; }
   </style>
 </head>
 <body>
@@ -83,28 +45,32 @@
     </div>
     <nav class="sidebar-nav">
       <p class="nav-section-label">Overview</p>
-      <a class="nav-item" href="dashboard.html">📊 Dashboard</a>
-      <a class="nav-item" href="courses.html">📚 My Courses</a>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon" data-icon="dashboard"></span><span>Dashboard</span></a>
+      <a class="nav-item" href="courses.html"><span class="nav-icon" data-icon="courses"></span><span>My Courses</span></a>
+      
       <p class="nav-section-label">Course Management</p>
-      <a class="nav-item" href="syllabus.html">📖 Syllabus Setup</a>
-      <a class="nav-item" href="outcomes.html">🎯 CO & PO Setup</a>
-      <a class="nav-item" href="co-po-map.html">🗺️ CO-PO Mapping</a>
-      <a class="nav-item" href="6a-matrix.html">📋 6A Indicator Mapping</a>
-      <a class="nav-item" href="students.html">👥 Students</a>
+      <a class="nav-item" href="syllabus.html"><span class="nav-icon" data-icon="syllabus"></span><span>Syllabus Setup</span></a>
+      <a class="nav-item" href="outcomes.html"><span class="nav-icon" data-icon="outcomes"></span><span>CO & PO Setup</span></a>
+      <a class="nav-item" href="co-po-map.html"><span class="nav-icon" data-icon="map"></span><span>CO-PO Mapping</span></a>
+      <a class="nav-item" href="6a-matrix.html"><span class="nav-icon" data-icon="matrix"></span><span>6A Indicator Matrix</span></a>
+      <a class="nav-item" href="students.html"><span class="nav-icon" data-icon="students"></span><span>Students</span></a>
+      
       <p class="nav-section-label">Assessment</p>
-      <a class="nav-item" href="marks.html">📝 Marks Entry</a>
-      <a class="nav-item" href="attainment.html">📈 Attainment</a>
-      <a class="nav-item" href="assignments.html">🤖 Assignments & AI</a>
-      <a class="nav-item" href="auto-grade.html">✅ Auto-Grading</a>
-      <a class="nav-item" href="question-paper.html">📄 Question Paper</a>
-      <a class="nav-item" href="reports.html">📄 Reports & Export</a>
+      <a class="nav-item" href="marks.html"><span class="nav-icon" data-icon="marks"></span><span>Marks Entry</span></a>
+      <a class="nav-item" href="attainment.html"><span class="nav-icon" data-icon="attainment"></span><span>Attainment</span></a>
+      <a class="nav-item" href="assignments.html"><span class="nav-icon" data-icon="assignments"></span><span>Assignments & AI</span></a>
+      <a class="nav-item" href="auto-grade.html"><span class="nav-icon" data-icon="grade"></span><span>Auto-Grading</span></a>
+      <a class="nav-item" href="question-paper.html"><span class="nav-icon" data-icon="paper"></span><span>Question Paper</span></a>
+      <a class="nav-item" href="reports.html"><span class="nav-icon" data-icon="reports"></span><span>Reports & Export</span></a>
     </nav>
     <div class="sidebar-footer">
-      <div class="user-card">
+      <div class="user-card" onclick="Auth.logout()">
         <div class="user-avatar"></div>
         <div><div class="user-name"></div><div class="user-role"></div></div>
       </div>
-      <button class="btn btn-ghost btn-sm w-full" data-action="logout" style="margin-top:8px">🚪 Logout</button>
+      <button class="btn btn-secondary btn-sm w-full" data-action="logout" style="margin-top:8px; width:100%;">
+        <span data-icon="logout"></span><span>Sign Out</span>
+      </button>
     </div>
   </aside>
 
@@ -112,176 +78,264 @@
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
-        <h1 class="topbar-title">⚙️ Course Setup</h1>
-        <div class="topbar-breadcrumb">
-          <a href="courses.html">My Courses</a>
-          <span>›</span>
-          <span id="breadcrumb-course">Loading…</span>
-        </div>
+        <h1 class="topbar-title">Course Configuration</h1>
+        <div class="topbar-breadcrumb">Courses <span>›</span> Setup &bull; <span id="breadcrumb-course" style="font-weight:600;color:var(--text-primary);">Course</span></div>
       </div>
       <div class="topbar-right">
-        <button class="btn btn-secondary btn-sm" onclick="history.back()">← Back</button>
-        <button class="btn btn-primary" onclick="saveAll()">💾 Save All Changes</button>
+        <button class="btn btn-primary btn-sm" onclick="saveAll()">
+          <span data-icon="check"></span><span>Save All Changes</span>
+        </button>
       </div>
     </header>
 
     <div class="page-content">
 
-      <!-- Course Selector -->
-      <div class="course-selector-row">
-        <span style="font-size:13px;font-weight:600;color:var(--text-secondary);">📚 Course:</span>
-        <select class="form-control" id="course-select" style="max-width:320px" onchange="switchCourse(this.value)"></select>
-        <span class="badge badge-info" id="course-status-badge">Loading</span>
-        <span style="margin-left:auto;font-size:12px;color:var(--text-muted)" id="course-dept-label"></span>
+      <!-- Course Selector Bar -->
+      <div class="course-selector-bar">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span style="font-size:13px;font-weight:600;color:var(--text-secondary);">Active Course:</span>
+          <select id="course-select" class="form-select" style="min-width:280px;" onchange="switchCourse(this.value)"></select>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span id="course-dept-label" style="font-size:12px;color:var(--text-secondary);font-weight:600;"></span>
+          <span class="badge badge-success" id="course-status-badge">Active</span>
+        </div>
       </div>
 
-      <!-- SECTION 1: Additional Course Details -->
-      <div class="section-card">
-        <div class="section-card-title">📋 Additional Details</div>
-        <div class="form-row">
+      <!-- Basic Info Card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span data-icon="courses"></span><span>Basic Course Information</span></div>
+          <span class="badge badge-neutral">NBA Criterion 2</span>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Course Code *</label>
+            <input class="form-input" id="s-code" placeholder="230331T">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Short Acronym</label>
+            <input class="form-input" id="s-short" placeholder="EDA">
+          </div>
+          <div class="form-group" style="grid-column: span 2;">
+            <label class="form-label">Course Title *</label>
+            <input class="form-input" id="s-name" placeholder="Exploratory Data Analysis">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Semester</label>
+            <select class="form-select" id="s-sem">
+              <option value="I">Semester I</option>
+              <option value="II">Semester II</option>
+              <option value="III">Semester III</option>
+              <option value="IV">Semester IV</option>
+              <option value="V">Semester V</option>
+              <option value="VI">Semester VI</option>
+              <option value="VII">Semester VII</option>
+              <option value="VIII">Semester VIII</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Academic Year</label>
+            <input class="form-input" id="s-year" placeholder="2025-26">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Class</label>
+            <input class="form-input" id="s-class" placeholder="TY BTech">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Division & Batch</label>
+            <div style="display:flex;gap:8px;">
+              <input class="form-input" id="s-div" placeholder="Div A" style="width:45%;">
+              <input class="form-input" id="s-batch" placeholder="A1, A2" style="width:55%;">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Course Champion</label>
+            <input class="form-input" id="s-champ" placeholder="Prof. Champion">
+          </div>
           <div class="form-group">
             <label class="form-label">Champion Date</label>
-            <input class="form-control" id="s-champ-date" type="date">
+            <input class="form-input" type="date" id="s-champ-date">
           </div>
           <div class="form-group">
             <label class="form-label">Lectures / Week</label>
-            <input class="form-control" id="s-lpw" type="number" min="1" max="10" value="3">
+            <input class="form-input" type="number" id="s-lpw" min="1" max="10" value="3">
           </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label" style="display:flex;justify-content:space-between;align-items:center;">
-            Teaching Philosophy
-            <button class="btn btn-sm" style="background:var(--primary);color:white;border:none;padding:4px 8px;font-size:12px;cursor:pointer;border-radius:4px" onclick="autoDraftPhilosophy()">✨ Auto-Draft with AI</button>
-          </label>
-          <textarea class="form-control" id="s-philosophy" rows="3" placeholder="Describe your teaching philosophy for this course…"></textarea>
-        </div>
-      </div>
-
-      <!-- SECTION 2: Exam Scheme -->
-      <div class="section-card">
-        <div class="section-card-title">📊 Exam Scheme (Total = 100 Marks)
-          <span class="marks-total-pill" id="marks-total-badge">Total: 100</span>
-        </div>
-        <div class="scheme-ring">
-          <div class="ring-item">
-            <div class="ring-circle" style="background:rgba(37,99,235,0.15);border-color:rgba(37,99,235,0.15)">
-              <span id="ia-display">30</span>
-            </div>
-            <div class="ring-label">IA Marks</div>
-          </div>
-          <div style="font-size:28px;color:var(--text-muted)">+</div>
-          <div class="ring-item">
-            <div class="ring-circle" style="background:rgba(6,182,212,0.12);border-color:rgba(6,182,212,0.4)">
-              <span id="mse-display">20</span>
-            </div>
-            <div class="ring-label">MSE Marks</div>
-          </div>
-          <div style="font-size:28px;color:var(--text-muted)">+</div>
-          <div class="ring-item">
-            <div class="ring-circle" style="background:rgba(16,185,129,0.12);border-color:rgba(16,185,129,0.4)">
-              <span id="ese-display">50</span>
-            </div>
-            <div class="ring-label">ESE Marks</div>
-          </div>
-          <div style="font-size:28px;color:var(--text-muted)">=</div>
-          <div class="ring-item">
-            <div class="ring-circle" style="background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.4)">
-              <span id="total-display">100</span>
-            </div>
-            <div class="ring-label">Total</div>
-          </div>
-        </div>
-        </div>
-      </div>
-
-      <!-- SECTION 3: Internal Assessment Details -->
-      <div class="section-card">
-        <div class="section-card-title" style="justify-content:space-between">
-          <span>📝 Internal Assessment (IA) – Question Structure</span>
-          <div style="display:flex;gap:8px;">
-            <select class="form-control" id="ia-assess-no" style="width:auto" onchange="loadIATable()">
-              <option value="1">Assessment 1</option>
-              <option value="2">Assessment 2</option>
-              <option value="3">Assessment 3</option>
+          <div class="form-group">
+            <label class="form-label">Course Status</label>
+            <select class="form-select" id="s-status">
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
             </select>
           </div>
         </div>
-        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--sp-md)">
-          Define the question structure for each IA assessment. Each question must be mapped to a CO and have a max mark.
-        </p>
-        <div class="ia-table-wrap">
-          <table id="ia-table">
+      </div>
+
+      <!-- Exam Scheme & Attainment Rules Card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span data-icon="matrix"></span><span>Evaluation Scheme & Attainment Thresholds</span></div>
+          <span class="badge badge-primary" id="marks-total-badge">Total: 100%</span>
+        </div>
+        
+        <div class="scheme-grid">
+          <div class="scheme-stat">
+            <div class="scheme-stat-lbl">IA Weight</div>
+            <div class="scheme-stat-val" id="ia-display">30</div>
+            <input type="number" class="form-input" id="s-ia" value="30" min="0" max="100" style="margin-top:6px;text-align:center;" oninput="updateScheme()">
+          </div>
+          <div class="scheme-stat">
+            <div class="scheme-stat-lbl">MSE Weight</div>
+            <div class="scheme-stat-val" id="mse-display">20</div>
+            <input type="number" class="form-input" id="s-mse" value="20" min="0" max="100" style="margin-top:6px;text-align:center;" oninput="updateScheme()">
+          </div>
+          <div class="scheme-stat">
+            <div class="scheme-stat-lbl">ESE Weight</div>
+            <div class="scheme-stat-val" id="ese-display">50</div>
+            <input type="number" class="form-input" id="s-ese" value="50" min="0" max="100" style="margin-top:6px;text-align:center;" oninput="updateScheme()">
+          </div>
+          <div class="scheme-stat">
+            <div class="scheme-stat-lbl">Total Marks</div>
+            <div class="scheme-stat-val" id="total-display">100</div>
+            <div style="font-size:11.5px;color:var(--text-muted);margin-top:12px;">Must equal 100%</div>
+          </div>
+        </div>
+
+        <div class="form-grid" style="margin-top:16px;">
+          <div class="form-group">
+            <label class="form-label">Direct Weight (%)</label>
+            <input class="form-input" type="number" id="s-direct-wt" value="80" min="0" max="100">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Indirect Weight (%)</label>
+            <input class="form-input" type="number" id="s-indirect-wt" value="20" min="0" max="100">
+          </div>
+          <div class="form-group">
+            <label class="form-label">CO Target Benchmark (%)</label>
+            <input class="form-input" type="number" id="s-co-thresh" value="60" min="0" max="100">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Level 1 Threshold (%)</label>
+            <input class="form-input" type="number" id="s-lvl1" value="65">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Level 2 Threshold (%)</label>
+            <input class="form-input" type="number" id="s-lvl2" value="75">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Level 3 Threshold (%)</label>
+            <input class="form-input" type="number" id="s-lvl3" value="85">
+          </div>
+        </div>
+      </div>
+
+      <!-- Teaching Philosophy Card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span data-icon="sparkles"></span><span>Teaching Philosophy & Pedagogical Strategy</span></div>
+          <button class="btn btn-secondary btn-sm" onclick="autoDraftPhilosophy()">
+            <span data-icon="sparkles"></span><span>AI Auto-Draft</span>
+          </button>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <textarea class="form-textarea" id="s-philosophy" rows="4" placeholder="Describe your instructional delivery methods, lab-integrated teaching, and student-centric pedagogy…"></textarea>
+          <div class="form-help">This narrative is incorporated directly into the NBA Self-Assessment Report (SAR) Course File.</div>
+        </div>
+      </div>
+
+      <!-- Internal Assessment Question Blueprint -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span data-icon="paper"></span><span>Internal Assessment (IA) Blueprint</span></div>
+          <div style="display:flex;gap:8px;">
+            <select id="ia-assess-no" class="form-select" style="width:110px;" onchange="loadIATable()">
+              <option value="1">IA-1</option>
+              <option value="2">IA-2</option>
+            </select>
+            <button class="btn btn-secondary btn-sm" onclick="addIARow()">
+              <span data-icon="plus"></span><span>Add Question</span>
+            </button>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table">
             <thead>
               <tr>
-                <th>Q No.</th>
+                <th style="width:50px;">Q#</th>
                 <th>Question Description</th>
-                <th>Blooms Level</th>
-                <th>CO Mapping</th>
-                <th>Max Marks</th>
-                <th></th>
+                <th style="width:120px;">Bloom's Level</th>
+                <th style="width:100px;">Target CO</th>
+                <th style="width:90px;">Max Marks</th>
+                <th style="width:60px;">Action</th>
               </tr>
             </thead>
             <tbody id="ia-tbody"></tbody>
           </table>
         </div>
-        <button class="add-row-btn" onclick="addIARow()">➕ Add Question</button>
+      </div>
 
-        <hr class="divider">
-
-        <div class="section-card-title" style="padding-top:0;margin-top:0">📝 MSE – Question Structure</div>
-        <div class="ia-table-wrap">
-          <table id="mse-table">
+      <!-- Mid Semester Exam (MSE) Blueprint -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span data-icon="paper"></span><span>Mid-Semester Exam (MSE) Blueprint</span></div>
+          <button class="btn btn-secondary btn-sm" onclick="addMSERow()">
+            <span data-icon="plus"></span><span>Add Question</span>
+          </button>
+        </div>
+        <div class="table-responsive">
+          <table class="table">
             <thead>
               <tr>
-                <th>Q No.</th>
+                <th style="width:50px;">Q#</th>
                 <th>Question Description</th>
-                <th>Blooms Level</th>
-                <th>CO Mapping</th>
-                <th>Max Marks</th>
-                <th></th>
+                <th style="width:120px;">Bloom's Level</th>
+                <th style="width:100px;">Target CO</th>
+                <th style="width:90px;">Max Marks</th>
+                <th style="width:60px;">Action</th>
               </tr>
             </thead>
             <tbody id="mse-tbody"></tbody>
           </table>
         </div>
-        <button class="add-row-btn" onclick="addMSERow()">➕ Add Question</button>
       </div>
 
-      <!-- Save Button -->
-      <div style="display:flex;justify-content:flex-end;gap:var(--sp-md);padding-top:var(--sp-md);">
-        <a href="courses.html" class="btn btn-secondary">Cancel</a>
-        <button class="btn btn-primary btn-lg" onclick="saveAll()">💾 Save All Changes</button>
+      <!-- Action Footer -->
+      <div style="display:flex;justify-content:flex-end;gap:12px;margin-bottom:32px;">
+        <a href="courses.html" class="btn btn-secondary">Discard Changes</a>
+        <button class="btn btn-primary" onclick="saveAll()">
+          <span data-icon="check"></span><span>Save All Changes</span>
+        </button>
       </div>
 
     </div>
   </main>
 </div>
 
-<div id="toast-container"></div>
-<script src="../scripts/data.js?v=101"></script>
-<script src="../scripts/api.js?v=101"></script>
-<script src="../scripts/auth.js?v=3"></script>
-<script src="../scripts/ai-mock.js?v=2"></script>
+<script src="../scripts/icons.js"></script>
+<script src="../scripts/data.js"></script>
+<script src="../scripts/api.js"></script>
+<script src="../scripts/auth.js"></script>
+<script src="../scripts/ai-mock.js"></script>
 <script src="../scripts/attainment.js"></script>
 <script src="../scripts/utils.js"></script>
+<script src="../scripts/ai-chat.js"></script>
 <script>
 (async () => {
   await (window._apiReady || Promise.resolve());
   const user = Auth.requireAuth(['faculty', 'hod']);
   if (!user) throw new Error('Not authorized');
-  Auth.populateSidebar(user);
 
   let currentCourse = null;
   let courseList    = [];
 
   loadCourseSelector();
+  renderAllIcons();
 
   function loadCourseSelector() {
     courseList = DB.courses.byFaculty(user.id);
     const sel  = document.getElementById('course-select');
     sel.innerHTML = courseList.map(c => `<option value="${c.id}">${c.name} (${c.code})</option>`).join('');
 
-    // Default to stored selection or first
     const stored = sessionStorage.getItem('selected_course_id');
     const defaultId = (stored && courseList.find(c => c.id === stored)) ? stored : courseList[0]?.id;
     if (defaultId) {
@@ -301,39 +355,63 @@
     const dept = DB.departments.byId(currentCourse.deptId);
 
     document.getElementById('breadcrumb-course').textContent = currentCourse.name;
-    document.getElementById('course-status-badge').textContent = currentCourse.status || 'active';
-    document.getElementById('course-status-badge').className = `badge ${(currentCourse.status||'active')==='active' ? 'badge-success' : 'badge-muted'}`;
+    document.getElementById('course-status-badge').textContent = currentCourse.status || 'Active';
+    document.getElementById('course-status-badge').className = `badge ${(currentCourse.status||'active')==='active' ? 'badge-success' : 'badge-neutral'}`;
     document.getElementById('course-dept-label').textContent = dept ? dept.name : '';
 
-    // Populate Additional Details
+    // Basic Info
+    document.getElementById('s-code').value      = currentCourse.code  || '';
+    document.getElementById('s-short').value     = currentCourse.shortName || '';
+    document.getElementById('s-name').value      = currentCourse.name  || '';
+    document.getElementById('s-year').value      = currentCourse.year  || '2025-26';
+    document.getElementById('s-class').value     = currentCourse.class || '';
+    document.getElementById('s-div').value       = currentCourse.division || '';
+    document.getElementById('s-batch').value     = currentCourse.batch || '';
+    document.getElementById('s-champ').value     = currentCourse.champion || '';
     document.getElementById('s-champ-date').value = currentCourse.champDate || '';
     document.getElementById('s-lpw').value       = currentCourse.lecturesPerWeek || 3;
+    document.getElementById('s-status').value    = currentCourse.status || 'active';
     document.getElementById('s-philosophy').value = currentCourse.teachingPhilosophy || '';
+    document.getElementById('s-sem').value       = currentCourse.semester || 'V';
 
-    // Exam Scheme (Display only)
+    // Exam Scheme
     const es = currentCourse.examScheme || { ia:30, mse:20, ese:50 };
-    const ia = es.ia || 30;
-    const mse = es.mse || 20;
-    const ese = es.ese || 50;
+    document.getElementById('s-ia').value  = es.ia;
+    document.getElementById('s-mse').value = es.mse;
+    document.getElementById('s-ese').value = es.ese;
+    updateScheme();
+
+    // Weights
+    document.getElementById('s-direct-wt').value   = currentCourse.directWeight   || 80;
+    document.getElementById('s-indirect-wt').value = currentCourse.indirectWeight || 20;
+
+    // Thresholds
+    const lvls = currentCourse.attainmentLevels || { 1:65, 2:75, 3:85 };
+    document.getElementById('s-co-thresh').value = currentCourse.coThreshold || 60;
+    document.getElementById('s-lvl1').value = lvls[1] || 65;
+    document.getElementById('s-lvl2').value = lvls[2] || 75;
+    document.getElementById('s-lvl3').value = lvls[3] || 85;
+
+    // Tables
+    loadIATable();
+    loadMSETable();
+    renderAllIcons();
+  }
+
+  function updateScheme() {
+    const ia  = parseInt(document.getElementById('s-ia').value)  || 0;
+    const mse = parseInt(document.getElementById('s-mse').value) || 0;
+    const ese = parseInt(document.getElementById('s-ese').value) || 0;
     const tot = ia + mse + ese;
     document.getElementById('ia-display').textContent  = ia;
     document.getElementById('mse-display').textContent = mse;
     document.getElementById('ese-display').textContent = ese;
     document.getElementById('total-display').textContent = tot;
     const badge = document.getElementById('marks-total-badge');
-    badge.textContent = `Total: ${tot}`;
-    badge.style.background = tot === 100 ? '' : 'var(--danger)';
-
-    // IA Table
-    loadIATable();
-    loadMSETable();
+    badge.textContent = `Total: ${tot}%`;
+    badge.className = tot === 100 ? 'badge badge-primary' : 'badge badge-danger';
   }
 
-  function updateScheme() {
-    // Left empty since it was removed
-  }
-
-  /* ── IA Table ── */
   function loadIATable() {
     if (!currentCourse) return;
     const aNo     = parseInt(document.getElementById('ia-assess-no').value) || 1;
@@ -358,52 +436,40 @@
     tbody.innerHTML = qs.map((q, i) => `
       <tr data-idx="${i}">
         <td>${i + 1}</td>
-        <td><input value="${q.desc||''}" placeholder="Question description…" onchange="updateQField('${type}',${i},'desc',this.value)"></td>
+        <td><input class="form-input" style="padding:4px 8px;font-size:13px;" value="${q.desc||''}" placeholder="Question description…"></td>
         <td>
-          <select style="background:var(--surface);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:4px 8px;font-size:13px" onchange="updateQField('${type}',${i},'bloomsLevel',this.value)">
-            ${['L3','L4','L5','L6'].map(l => `<option ${q.bloomsLevel===l?'selected':''}>${l}</option>`).join('')}
+          <select class="form-select" style="padding:4px 8px;font-size:12.5px;">
+            ${['L1','L2','L3','L4','L5','L6'].map(l => `<option ${q.bloomsLevel===l?'selected':''}>${l}</option>`).join('')}
           </select>
         </td>
         <td>
-          <select style="background:var(--surface);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:4px 8px;font-size:13px" onchange="updateQField('${type}',${i},'coNo',parseInt(this.value))">
+          <select class="form-select" style="padding:4px 8px;font-size:12.5px;">
             ${coOptions.replace(`value="${q.coNo}"`, `value="${q.coNo}" selected`)}
           </select>
         </td>
-        <td><input type="number" min="1" max="50" value="${q.maxMarks||5}" style="width:60px" onchange="updateQField('${type}',${i},'maxMarks',parseInt(this.value))"></td>
-        <td><button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="removeQRow('${type}',${i})">🗑️</button></td>
-      </tr>`).join('') || `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px">No questions yet. Click "Add Question" below.</td></tr>`;
-  }
-
-  function getQStruct(type) {
-    if (!currentCourse) return [];
-    const aNo  = type === 'ia' ? (parseInt(document.getElementById('ia-assess-no').value) || 1) : 1;
-    const all  = DB.config.getIAQuestions(currentCourse.id, type);
-    const found = all.find(s => s.assessmentNo === aNo);
-    return found ? found.questions : [];
-  }
-
-  function updateQField(type, idx, field, val) {
-    // We update on save only
+        <td><input type="number" class="form-input" min="1" max="50" value="${q.maxMarks||5}" style="padding:4px 6px;text-align:center;"></td>
+        <td><button class="btn btn-danger btn-sm btn-icon" onclick="removeQRow('${type}',${i})"><span data-icon="trash"></span></button></td>
+      </tr>`).join('') || `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:16px;">No questions defined yet. Click "Add Question".</td></tr>`;
+    renderAllIcons(tbody);
   }
 
   function addIARow() {
-    const aNo    = parseInt(document.getElementById('ia-assess-no').value) || 1;
-    const cos    = DB.cos.byCourse(currentCourse.id).filter(c => c.text);
-    const tbody  = document.getElementById('ia-tbody');
-    const rows   = tbody.querySelectorAll('tr[data-idx]').length;
+    const cos = DB.cos.byCourse(currentCourse.id).filter(c => c.text);
+    const tbody = document.getElementById('ia-tbody');
+    const rows  = tbody.querySelectorAll('tr[data-idx]').length;
     const coOptions = cos.map(c => `<option value="${c.no}">CO${c.no}</option>`).join('');
     const newRow = document.createElement('tr');
     newRow.dataset.idx = rows;
-    newRow.dataset.type = 'ia';
     newRow.innerHTML = `
       <td>${rows + 1}</td>
-      <td><input placeholder="Question description…"></td>
-      <td><select style="background:var(--surface);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:4px 8px;font-size:13px">${['L3','L4','L5','L6'].map(l=>`<option>${l}</option>`).join('')}</select></td>
-      <td><select style="background:var(--surface);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:4px 8px;font-size:13px">${coOptions}</select></td>
-      <td><input type="number" min="1" max="50" value="5" style="width:60px"></td>
-      <td><button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="this.closest('tr').remove();renumberRows('ia-tbody')">🗑️</button></td>`;
+      <td><input class="form-input" style="padding:4px 8px;font-size:13px;" placeholder="Question description…"></td>
+      <td><select class="form-select" style="padding:4px 8px;font-size:12.5px;">${['L1','L2','L3','L4','L5','L6'].map(l=>`<option>${l}</option>`).join('')}</select></td>
+      <td><select class="form-select" style="padding:4px 8px;font-size:12.5px;">${coOptions}</select></td>
+      <td><input type="number" class="form-input" min="1" max="50" value="5" style="padding:4px 6px;text-align:center;"></td>
+      <td><button class="btn btn-danger btn-sm btn-icon" onclick="this.closest('tr').remove();renumberRows('ia-tbody')"><span data-icon="trash"></span></button></td>`;
     if (tbody.querySelector('td[colspan]')) tbody.innerHTML = '';
     tbody.appendChild(newRow);
+    renderAllIcons(newRow);
   }
 
   function addMSERow() {
@@ -413,16 +479,16 @@
     const coOptions = cos.map(c => `<option value="${c.no}">CO${c.no}</option>`).join('');
     const newRow = document.createElement('tr');
     newRow.dataset.idx = rows;
-    newRow.dataset.type = 'mse';
     newRow.innerHTML = `
       <td>${rows + 1}</td>
-      <td><input placeholder="Question description…"></td>
-      <td><select style="background:var(--surface);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:4px 8px;font-size:13px">${['L3','L4','L5','L6'].map(l=>`<option>${l}</option>`).join('')}</select></td>
-      <td><select style="background:var(--surface);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:4px 8px;font-size:13px">${coOptions}</select></td>
-      <td><input type="number" min="1" max="50" value="5" style="width:60px"></td>
-      <td><button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="this.closest('tr').remove();renumberRows('mse-tbody')">🗑️</button></td>`;
+      <td><input class="form-input" style="padding:4px 8px;font-size:13px;" placeholder="Question description…"></td>
+      <td><select class="form-select" style="padding:4px 8px;font-size:12.5px;">${['L1','L2','L3','L4','L5','L6'].map(l=>`<option>${l}</option>`).join('')}</select></td>
+      <td><select class="form-select" style="padding:4px 8px;font-size:12.5px;">${coOptions}</select></td>
+      <td><input type="number" class="form-input" min="1" max="50" value="5" style="padding:4px 6px;text-align:center;"></td>
+      <td><button class="btn btn-danger btn-sm btn-icon" onclick="this.closest('tr').remove();renumberRows('mse-tbody')"><span data-icon="trash"></span></button></td>`;
     if (tbody.querySelector('td[colspan]')) tbody.innerHTML = '';
     tbody.appendChild(newRow);
+    renderAllIcons(newRow);
   }
 
   function removeQRow(type, idx) {
@@ -458,17 +524,39 @@
     if (!currentCourse) { Toast.error('No course selected.'); return; }
     const cid = currentCourse.id;
 
-    // Build updated course object
+    const ia  = parseInt(document.getElementById('s-ia').value)  || 30;
+    const mse = parseInt(document.getElementById('s-mse').value) || 20;
+    const ese = parseInt(document.getElementById('s-ese').value) || 50;
+
     const updated = {
       ...currentCourse,
+      code             : document.getElementById('s-code').value.trim(),
+      shortName        : document.getElementById('s-short').value.trim(),
+      name             : document.getElementById('s-name').value.trim(),
+      semester         : document.getElementById('s-sem').value,
+      year             : document.getElementById('s-year').value.trim(),
+      class            : document.getElementById('s-class').value.trim(),
+      division         : document.getElementById('s-div').value.trim(),
+      batch            : document.getElementById('s-batch').value.trim(),
+      champion         : document.getElementById('s-champ').value.trim(),
       champDate        : document.getElementById('s-champ-date').value,
       lecturesPerWeek  : parseInt(document.getElementById('s-lpw').value) || 3,
-      teachingPhilosophy: document.getElementById('s-philosophy').value.trim()
+      status           : document.getElementById('s-status').value,
+      teachingPhilosophy: document.getElementById('s-philosophy').value.trim(),
+      examScheme       : { ia, mse, ese },
+      coThreshold      : parseInt(document.getElementById('s-co-thresh').value) || 60,
+      directWeight     : parseInt(document.getElementById('s-direct-wt').value) || 80,
+      indirectWeight   : parseInt(document.getElementById('s-indirect-wt').value) || 20,
+      attainmentLevels : {
+        1: parseInt(document.getElementById('s-lvl1').value) || 65,
+        2: parseInt(document.getElementById('s-lvl2').value) || 75,
+        3: parseInt(document.getElementById('s-lvl3').value) || 85,
+      },
     };
 
+    if (!updated.name || !updated.code) { Toast.error('Course Code and Name are required.'); return; }
     DB.courses.update(updated);
 
-    // Save IA question structure
     const aNo    = parseInt(document.getElementById('ia-assess-no').value) || 1;
     const iaRows = collectQRows('ia-tbody');
     const mseRows = collectQRows('mse-tbody');
@@ -481,7 +569,7 @@
       DB.config.saveIAQuestions(cid, 'mse', [{ courseId: cid, assessmentType: 'mse', assessmentNo: 1, questions: mseRows }]);
     }
 
-    Toast.success('All changes saved successfully!');
+    Toast.success('Course configuration saved.');
     currentCourse = updated;
   }
 
@@ -493,7 +581,7 @@
     
     const btn = document.querySelector('button[onclick="autoDraftPhilosophy()"]');
     const originalText = btn.innerHTML;
-    btn.innerHTML = '⏳ Generating...';
+    btn.innerHTML = 'Drafting…';
     btn.disabled = true;
 
     try {
@@ -504,21 +592,24 @@
         deptMission: dept ? dept.mission : ''
       });
       document.getElementById('s-philosophy').value = philosophy;
-      Toast.success('Teaching philosophy drafted! Please review and save.');
+      Toast.success('Teaching philosophy generated.');
     } catch (err) {
       Toast.error(err.message || 'Failed to generate philosophy');
     } finally {
       btn.innerHTML = originalText;
       btn.disabled = false;
+      renderAllIcons(btn);
     }
   }
 
-  // Auto-exposed: onclick handlers need to be on window
-  window.addIARow = addIARow;
-  window.addMSERow = addMSERow;
+  window.switchCourse = switchCourse;
+  window.updateScheme = updateScheme;
+  window.loadIATable  = loadIATable;
+  window.addIARow     = addIARow;
+  window.addMSERow    = addMSERow;
+  window.removeQRow   = removeQRow;
+  window.saveAll      = saveAll;
   window.autoDraftPhilosophy = autoDraftPhilosophy;
-  window.removeQRow = removeQRow;
-  window.saveAll = saveAll;
 })();
 </script>
 </body>

@@ -3,115 +3,42 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Auto-Grading | OBE System – MITAOE</title>
+  <title>AI Auto-Grading Engine | OBE System – MITAOE</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../styles/main.css?v=6">
-  <link rel="stylesheet" href="../styles/components.css?v=6">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles/main.css">
+  <link rel="stylesheet" href="../styles/components.css">
   <style>
-    /* ── Page-specific styles ── */
-    .grade-result { display: none; margin-top: 24px; }
-
-    /* Score Hero */
-    .score-hero {
-      background: linear-gradient(135deg, #1e3a5f 0%, #0f2044 100%);
-      border-radius: 16px; padding: 32px; text-align: center;
-      color: white; margin-bottom: 24px; position: relative; overflow: hidden;
+    .auto-grade-layout {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
     }
-    .score-hero::before {
-      content: ''; position: absolute; inset: 0;
-      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    @media (max-width: 960px) {
+      .auto-grade-layout { grid-template-columns: 1fr; }
     }
-    .score-ring-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px; }
-    .score-ring-svg { transform: rotate(-90deg); }
-    .score-ring-bg { fill: none; stroke: rgba(255,255,255,0.15); stroke-width: 8; }
-    .score-ring-fill { fill: none; stroke: #60a5fa; stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1); }
-    .score-ring-text { position: absolute; text-align: center; }
-    .score-ring-number { font-size: 32px; font-weight: 800; color: white; display: block; line-height: 1; }
-    .score-ring-max { font-size: 14px; color: rgba(255,255,255,0.6); }
-    .grade-badge {
-      display: inline-block; padding: 4px 20px; border-radius: 999px;
-      font-size: 22px; font-weight: 800; background: rgba(255,255,255,0.15);
-      color: white; letter-spacing: 2px; margin-bottom: 8px;
+    .score-hero-flat {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-md); padding: 24px; text-align: center; margin-bottom: 16px;
     }
-    .score-meta { display: flex; justify-content: center; gap: 32px; margin-top: 16px; flex-wrap: wrap; }
-    .score-meta-item { text-align: center; }
-    .score-meta-value { font-size: 20px; font-weight: 700; color: white; }
-    .score-meta-label { font-size: 11px; color: rgba(255,255,255,0.55); text-transform: uppercase; letter-spacing: 1px; }
+    .score-number { font-size: 40px; font-weight: 800; color: var(--primary); line-height: 1; }
+    .score-max { font-size: 16px; color: var(--text-secondary); font-weight: 600; }
 
-    /* Summary cards row */
-    .summary-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
-    .summary-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
-    .summary-card h5 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 8px; }
-    .summary-card p { font-size: 14px; color: var(--text-primary); line-height: 1.6; }
+    .summary-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .summary-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); padding: 14px;
+    }
+    .summary-card.strength { border-left: 3px solid var(--success); }
+    .summary-card.weakness { border-left: 3px solid var(--danger); }
 
-    /* Concepts missed */
-    .concepts-missed { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px; padding: 16px; margin-bottom: 24px; }
-    .concepts-missed h5 { font-size: 12px; font-weight: 700; color: #c2410c; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
-    .concept-tag { display: inline-block; background: #fff; border: 1px solid #fed7aa; color: #9a3412; border-radius: 6px; padding: 4px 10px; font-size: 12px; margin: 3px 3px 3px 0; font-weight: 500; }
-
-    /* Rubric items */
-    .rubric-section h4 { font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
     .rubric-card {
-      border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
-      margin-bottom: 12px; background: white;
+      border: 1px solid var(--border); border-radius: var(--r-md); overflow: hidden;
+      margin-bottom: 8px; background: var(--surface);
     }
     .rubric-card-header {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 16px; background: var(--surface-2); cursor: pointer;
-      user-select: none;
+      padding: 10px 14px; background: var(--surface-2); cursor: pointer;
     }
-    .rubric-card-header:hover { background: var(--surface-1); }
-    .rubric-name { font-weight: 600; font-size: 14px; color: var(--text-primary); flex: 1; }
-    .rubric-score-pill {
-      display: flex; align-items: center; gap: 8px;
-    }
-    .rubric-score-bar-wrap { width: 80px; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
-    .rubric-score-bar { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
-    .rubric-score-text { font-weight: 800; font-size: 14px; white-space: nowrap; }
-    .rubric-chevron { color: var(--text-secondary); transition: transform 0.2s; font-size: 12px; margin-left: 8px; }
-    .rubric-card.open .rubric-chevron { transform: rotate(180deg); }
-    .rubric-card-body { padding: 16px; display: none; border-top: 1px solid var(--border); }
+    .rubric-card-body { padding: 14px; display: none; border-top: 1px solid var(--border); }
     .rubric-card.open .rubric-card-body { display: block; }
-    .rubric-detail-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-    .rubric-detail-box { background: var(--surface-2); border-radius: 8px; padding: 10px 12px; }
-    .rubric-detail-box label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); display: block; margin-bottom: 4px; }
-    .rubric-detail-box p { font-size: 13px; color: var(--text-primary); line-height: 1.5; margin: 0; }
-    .strength-box { background: #f0fdf4; border-left: 3px solid #22c55e; }
-    .weakness-box { background: #fef2f2; border-left: 3px solid #ef4444; }
-    .improvement-box { background: #eff6ff; border-left: 3px solid #3b82f6; }
-    .justification-box { background: var(--surface-2); border-left: 3px solid #8b5cf6; }
-
-    /* Overall feedback */
-    .feedback-section { background: var(--surface-2); border-radius: 12px; padding: 20px; margin-bottom: 24px; }
-    .feedback-section h4 { font-size: 13px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
-    .feedback-section p { font-size: 14px; color: var(--text-primary); line-height: 1.7; margin: 0; }
-
-    /* Exam readiness bar */
-    .readiness-wrap { margin-top: 16px; }
-    .readiness-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-    .readiness-label span:first-child { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
-    .readiness-label span:last-child { font-size: 14px; font-weight: 800; color: var(--primary); }
-    .readiness-bar-bg { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
-    .readiness-bar-fill { height: 100%; border-radius: 4px; transition: width 1.5s ease; }
-
-    /* Print button */
-    .action-row { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
-    @media print { .sidebar, .topbar, .action-row, #grade-form { display: none; } .grade-result { display: block !important; } }
-    
-    /* Form improvements */
-    .step-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--primary); margin-bottom: 4px; display: block; }
-    .file-drop-zone {
-      border: 2px dashed var(--border); border-radius: 10px; padding: 24px;
-      text-align: center; cursor: pointer; transition: all 0.2s;
-      background: var(--surface-2);
-    }
-    .file-drop-zone:hover, .file-drop-zone.dragover { border-color: var(--primary); background: var(--primary-light); }
-    .file-drop-zone input[type=file] { display: none; }
-    .file-drop-zone .drop-icon { font-size: 32px; margin-bottom: 8px; }
-    .file-drop-zone .drop-text { font-size: 14px; color: var(--text-secondary); }
-    .file-drop-zone .drop-text strong { color: var(--primary); }
-    .file-selected-name { font-size: 13px; font-weight: 600; color: var(--primary); margin-top: 8px; }
   </style>
 </head>
 <body>
@@ -125,29 +52,31 @@
     </div>
     <nav class="sidebar-nav">
       <p class="nav-section-label">Overview</p>
-      <a class="nav-item" href="dashboard.html">📊 Dashboard</a>
-      <a class="nav-item" href="courses.html">📚 My Courses</a>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon" data-icon="dashboard"></span><span>Dashboard</span></a>
+      <a class="nav-item" href="courses.html"><span class="nav-icon" data-icon="courses"></span><span>My Courses</span></a>
+      
       <p class="nav-section-label">Course Management</p>
-      <a class="nav-item" href="syllabus.html">📖 Syllabus Setup</a>
-      <a class="nav-item" href="outcomes.html">🎯 CO & PO Setup</a>
-      <a class="nav-item" href="co-po-map.html">🗺️ CO-PO Mapping</a>
-      <a class="nav-item" href="6a-matrix.html">📋 6A Indicator Mapping</a>
-      <a class="nav-item" href="students.html">👥 Students</a>
+      <a class="nav-item" href="syllabus.html"><span class="nav-icon" data-icon="syllabus"></span><span>Syllabus Setup</span></a>
+      <a class="nav-item" href="outcomes.html"><span class="nav-icon" data-icon="outcomes"></span><span>CO & PO Setup</span></a>
+      <a class="nav-item" href="co-po-map.html"><span class="nav-icon" data-icon="map"></span><span>CO-PO Mapping</span></a>
+      <a class="nav-item" href="6a-matrix.html"><span class="nav-icon" data-icon="matrix"></span><span>6A Indicator Matrix</span></a>
+      <a class="nav-item" href="students.html"><span class="nav-icon" data-icon="students"></span><span>Students</span></a>
+      
       <p class="nav-section-label">Assessment</p>
-      <a class="nav-item" href="marks.html">📝 Marks Entry</a>
-      <a class="nav-item" href="attainment.html">📈 Attainment</a>
-      <a class="nav-item" href="assignments.html">🤖 Assignments & AI</a>
-      <a class="nav-item active" href="auto-grade.html">✅ Auto-Grading</a>
-      <a class="nav-item" href="question-paper.html">📄 Question Paper</a>
-      <a class="nav-item" href="reports.html">📄 Reports & Export</a>
+      <a class="nav-item" href="marks.html"><span class="nav-icon" data-icon="marks"></span><span>Marks Entry</span></a>
+      <a class="nav-item" href="attainment.html"><span class="nav-icon" data-icon="attainment"></span><span>Attainment</span></a>
+      <a class="nav-item" href="assignments.html"><span class="nav-icon" data-icon="assignments"></span><span>Assignments & AI</span></a>
+      <a class="nav-item active" href="auto-grade.html"><span class="nav-icon" data-icon="grade"></span><span>Auto-Grading</span></a>
+      <a class="nav-item" href="question-paper.html"><span class="nav-icon" data-icon="paper"></span><span>Question Paper</span></a>
+      <a class="nav-item" href="reports.html"><span class="nav-icon" data-icon="reports"></span><span>Reports & Export</span></a>
     </nav>
     <div class="sidebar-footer">
-      <div class="user-card">
+      <div class="user-card" onclick="Auth.logout()">
         <div class="user-avatar"></div>
         <div><div class="user-name"></div><div class="user-role"></div></div>
       </div>
-      <button class="btn btn-ghost btn-sm w-full" data-action="logout" style="margin-top:8px">
-        🚪 Logout
+      <button class="btn btn-secondary btn-sm w-full" data-action="logout" style="margin-top:8px; width:100%;">
+        <span data-icon="logout"></span><span>Sign Out</span>
       </button>
     </div>
   </aside>
@@ -156,181 +85,121 @@
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
-        <h1 class="topbar-title">🎯 AI Auto-Grading Engine</h1>
-        <div class="topbar-breadcrumb">Assessment <span>›</span> AI Auto-Grading</div>
-      </div>
-      <div class="topbar-right">
-        <span class="badge badge-primary" style="font-size:12px; padding:6px 14px;">⚡ Powered by Gemini 2.5 Flash</span>
+        <h1 class="topbar-title">AI Auto-Grading & Rubric Evaluation</h1>
+        <div class="topbar-breadcrumb">Assessment <span>›</span> Automated Descriptive Grading</div>
       </div>
     </header>
 
     <div class="page-content">
-      <div class="grid-2" style="gap:24px; align-items: start;">
+      <div class="auto-grade-layout">
 
-        <!-- LEFT: Input Form -->
-        <div class="card" style="position: sticky; top: 24px;">
+        <!-- LEFT: Input Configuration -->
+        <div class="card">
           <div class="card-header">
             <div>
-              <h3 class="card-title">Grade a Submission</h3>
-              <p class="card-sub">5-stage AI pipeline · Evidence-based scoring · Detailed feedback</p>
+              <div class="card-title"><span data-icon="grade"></span><span>Submission Evaluation Workbench</span></div>
+              <div class="card-subtitle">Evaluate descriptive student answers against analytical rubrics</div>
             </div>
           </div>
-          <div class="card-body">
-            <form id="grade-form">
+          <form id="grade-form">
+            <!-- Step 1: Course -->
+            <div class="form-group">
+              <label class="form-label">Active Course</label>
+              <select class="form-select" id="course-select"></select>
+            </div>
 
-              <!-- Step 1: Course & Assignment -->
-              <div class="mb-md">
-                <span class="step-label">Step 1 — Select Course & Assignment</span>
-                <div class="grid-2" style="gap: 12px;">
-                  <div class="form-group" style="margin-bottom: 0;">
-                    <label class="form-label">Course</label>
-                    <select class="form-control" id="course-select">
-                      <option value="">-- Choose Course --</option>
-                    </select>
-                  </div>
-                  <div class="form-group" style="margin-bottom: 0;">
-                    <label class="form-label">Assignment</label>
-                    <select class="form-control" id="assignment-select">
-                      <option value="">-- Choose Assignment --</option>
-                      <option value="manual">-- Custom / Manual --</option>
-                    </select>
-                  </div>
-                </div>
+            <!-- Step 2: Question -->
+            <div class="form-group">
+              <label class="form-label">Question Statement / Problem Prompt</label>
+              <textarea class="form-textarea" id="manual-question" rows="3" placeholder="Enter the exact question prompt given to students…"></textarea>
+            </div>
+
+            <!-- Step 3: Answer -->
+            <div class="form-group">
+              <label class="form-label">Student Answer Text / Submission</label>
+              <div class="drop-zone" id="drop-zone" style="margin-bottom:8px;padding:16px;">
+                <input type="file" id="answer-file" accept=".pdf,.docx,.txt" style="display:none;">
+                <span data-icon="upload" data-icon-size="24"></span>
+                <p style="font-size:12px;margin:4px 0 0;">Click to upload PDF / DOCX or drag file here</p>
+                <div id="file-selected-name" style="font-weight:700;font-size:11px;color:var(--primary);margin-top:4px;display:none;"></div>
               </div>
+              <textarea class="form-textarea" id="answer-text" rows="4" placeholder="Or paste the student's answer text directly…"></textarea>
+            </div>
 
-              <!-- Step 2: Question -->
-              <div class="form-group mb-md">
-                <span class="step-label">Step 2 — Enter the Question</span>
-                <label class="form-label">Assignment Question / Topic Asked</label>
-                <textarea class="form-control" id="manual-question" rows="3" placeholder="Enter the exact question asked to the student. The more specific you are, the more accurate the grading will be..."></textarea>
+            <!-- Step 4: Rubrics -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div class="form-group">
+                <label class="form-label">Maximum Score</label>
+                <input type="number" class="form-input" id="max-marks" value="10" min="1" max="100">
               </div>
-
-              <!-- Step 3: Student Answer -->
-              <div class="mb-md">
-                <span class="step-label">Step 3 — Upload Student's Answer</span>
-                <div class="file-drop-zone" id="drop-zone">
-                  <input type="file" id="answer-file" accept=".pdf,.docx,.txt">
-                  <div class="drop-icon">📎</div>
-                  <div class="drop-text">
-                    <strong>Click to upload</strong> or drag and drop here<br>
-                    PDF, DOCX, TXT supported
-                  </div>
-                  <div class="file-selected-name" id="file-selected-name" style="display:none;"></div>
-                </div>
-                <div style="display:flex; align-items:center; gap:12px; margin: 12px 0; color:var(--text-secondary); font-size:12px;">
-                  <div style="flex:1; height:1px; background: var(--border);"></div>
-                  OR TYPE / PASTE BELOW
-                  <div style="flex:1; height:1px; background: var(--border);"></div>
-                </div>
-                <textarea class="form-control" id="answer-text" rows="5" placeholder="Paste or type the student's full answer here..."></textarea>
+              <div class="form-group">
+                <label class="form-label">Bloom's Level</label>
+                <select class="form-select" id="blooms-level">
+                  <option value="L1">L1 – Remember</option>
+                  <option value="L2">L2 – Understand</option>
+                  <option value="L3" selected>L3 – Apply</option>
+                  <option value="L4">L4 – Analyze</option>
+                  <option value="L5">L5 – Evaluate</option>
+                  <option value="L6">L6 – Create</option>
+                </select>
               </div>
+            </div>
 
-              <!-- Step 4: Config -->
-              <div class="mb-md">
-                <span class="step-label">Step 4 — Configure Marks & Rubrics</span>
-                <div class="form-group">
-                  <label class="form-label">Maximum Marks</label>
-                  <input type="number" class="form-control" id="max-marks" value="10" min="1" max="100" required style="max-width:200px;">
-                </div>
-                <div class="form-group" style="margin-bottom:0;">
-                  <label class="form-label">Grading Rubrics <small style="color:var(--text-secondary); font-weight:400;">(one criterion per line — marks are split equally)</small></label>
-                  <textarea class="form-control" id="rubrics-text" rows="5" placeholder="E.g.:&#10;Correct identification of the core concept&#10;Accurate application of the formula / method&#10;Logical reasoning and structured arguments&#10;Use of examples or diagrams to support answer&#10;Clarity and conciseness of writing" required></textarea>
-                </div>
-              </div>
+            <div class="form-group">
+              <label class="form-label">Evaluation Rubric Criteria <span style="font-weight:400;color:var(--text-secondary);font-size:11px;">(one per line)</span></label>
+              <textarea class="form-textarea" id="rubrics-text" rows="4" placeholder="Correct technical conceptual definitions&#10;Accurate mathematical derivation / algorithm implementation&#10;Appropriate diagram / architecture schematic&#10;Synthesized conclusion and clarity of reasoning"></textarea>
+            </div>
 
-              <button type="submit" class="btn btn-primary w-full" id="btn-grade" style="padding: 14px; font-size: 16px; font-weight: 700;">
-                <span id="btn-grade-text">🤖 Grade with AI Engine</span>
-              </button>
-            </form>
-          </div>
+            <button type="submit" class="btn btn-primary w-full" id="btn-grade">
+              <span data-icon="sparkles"></span><span id="btn-grade-text">Evaluate with AI Engine</span>
+            </button>
+          </form>
         </div>
 
-        <!-- RIGHT: Results -->
-        <div id="grade-result" class="grade-result">
+        <!-- RIGHT: Results Panel -->
+        <div id="grade-result" style="display:none;">
 
           <!-- Score Hero -->
-          <div class="score-hero" id="score-hero">
-            <div class="score-ring-wrap">
-              <svg class="score-ring-svg" width="140" height="140" viewBox="0 0 140 140">
-                <circle class="score-ring-bg" cx="70" cy="70" r="54"/>
-                <circle class="score-ring-fill" id="score-ring-fill" cx="70" cy="70" r="54"
-                  stroke-dasharray="339.3"
-                  stroke-dashoffset="339.3"/>
-              </svg>
-              <div class="score-ring-text">
-                <span class="score-ring-number" id="final-score">0</span>
-                <span class="score-ring-max">/ <span id="display-max">10</span></span>
-              </div>
-            </div>
+          <div class="score-hero-flat">
+            <div style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;margin-bottom:8px;">Evaluation Score</div>
             <div>
-              <div class="grade-badge" id="grade-badge">—</div>
-              <div style="font-size:15px; opacity:0.75;" id="pct-display">0%</div>
+              <span class="score-number" id="final-score">0</span>
+              <span class="score-max"> / <span id="display-max">10</span></span>
             </div>
-            <div class="score-meta">
-              <div class="score-meta-item">
-                <div class="score-meta-value" id="blooms-display">—</div>
-                <div class="score-meta-label">Bloom's Level</div>
-              </div>
-              <div class="score-meta-item">
-                <div class="score-meta-value" id="readiness-display">—</div>
-                <div class="score-meta-label">Exam Readiness</div>
-              </div>
+            <div style="margin-top:8px;">
+              <span class="badge badge-success" id="grade-badge" style="font-size:13px;padding:4px 12px;">—</span>
+              <span id="pct-display" style="font-size:13px;font-weight:700;color:var(--text-secondary);margin-left:6px;">0%</span>
             </div>
           </div>
 
-          <!-- Action buttons -->
-          <div class="action-row">
-            <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨️ Print Report</button>
-            <button class="btn btn-secondary btn-sm" id="btn-copy-feedback">📋 Copy Feedback</button>
-          </div>
-
-          <!-- Strengths & Weaknesses summary -->
+          <!-- Strengths & Weaknesses -->
           <div class="summary-row">
-            <div class="summary-card" style="border-left: 3px solid #22c55e;">
-              <h5>✅ Overall Strengths</h5>
-              <p id="overall-strengths">—</p>
+            <div class="summary-card strength">
+              <div style="font-size:11px;font-weight:700;color:var(--success);text-transform:uppercase;margin-bottom:4px;">Demonstrated Strengths</div>
+              <p id="overall-strengths" style="font-size:12.5px;color:var(--text-primary);margin:0;line-height:1.4;">—</p>
             </div>
-            <div class="summary-card" style="border-left: 3px solid #ef4444;">
-              <h5>❌ Overall Weaknesses</h5>
-              <p id="overall-weaknesses">—</p>
-            </div>
-          </div>
-
-          <!-- Concepts missed -->
-          <div class="concepts-missed" id="concepts-missed-wrap" style="display:none;">
-            <h5>⚠️ Key Concepts Missed</h5>
-            <div id="concepts-missed-list"></div>
-          </div>
-
-          <!-- Exam Readiness Bar -->
-          <div class="feedback-section">
-            <h4>📊 Exam Readiness Prediction</h4>
-            <div class="readiness-wrap">
-              <div class="readiness-label">
-                <span>Predicted readiness for exam based on this answer</span>
-                <span id="readiness-score-label">0 / 100</span>
-              </div>
-              <div class="readiness-bar-bg">
-                <div class="readiness-bar-fill" id="readiness-bar" style="width:0%;"></div>
-              </div>
+            <div class="summary-card weakness">
+              <div style="font-size:11px;font-weight:700;color:var(--danger);text-transform:uppercase;margin-bottom:4px;">Identified Deficiencies</div>
+              <p id="overall-weaknesses" style="font-size:12.5px;color:var(--text-primary);margin:0;line-height:1.4;">—</p>
             </div>
           </div>
 
-          <!-- Rubric-by-rubric breakdown -->
-          <div class="rubric-section" style="margin-bottom: 24px;">
-            <h4>📋 Rubric-by-Rubric Evaluation</h4>
+          <!-- Rubric Breakdown -->
+          <div class="card" style="margin-bottom:16px;">
+            <div class="card-header">
+              <div class="card-title">Rubric-by-Rubric Score Breakdown</div>
+            </div>
             <div id="feedback-container"></div>
           </div>
 
-          <!-- Overall AI Feedback -->
-          <div class="feedback-section">
-            <h4>💬 AI Examiner's Overall Feedback</h4>
-            <p id="overall-feedback">—</p>
+          <!-- Overall Feedback -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Examiner Summary Feedback</div>
+            </div>
+            <p id="overall-feedback" style="font-size:13px;color:var(--text-primary);line-height:1.6;margin:0;">—</p>
           </div>
 
-          <div style="text-align:center; padding:12px; color:var(--text-secondary); font-size:12px; border-top:1px solid var(--border); margin-top:12px;">
-            Graded by Gemini 2.5 Flash · 5-Stage Validation Pipeline · MITAOE OBE System
-          </div>
         </div>
 
       </div>
@@ -338,9 +207,15 @@
   </main>
 </div>
 
-<script src="../scripts/data.js?v=101"></script>
-<script src="../scripts/api.js?v=101"></script>
-<script src="../scripts/auth.js?v=3"></script>
-<script src="../scripts/auto-grade.js?v=105"></script>
+<script src="../scripts/icons.js"></script>
+<script src="../scripts/data.js"></script>
+<script src="../scripts/api.js"></script>
+<script src="../scripts/auth.js"></script>
+<script src="../scripts/utils.js"></script>
+<script src="../scripts/auto-grade.js"></script>
+<script src="../scripts/ai-chat.js"></script>
+<script>
+  renderAllIcons();
+</script>
 </body>
 </html>

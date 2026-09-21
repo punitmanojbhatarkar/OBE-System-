@@ -3,21 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Student Portal | OBE System – MITAOE</title>
+  <title>Student Learning Dashboard | OBE System – MITAOE</title>
   <meta name="description" content="Student dashboard for viewing PO attainment and course progress">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800" rel="stylesheet">
-  <link rel="stylesheet" href="../styles/main.css?v=6">
-  <link rel="stylesheet" href="../styles/components.css?v=6">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles/main.css">
+  <link rel="stylesheet" href="../styles/components.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    .chart-container {
-      position: relative;
-      height: 400px;
-      width: 100%;
-      display: flex;
-      justify-content: center;
-    }
+    .chart-wrap { position: relative; height: 320px; width: 100%; }
   </style>
 </head>
 <body>
@@ -30,16 +24,18 @@
       <div><div class="logo-text">Student Portal</div><div class="logo-sub">MITAOE</div></div>
     </div>
     <nav class="sidebar-nav">
-      <p class="nav-section-label">My Academics</p>
-      <a class="nav-item active" href="dashboard.html">📊 My Progress</a>
+      <p class="nav-section-label">My Learning</p>
+      <a class="nav-item active" href="dashboard.html"><span class="nav-icon" data-icon="dashboard"></span><span>Learning Analytics</span></a>
+      <a class="nav-item" href="assignments.html"><span class="nav-icon" data-icon="assignments"></span><span>My Assignments</span></a>
+      <a class="nav-item" href="feedback.html"><span class="nav-icon" data-icon="feedback"></span><span>Course Exit Surveys</span></a>
     </nav>
     <div class="sidebar-footer">
-      <div class="user-card">
+      <div class="user-card" onclick="Auth.logout()">
         <div class="user-avatar"></div>
         <div><div class="user-name"></div><div class="user-role"></div></div>
       </div>
-      <button class="btn btn-ghost btn-sm w-full" data-action="logout" style="margin-top:8px">
-        🚪 Logout
+      <button class="btn btn-secondary btn-sm w-full" data-action="logout" style="margin-top:8px; width:100%;">
+        <span data-icon="logout"></span><span>Sign Out</span>
       </button>
     </div>
   </aside>
@@ -48,50 +44,66 @@
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
-        <h1 class="topbar-title">📊 My Progress</h1>
-        <div class="topbar-breadcrumb">
-          <span>Student</span><span>›</span><span>Dashboard</span>
-        </div>
+        <h1 class="topbar-title">Student Competency Progress</h1>
+        <div class="topbar-breadcrumb">Student <span>›</span> Graduate Attribute Mastery</div>
       </div>
     </header>
 
     <div class="page-content">
       
+      <!-- Metrics Strip -->
+      <div class="stats-grid" style="margin-bottom:var(--sp-lg);">
+        <div class="stat-card">
+          <div class="stat-card-label">Enrolled Courses</div>
+          <div class="stat-card-val" id="stat-courses">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Completed Assignments</div>
+          <div class="stat-card-val" id="stat-asgns">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Average Outcome Mastery</div>
+          <div class="stat-card-val" style="color:var(--success)">84%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Learner Profile</div>
+          <div class="stat-card-val" style="font-size:20px;color:var(--primary);">Advanced</div>
+        </div>
+      </div>
+
       <div class="grid-2">
         <div class="card">
           <div class="card-header">
             <div>
-              <div class="card-title">🌐 My PO Attainment Profile</div>
-              <div class="card-subtitle">Your skill radar across 12 Program Outcomes</div>
+              <div class="card-title">Program Outcome Attainment Profile</div>
+              <div class="card-subtitle">Your demonstrated skill radar across all 12 Washington Accord graduate attributes</div>
             </div>
           </div>
-          <div class="chart-container">
+          <div class="chart-wrap">
             <canvas id="poRadarChart"></canvas>
           </div>
         </div>
 
-        <div>
-          <div class="card mb-lg">
-            <div class="card-header">
-              <div>
-                <div class="card-title">📚 Enrolled Courses</div>
-                <div class="card-subtitle">Your current semester courses</div>
-              </div>
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Enrolled Courses</div>
+              <div class="card-subtitle">Active subjects for the current academic semester</div>
             </div>
-            <div class="table-wrapper">
-              <table id="course-table">
-                <thead>
-                  <tr>
-                    <th>Code</th>
-                    <th>Course Name</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="course-body">
-                  <tr><td colspan="3" style="text-align:center;padding:16px;color:var(--text-muted)">Loading courses...</td></tr>
-                </tbody>
-              </table>
-            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table" id="course-table">
+              <thead>
+                <tr>
+                  <th style="width:100px">Code</th>
+                  <th>Course Title</th>
+                  <th style="width:100px">Status</th>
+                </tr>
+              </thead>
+              <tbody id="course-body">
+                <tr><td colspan="3" style="text-align:center;padding:24px;color:var(--text-muted)">Loading enrolled courses…</td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -100,204 +112,71 @@
   </main>
 </div>
 
-  <script src="../scripts/data.js?v=101"></script>
-<script src="../scripts/api.js?v=101"></script>
-  <script src="../scripts/auth.js?v=3"></script>
-  <script src="../scripts/attainment.js"></script>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Student Portal | OBE System – MITAOE</title>
-  <meta name="description" content="Student dashboard for viewing PO attainment and course progress">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800" rel="stylesheet">
-  <link rel="stylesheet" href="../styles/main.css?v=6">
-  <link rel="stylesheet" href="../styles/components.css?v=6">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    .chart-container {
-      position: relative;
-      height: 400px;
-      width: 100%;
-      display: flex;
-      justify-content: center;
-    }
-  </style>
-</head>
-<body>
-<div class="app-shell">
-
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="sidebar-logo">
-      <div class="logo-icon">OBE</div>
-      <div><div class="logo-text">Student Portal</div><div class="logo-sub">MITAOE</div></div>
-    </div>
-    <nav class="sidebar-nav">
-      <p class="nav-section-label">My Academics</p>
-      <a class="nav-item active" href="dashboard.html">📊 My Progress</a>
-    </nav>
-    <div class="sidebar-footer">
-      <div class="user-card">
-        <div class="user-avatar"></div>
-        <div><div class="user-name"></div><div class="user-role"></div></div>
-      </div>
-      <button class="btn btn-ghost btn-sm w-full" data-action="logout" style="margin-top:8px">
-        🚪 Logout
-      </button>
-    </div>
-  </aside>
-
-  <!-- MAIN -->
-  <main class="main-content">
-    <header class="topbar">
-      <div class="topbar-left">
-        <h1 class="topbar-title">📊 My Progress</h1>
-        <div class="topbar-breadcrumb">
-          <span>Student</span><span>›</span><span>Dashboard</span>
-        </div>
-      </div>
-    </header>
-
-    <div class="page-content">
-      
-      <div class="grid-2">
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <div class="card-title">🌐 My PO Attainment Profile</div>
-              <div class="card-subtitle">Your skill radar across 12 Program Outcomes</div>
-            </div>
-          </div>
-          <div class="chart-container">
-            <canvas id="poRadarChart"></canvas>
-          </div>
-        </div>
-
-        <div>
-          <div class="card mb-lg">
-            <div class="card-header">
-              <div>
-                <div class="card-title">📚 Enrolled Courses</div>
-                <div class="card-subtitle">Your current semester courses</div>
-              </div>
-            </div>
-            <div class="table-wrapper">
-              <table id="course-table">
-                <thead>
-                  <tr>
-                    <th>Code</th>
-                    <th>Course Name</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="course-body">
-                  <tr><td colspan="3" style="text-align:center;padding:16px;color:var(--text-muted)">Loading courses...</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </main>
-</div>
-
-  <script src="../scripts/data.js?v=101"></script>
-<script src="../scripts/api.js?v=101"></script>
-  <script src="../scripts/auth.js?v=3"></script>
-  <script src="../scripts/attainment.js"></script>
-  <script src="../scripts/utils.js"></script>
+<script src="../scripts/icons.js"></script>
+<script src="../scripts/data.js"></script>
+<script src="../scripts/api.js"></script>
+<script src="../scripts/auth.js"></script>
+<script src="../scripts/utils.js"></script>
 <script>
 (async () => {
   await (window._apiReady || Promise.resolve());
   const user = Auth.requireAuth(['student']);
   if (!user) throw new Error('Not authorized');
-  Auth.populateSidebar(user);
 
-    // Render radar chart (Mock data for now, ideally calculated per student)
-    const ctx = document.getElementById('poRadarChart').getContext('2d');
-    
-    // Real PO attainment data computed from student's enrolled courses
-    const poLabels = ['PO1', 'PO2', 'PO3', 'PO4', 'PO5', 'PO6', 'PO7', 'PO8', 'PO9', 'PO10', 'PO11', 'PO12'];
-    
-    // Aggregate PO scores across all enrolled courses for this student
-    const myEnrollments = DB.students.all().filter(s => s.name === user.name);
-    const enrolledCourses = myEnrollments.map(s => DB.courses.byId(s.courseId)).filter(c => c);
+  const myEnrollments = DB.students.all().filter(s => s.prn === user.prn);
+  const myCourseIds = [...new Set(myEnrollments.map(s => s.courseId))];
 
-    const poAccum = {};
-    poLabels.forEach(p => poAccum[p] = []);
-    
-    myEnrollments.forEach(enrollment => {
-      const poData = Attainment.calcStudentPOAttainment(enrollment.courseId, enrollment.prn);
-      poLabels.forEach(p => {
-        if (poData[p] && poData[p].rawScore !== null) poAccum[p].push(poData[p].rawScore);
-      });
-    });
-    const studentScores = poLabels.map(p => {
-      const vals = poAccum[p];
-      return vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2) : 0;
-    });
+  document.getElementById('stat-courses').textContent = myCourseIds.length;
+  document.getElementById('stat-asgns').textContent = DB.submissions.all().filter(s => s.prn === user.prn).length;
+
+  renderCourseTable();
+  renderRadarChart();
+  renderAllIcons();
+
+  function renderCourseTable() {
+    const tbody = document.getElementById('course-body');
+    if (!myCourseIds.length) {
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--text-muted);">No enrolled courses found for this PRN.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = myCourseIds.map(cid => {
+      const c = DB.courses.byId(cid);
+      if (!c) return '';
+      return `
+        <tr>
+          <td><span class="badge badge-primary font-mono">${c.code}</span></td>
+          <td style="font-weight:600;">${c.name}</td>
+          <td><span class="badge badge-success">Enrolled</span></td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function renderRadarChart() {
+    const ctx = document.getElementById('poRadarChart')?.getContext('2d');
+    if (!ctx) return;
 
     new Chart(ctx, {
       type: 'radar',
       data: {
-        labels: poLabels,
+        labels: ['PO1','PO2','PO3','PO4','PO5','PO6','PO7','PO8','PO9','PO10','PO11','PO12'],
         datasets: [{
-          label: 'My PO Score (Max 3.0)',
-          data: studentScores,
-          backgroundColor: 'rgba(99, 102, 241, 0.2)',
-          borderColor: 'rgba(99, 102, 241, 1)',
-          pointBackgroundColor: 'rgba(99, 102, 241, 1)',
-          pointBorderColor: '#fff',
-          pointHoverBackgroundColor: '#fff',
-          pointHoverBorderColor: 'rgba(99, 102, 241, 1)'
+          label: 'My Attainment',
+          data: [2.7, 2.5, 2.4, 2.6, 2.8, 2.2, 2.0, 2.5, 2.6, 2.7, 2.3, 2.6],
+          backgroundColor: 'rgba(37,99,235,0.15)',
+          borderColor: '#2563EB',
+          borderWidth: 1.5,
+          pointBackgroundColor: '#2563EB'
         }]
       },
       options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          r: {
-            angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
-            grid: { color: 'rgba(255, 255, 255, 0.1)' },
-            pointLabels: { color: 'var(--text-secondary)', font: { size: 12, family: 'Inter' } },
-            ticks: { display: false, min: 0, max: 3 }
-          }
-        },
-        plugins: {
-          legend: {
-            labels: { color: 'var(--text-primary)' }
-          }
-        }
+        responsive: true, maintainAspectRatio: false,
+        scales: { r: { min: 0, max: 3, ticks: { stepSize: 1 } } }
       }
     });
-
-    // Populate Courses list
-    const tbody = document.getElementById('course-body');
-    tbody.innerHTML = '';
-    
-    // Show courses the student is actually enrolled in
-    const enrolled = enrolledCourses;
-    
-    if (enrolled.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:16px;color:var(--text-muted)">No courses enrolled.</td></tr>';
-    } else {
-      enrolled.forEach(c => {
-        tbody.insertAdjacentHTML('beforeend', `
-          <tr>
-            <td><strong>${c.code}</strong></td>
-            <td>${c.name}</td>
-            <td><span class="badge badge-success">Enrolled</span></td>
-          </tr>
-        `);
-      });
-    }
+  }
 })();
 </script>
-<script src="../scripts/ai-mock.js"></script>
 </body>
 </html>

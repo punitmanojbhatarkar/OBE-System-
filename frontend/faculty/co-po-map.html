@@ -4,16 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
   <title>CO-PO Mapping | OBE System – MITAOE</title>
   <meta name="description" content="Interactive CO-PO Mapping Matrix for course outcomes and program outcomes.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800" rel="stylesheet">
-  <link rel="stylesheet" href="../styles/main.css?v=6">
-  <link rel="stylesheet" href="../styles/components.css?v=6">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles/main.css">
+  <link rel="stylesheet" href="../styles/components.css">
   <style>
-    /* ── CO-PO Matrix Specific Styles ── */
     .matrix-wrapper {
       overflow-x: auto;
       border-radius: var(--r-lg);
@@ -27,248 +24,82 @@
       min-width: 900px;
     }
     .matrix-table th {
-      background: rgba(37,99,235,0.15);
-      padding: 10px 8px;
+      background: var(--surface-2);
+      padding: 8px 6px;
       text-align: center;
       font-weight: 700;
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       color: var(--text-secondary);
-      border-bottom: 1px solid var(--border);
-      border-right: 1px solid var(--border);
+      border: 1px solid var(--border);
       white-space: nowrap;
-      position: sticky;
-      top: 0;
-      z-index: 2;
+      position: sticky; top: 0; z-index: 2;
     }
     .matrix-table th.co-header {
-      text-align: left;
-      min-width: 140px;
-      position: sticky;
-      left: 0;
-      z-index: 3;
-      background: rgba(37,99,235,0.15);
+      text-align: left; min-width: 220px;
+      position: sticky; left: 0; z-index: 3; background: var(--surface-2);
     }
     .matrix-table td {
-      border-bottom: 1px solid var(--border);
-      border-right: 1px solid var(--border);
-      padding: 0;
-      text-align: center;
+      border: 1px solid var(--border);
+      padding: 0; text-align: center;
     }
     .matrix-table td.co-label {
-      padding: 10px 14px;
-      text-align: left;
-      font-weight: 600;
-      font-size: 12px;
-      color: var(--text-primary);
-      background: var(--surface);
-      border-right: 1px solid var(--border);
-      position: sticky;
-      left: 0;
-      z-index: 1;
-      white-space: nowrap;
-      min-width: 140px;
+      padding: 8px 12px; text-align: left; font-weight: 600; font-size: 12.5px;
+      color: var(--text-primary); background: var(--surface);
+      position: sticky; left: 0; z-index: 1; min-width: 220px;
     }
-    .matrix-table td.co-label .co-num {
-      display: inline-block;
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      background: var(--primary);
-      color: #fff;
-      font-size: 11px;
-      font-weight: 700;
-      line-height: 28px;
-      text-align: center;
-      margin-right: 8px;
-      flex-shrink: 0;
-    }
-    .matrix-table tr.avg-row td {
-      background: rgba(37,99,235,0.15);
-      font-weight: 700;
-    }
-    .matrix-table tr.avg-row td.co-label {
-      background: rgba(37,99,235,0.08);
-      color: var(--primary);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      border-right: 1px solid var(--border);
-    }
-
-    /* ── Cell button ── */
     .cell-btn {
-      width: 100%;
-      height: 46px;
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 700;
-      transition: all 0.15s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--text-primary);
+      width: 100%; height: 42px; background: transparent; border: none;
+      cursor: pointer; font-size: 13px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      transition: background var(--t-fast);
     }
-    .cell-btn:hover {
-      filter: brightness(1.3);
-      transform: scale(1.08);
-    }
-    .cell-btn[data-val="0"] { color: var(--text-muted); }
-    .cell-btn[data-val="1"] { background: rgba(245,158,11,0.12); color: #d97706; }
-    .cell-btn[data-val="2"] { background: rgba(249,115,22,0.12); color: #ea580c; }
-    .cell-btn[data-val="3"] { background: rgba(37,99,235,0.12); color: #2563eb; }
+    .cell-btn:hover { background: var(--primary-light); }
+    .cell-btn[data-val="0"] { color: var(--text-disabled); }
+    .cell-btn[data-val="1"] { background: var(--lvl-1-bg); color: var(--lvl-1-text); }
+    .cell-btn[data-val="2"] { background: var(--lvl-2-bg); color: var(--lvl-2-text); }
+    .cell-btn[data-val="3"] { background: var(--lvl-3-bg); color: var(--lvl-3-text); }
 
-    /* avg cell display */
     .avg-cell {
-      padding: 10px 8px;
-      font-size: 13px;
-      font-weight: 700;
+      padding: 8px 4px; font-weight: 700; font-size: 12.5px;
     }
-    .avg-cell.val-0 { color: var(--text-muted); }
-    .avg-cell.val-1 { color: #d97706; background: rgba(245,158,11,0.12); }
-    .avg-cell.val-2 { color: #ea580c; background: rgba(249,115,22,0.12); }
-    .avg-cell.val-3 { color: #2563eb; background: rgba(37,99,235,0.12); }
+    .avg-cell.val-3 { background: var(--lvl-3-bg); color: var(--lvl-3-text); }
+    .avg-cell.val-2 { background: var(--lvl-2-bg); color: var(--lvl-2-text); }
+    .avg-cell.val-1 { background: var(--lvl-1-bg); color: var(--lvl-1-text); }
+    .avg-cell.val-0 { color: var(--text-disabled); }
 
-    /* ── Legend ── */
-    .legend {
-      display: flex;
-      gap: var(--sp-lg);
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 13px;
-      color: var(--text-secondary);
-    }
-    .legend-swatch {
-      width: 32px; height: 22px;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    /* ── CO Description tooltip ── */
-    .co-text-small {
-      font-size: 10px;
-      color: var(--text-muted);
-      font-weight: 400;
-      margin-top: 2px;
-      max-width: 200px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    /* Section divider between PO and PSO cols */
-    .pso-divider { border-left: 2px solid var(--primary) !important; }
-
-    /* Summary cards */
-    .po-summary-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-      gap: 10px;
+    .pso-divider { border-left: 2px solid var(--border-strong) !important; }
+    
+    .po-sum-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 8px;
     }
     .po-sum-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--r-md);
-      padding: 10px;
-      text-align: center;
-      transition: all var(--t-fast);
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-md); padding: 8px 4px; text-align: center;
     }
-    .po-sum-card:hover { border-color: rgba(37,99,235,0.15); }
-    .po-sum-card .po-name { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
-    .po-sum-card .po-val { font-size: 18px; font-weight: 800; margin-top: 4px; }
+    .po-name { font-size: 11px; font-weight: 700; color: var(--text-secondary); }
+    .po-val  { font-size: 16px; font-weight: 800; margin-top: 2px; }
 
-    .save-indicator {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      color: var(--success);
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-    .save-indicator.show { opacity: 1; }
-  
+    /* Justification Drawer / Modal */
     .justification-panel {
-      position: fixed;
-      top: 0;
-      right: -400px;
-      width: 400px;
-      height: 100vh;
-      background: var(--surface);
-      box-shadow: -4px 0 15px rgba(0,0,0,0.1);
-      z-index: 1000;
-      transition: right 0.3s ease;
-      display: flex;
-      flex-direction: column;
-      border-left: 1px solid var(--border);
+      position: fixed; top: 0; right: -420px; width: 400px; height: 100vh;
+      background: var(--surface); border-left: 1px solid var(--border);
+      z-index: 1001; transition: right 0.25s ease;
+      display: flex; flex-direction: column; padding: 24px;
     }
-    .justification-panel.open {
-      right: 0;
-    }
-    .jp-header {
-      padding: 20px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .jp-body {
-      padding: 20px;
-      flex: 1;
-      overflow-y: auto;
-    }
-    .jp-footer {
-      padding: 20px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-    }
+    .justification-panel.open { right: 0; }
     .jp-overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.4);
-      z-index: 999;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s ease;
+      position: fixed; inset: 0; background: rgba(15,23,42,0.5);
+      z-index: 1000; display: none;
     }
-    .jp-overlay.open {
-      opacity: 1;
-      pointer-events: auto;
-    }
-    .mapping-level-selector {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 24px;
-    }
+    .jp-overlay.open { display: block; }
     .mapping-btn {
-      flex: 1;
-      padding: 10px;
-      border: 1px solid var(--border);
-      background: var(--bg);
-      border-radius: var(--r-md);
-      cursor: pointer;
-      font-weight: 600;
-      transition: all 0.2s;
+      flex: 1; padding: 10px; border-radius: var(--r-md); border: 1px solid var(--border);
+      font-weight: 700; font-size: 14px; background: var(--surface); cursor: pointer;
     }
-    .mapping-btn:hover { background: var(--surface-hover); }
-    .mapping-btn.active[data-val="0"] { background: var(--border); color: var(--text-primary); border-color: var(--text-muted); }
-    .mapping-btn.active[data-val="1"] { background: rgba(245,158,11,0.15); color: #d97706; border-color: #d97706; }
-    .mapping-btn.active[data-val="2"] { background: rgba(249,115,22,0.15); color: #ea580c; border-color: #ea580c; }
-</style>
+    .mapping-btn.active { border-color: var(--primary); background: var(--primary-light); color: var(--primary-text); }
+  </style>
 </head>
 <body>
 <div class="app-shell">
@@ -281,29 +112,31 @@
     </div>
     <nav class="sidebar-nav">
       <p class="nav-section-label">Overview</p>
-      <a class="nav-item" href="dashboard.html">📊 Dashboard</a>
-      <a class="nav-item" href="courses.html">📚 My Courses</a>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon" data-icon="dashboard"></span><span>Dashboard</span></a>
+      <a class="nav-item" href="courses.html"><span class="nav-icon" data-icon="courses"></span><span>My Courses</span></a>
+      
       <p class="nav-section-label">Course Management</p>
-      <a class="nav-item" href="syllabus.html">📖 Syllabus Setup</a>
-      <a class="nav-item" href="outcomes.html">🎯 CO & PO Setup</a>
-      <a class="nav-item" href="co-po-map.html">🗺️ CO-PO Mapping</a>
-      <a class="nav-item" href="6a-matrix.html">📋 6A Indicator Mapping</a>
-      <a class="nav-item" href="students.html">👥 Students</a>
+      <a class="nav-item" href="syllabus.html"><span class="nav-icon" data-icon="syllabus"></span><span>Syllabus Setup</span></a>
+      <a class="nav-item" href="outcomes.html"><span class="nav-icon" data-icon="outcomes"></span><span>CO & PO Setup</span></a>
+      <a class="nav-item active" href="co-po-map.html"><span class="nav-icon" data-icon="map"></span><span>CO-PO Mapping</span></a>
+      <a class="nav-item" href="6a-matrix.html"><span class="nav-icon" data-icon="matrix"></span><span>6A Indicator Matrix</span></a>
+      <a class="nav-item" href="students.html"><span class="nav-icon" data-icon="students"></span><span>Students</span></a>
+      
       <p class="nav-section-label">Assessment</p>
-      <a class="nav-item" href="marks.html">📝 Marks Entry</a>
-      <a class="nav-item" href="attainment.html">📈 Attainment</a>
-      <a class="nav-item" href="assignments.html">🤖 Assignments & AI</a>
-      <a class="nav-item" href="auto-grade.html">✅ Auto-Grading</a>
-      <a class="nav-item" href="question-paper.html">📄 Question Paper</a>
-      <a class="nav-item" href="reports.html">📄 Reports & Export</a>
+      <a class="nav-item" href="marks.html"><span class="nav-icon" data-icon="marks"></span><span>Marks Entry</span></a>
+      <a class="nav-item" href="attainment.html"><span class="nav-icon" data-icon="attainment"></span><span>Attainment</span></a>
+      <a class="nav-item" href="assignments.html"><span class="nav-icon" data-icon="assignments"></span><span>Assignments & AI</span></a>
+      <a class="nav-item" href="auto-grade.html"><span class="nav-icon" data-icon="grade"></span><span>Auto-Grading</span></a>
+      <a class="nav-item" href="question-paper.html"><span class="nav-icon" data-icon="paper"></span><span>Question Paper</span></a>
+      <a class="nav-item" href="reports.html"><span class="nav-icon" data-icon="reports"></span><span>Reports & Export</span></a>
     </nav>
     <div class="sidebar-footer">
-      <div class="user-card">
+      <div class="user-card" onclick="Auth.logout()">
         <div class="user-avatar"></div>
         <div><div class="user-name"></div><div class="user-role"></div></div>
       </div>
-      <button class="btn btn-ghost btn-sm w-full" data-action="logout" style="margin-top:8px">
-        🚪 Logout
+      <button class="btn btn-secondary btn-sm w-full" data-action="logout" style="margin-top:8px; width:100%;">
+        <span data-icon="logout"></span><span>Sign Out</span>
       </button>
     </div>
   </aside>
@@ -312,191 +145,150 @@
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
-        <h1 class="topbar-title">🗺️ CO-PO Mapping</h1>
-        <div class="topbar-breadcrumb">
-          <span>Faculty</span><span>›</span><span>CO-PO Mapping</span>
-        </div>
+        <h1 class="topbar-title">CO-PO & PSO Correlation Matrix</h1>
+        <div class="topbar-breadcrumb">Course Management <span>›</span> Correlation Matrix</div>
       </div>
-      <div class="topbar-right">
-        <span class="save-indicator" id="save-indicator">✓ Saved</span>
-        <select class="form-control" id="course-select" style="width:260px">
-          <option value="">— Select Course —</option>
-        </select>
-        <button class="btn btn-sm" style="background:var(--primary);color:white;border:none" onclick="autoMapWithAI()">✨ Auto-Map with AI</button>
-        <button class="btn btn-secondary btn-sm" onclick="resetMatrix()">↺ Reset</button>
-        <button class="btn btn-primary btn-sm" onclick="saveAll()">💾 Save All</button>
+      <div class="topbar-right" style="display:flex;gap:8px;align-items:center;">
+        <select class="form-select" id="course-select" style="width:240px;font-size:12.5px;"></select>
+        <button class="btn btn-secondary btn-sm" onclick="autoMapWithAI()">
+          <span data-icon="sparkles"></span><span>Auto-Map with AI</span>
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="saveAll()">
+          <span data-icon="check"></span><span>Save Matrix</span>
+        </button>
       </div>
     </header>
 
     <div class="page-content">
 
-      <!-- Legend + Info -->
-      <div class="card mb-lg" id="info-card" style="display:none">
-        <div class="flex-between" style="flex-wrap:wrap;gap:16px">
+      <!-- Matrix Legend -->
+      <div class="matrix-legend" style="margin-top:0;margin-bottom:var(--sp-md);">
+        <span style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;">Mapping Scale:</span>
+        <div class="legend-item"><span class="legend-swatch" style="background:#FFFFFF;color:var(--text-disabled);">—</span><span>0 = No Correlation</span></div>
+        <div class="legend-item"><span class="legend-swatch" style="background:var(--lvl-1-bg);color:var(--lvl-1-text);">1</span><span>1 = Slight / Low</span></div>
+        <div class="legend-item"><span class="legend-swatch" style="background:var(--lvl-2-bg);color:var(--lvl-2-text);">2</span><span>2 = Moderate / Medium</span></div>
+        <div class="legend-item"><span class="legend-swatch" style="background:var(--lvl-3-bg);color:var(--lvl-3-text);">3</span><span>3 = Substantial / High</span></div>
+        <div style="margin-left:auto;font-size:11.5px;color:var(--text-muted);">Click any cell to edit weight and justification.</div>
+      </div>
+
+      <!-- Course Header Info -->
+      <div class="card" id="info-card" style="margin-bottom:var(--sp-md);padding:14px 18px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
           <div>
-            <div class="card-title" id="course-title">Course Name</div>
-            <div class="card-subtitle" id="course-info">Course details</div>
+            <div style="font-weight:700;font-size:15px;color:var(--text-primary);" id="course-title">Loading...</div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;" id="course-info">—</div>
           </div>
-          <div class="legend">
-            <div class="legend-item">
-              <div class="legend-swatch" style="background:rgba(255,255,255,0.04);border:1px solid var(--border);color:var(--text-muted)">—</div>
-              <span>0 – Not Mapped</span>
-            </div>
-            <div class="legend-item">
-              <div class="legend-swatch" style="background:rgba(245,158,11,0.12);color:#d97706">1</div>
-              <span>1 – Low</span>
-            </div>
-            <div class="legend-item">
-              <div class="legend-swatch" style="background:rgba(249,115,22,0.12);color:#ea580c">2</div>
-              <span>2 – Medium</span>
-            </div>
-            <div class="legend-item">
-              <div class="legend-swatch" style="background:rgba(37,99,235,0.12);color:#2563eb">3</div>
-              <span>3 – High</span>
-            </div>
-            <div style="font-size:12px;color:var(--text-muted);border-left:1px solid var(--border);padding-left:16px">
-              💡 Click any cell to cycle: 0 → 1 → 2 → 3 → 0
-            </div>
-          </div>
+          <button class="btn btn-danger btn-sm" onclick="resetMatrix()">
+            <span data-icon="refresh"></span><span>Reset Matrix</span>
+          </button>
         </div>
       </div>
 
-      <!-- No course selected empty state -->
-      <div class="card" id="empty-state">
-        <div class="empty-state">
-          <div class="empty-icon">🗺️</div>
-          <h3>Select a Course</h3>
-          <p>Choose a course from the dropdown above to view and edit the CO-PO mapping matrix.</p>
-        </div>
+      <!-- Main Matrix -->
+      <div class="matrix-wrapper mb-lg" id="matrix-section">
+        <table class="matrix-table" id="matrix-table">
+          <thead id="matrix-head"></thead>
+          <tbody id="matrix-body"></tbody>
+        </table>
       </div>
 
-      <!-- Matrix Section -->
-      <div id="matrix-section" class="hidden">
-        <div class="matrix-wrapper">
-          <table class="matrix-table" id="matrix-table">
-            <thead id="matrix-head"></thead>
-            <tbody id="matrix-body"></tbody>
+      <!-- PO Summary Average Cards -->
+      <div class="card mb-lg">
+        <div class="card-header">
+          <div class="card-title"><span data-icon="matrix"></span><span>Program Outcome Average Weights</span></div>
+          <span class="badge badge-neutral">NBA SAR Table 3.1</span>
+        </div>
+        <div class="po-sum-grid" id="po-summary"></div>
+      </div>
+
+      <!-- Course Outcomes Reference -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span data-icon="outcomes"></span><span>Course Outcomes Reference Statements</span></div>
+        </div>
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th style="width:60px">CO</th>
+                <th>Statement</th>
+                <th style="width:140px">Bloom's Level</th>
+                <th style="width:160px">Assessment Methods</th>
+              </tr>
+            </thead>
+            <tbody id="co-ref-body"></tbody>
           </table>
         </div>
-
-        <!-- PO Average Summary Cards -->
-        <div class="card mt-lg">
-          <div class="card-header">
-            <div>
-              <div class="card-title">📊 PO Mapping Summary</div>
-              <div class="card-subtitle">Average mapping strength per Program Outcome across all active COs</div>
-            </div>
-          </div>
-          <div class="po-summary-grid" id="po-summary"></div>
-        </div>
-
-        <!-- CO Description Reference -->
-        <div class="card mt-lg">
-          <div class="card-header">
-            <div class="card-title">📋 CO Reference</div>
-            <div class="card-subtitle">Course Outcome descriptions for this course</div>
-          </div>
-          <div class="table-wrapper">
-            <table id="co-ref-table">
-              <thead>
-                <tr>
-                  <th style="width:60px">CO</th>
-                  <th>Description</th>
-                  <th style="width:100px">Blooms Level</th>
-                  <th style="width:160px">Assessed Through</th>
-                </tr>
-              </thead>
-              <tbody id="co-ref-body"></tbody>
-            </table>
-          </div>
-        </div>
       </div>
 
-
-      <!-- Justification Panel -->
-      <div class="jp-overlay" id="jp-overlay" onclick="closeJustificationPanel()"></div>
-      <div class="justification-panel" id="justification-panel">
-        <div class="jp-header">
-          <div>
-            <h3 style="margin:0; font-size:16px;">CO-PO Mapping Details</h3>
-            <div id="jp-title" style="font-size:13px; color:var(--text-muted); margin-top:4px;"></div>
-          </div>
-          <button class="btn btn-ghost" style="padding:4px" onclick="closeJustificationPanel()">✕</button>
-        </div>
-        <div class="jp-body">
-          <div class="form-group">
-            <label class="form-label">Mapping Level (Correlation)</label>
-            <div class="mapping-level-selector" id="jp-level-selector">
-              <button class="mapping-btn" data-val="0">0 - None</button>
-              <button class="mapping-btn" data-val="1">1 - Low</button>
-              <button class="mapping-btn" data-val="2">2 - Medium</button>
-              <button class="mapping-btn" data-val="3">3 - High</button>
-            </div>
-          </div>
-          
-          <div class="form-group">
-            <label class="form-label">Justification (Optional but Recommended)</label>
-            <p style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">NBA requires justification for how this CO strongly/moderately contributes to the PO.</p>
-            <textarea id="jp-justification" class="form-control" rows="6" placeholder="Provide reason for this mapping level..."></textarea>
-          </div>
-        </div>
-        <div class="jp-footer">
-          <button class="btn btn-secondary" onclick="closeJustificationPanel()">Cancel</button>
-          <button class="btn btn-primary" onclick="saveJustification()">Save Mapping</button>
-        </div>
-      </div>
-    </div><!-- /page-content -->
+    </div>
   </main>
 </div>
 
-<div id="toast-container"></div>
+<!-- Justification Drawer -->
+<div class="jp-overlay" id="jp-overlay" onclick="closeJustificationPanel()"></div>
+<div class="justification-panel" id="justification-panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <h3 style="font-size:16px;font-weight:700;" id="jp-title">Mapping Detail</h3>
+    <button class="btn btn-secondary btn-sm btn-icon" onclick="closeJustificationPanel()"><span data-icon="close"></span></button>
+  </div>
+  <div style="margin-bottom:16px;">
+    <label class="form-label">Correlation Level</label>
+    <div style="display:flex;gap:6px;">
+      <button class="mapping-btn" data-val="0">—</button>
+      <button class="mapping-btn" data-val="1">1</button>
+      <button class="mapping-btn" data-val="2">2</button>
+      <button class="mapping-btn" data-val="3">3</button>
+    </div>
+  </div>
+  <div class="form-group" style="flex:1;display:flex;flex-direction:column;">
+    <label class="form-label">Academic Justification & Evidence</label>
+    <textarea class="form-textarea" id="jp-justification" style="flex:1;resize:none;" placeholder="Explain why this Course Outcome maps to this Program Outcome at the selected correlation level…"></textarea>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:16px;">
+    <button class="btn btn-secondary" style="flex:1" onclick="closeJustificationPanel()">Cancel</button>
+    <button class="btn btn-primary" style="flex:1" onclick="saveJustification()">Apply</button>
+  </div>
+</div>
 
-<script src="../scripts/data.js?v=101"></script>
-<script src="../scripts/api.js?v=101"></script>
-<script src="../scripts/auth.js?v=3"></script>
-<script src="../scripts/ai-mock.js?v=2"></script>
+<script src="../scripts/icons.js"></script>
+<script src="../scripts/data.js"></script>
+<script src="../scripts/api.js"></script>
+<script src="../scripts/auth.js"></script>
+<script src="../scripts/ai-mock.js"></script>
 <script src="../scripts/utils.js"></script>
+<script src="../scripts/ai-chat.js"></script>
 <script>
-  /* ── Auth ── */
+(async () => {
+  await (window._apiReady || Promise.resolve());
   const user = Auth.requireAuth(['faculty', 'hod']);
   if (!user) throw new Error('Not authorized');
-  Auth.populateSidebar(user);
 
-  /* ── PO/PSO column definitions ── */
-  const PO_COLS = [
-    'PO1','PO2','PO3','PO4','PO5','PO6','PO7','PO8','PO9','PO10','PO11','PO12',
-    'PSO1','PSO2','PSO3'
-  ];
-
+  const PO_COLS = ['PO1','PO2','PO3','PO4','PO5','PO6','PO7','PO8','PO9','PO10','PO11','PO12','PSO1','PSO2','PSO3'];
   const PO_FULL = {
-    PO1:'Engineering Knowledge', PO2:'Problem Analysis', PO3:'Design/Development',
-    PO4:'Conduct Investigations', PO5:'Modern Tool Usage', PO6:'The Engineer & Society',
-    PO7:'Environment & Sustainability', PO8:'Ethics', PO9:'Individual & Team Work', PO10:'Communication',
-    PO11:'Project Management & Finance', PO12:'Life-Long Learning',
-    PSO1:'Domain Specific 1', PSO2:'Domain Specific 2', PSO3:'Domain Specific 3'
+    PO1:'Engineering Knowledge',PO2:'Problem Analysis',PO3:'Design/Development',PO4:'Investigation',
+    PO5:'Modern Tool Usage',PO6:'Engineer & Society',PO7:'Environment & Sustainability',
+    PO8:'Ethics',PO9:'Individual & Team Work',PO10:'Communication',PO11:'Project Management',PO12:'Life-Long Learning',
+    PSO1:'Domain Specific Knowledge',PSO2:'Industry Readiness',PSO3:'Research Aptitude'
   };
 
   let currentCourseId = null;
   let activeCOs = [];
+  let currentActiveBtn = null;
 
-  /* ── Populate course dropdown ── */
+  populateCourses();
+  renderAllIcons();
+
   function populateCourses() {
     const sel = document.getElementById('course-select');
     const courses = DB.courses.byFaculty(user.id);
-    courses.forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = c.id;
-      opt.textContent = `${c.code} – ${c.name}`;
-      sel.appendChild(opt);
-    });
-    // Restore from session
+    sel.innerHTML = courses.map(c => `<option value="${c.id}">${c.code} – ${c.name}</option>`).join('');
+
     const stored = sessionStorage.getItem('selected_course_id');
-    if (stored && courses.find(c => c.id === stored)) {
-      sel.value = stored;
-      loadCourse(stored);
-    } else if (courses.length > 0) {
-      sel.value = courses[0].id;
-      loadCourse(courses[0].id);
+    const defaultId = (stored && courses.find(c => c.id === stored)) ? stored : courses[0]?.id;
+    if (defaultId) {
+      sel.value = defaultId;
+      loadCourse(defaultId);
     }
   }
 
@@ -507,94 +299,84 @@
     }
   });
 
-  /* ── Load course matrix ── */
   async function loadCourse(courseId) {
     currentCourseId = courseId;
-    const course = DB.courses.byId(courseId);
-    if (!course) return;
+    let course = DB.courses.byId(courseId);
+    if (!course) {
+      try {
+        const remoteCourse = await apiFetch(`/api/courses/${courseId}`);
+        if (remoteCourse) {
+          DB.courses.update(remoteCourse);
+          course = remoteCourse;
+        }
+      } catch (e) {}
+    }
+    if (!course) course = { id: courseId, code: courseId, name: courseId, semester: '—' };
 
-    // Always fetch fresh PO mapping from backend API
     try {
-      const freshPO = await fetch(`${window.API_BASE || 'http://127.0.0.1:8080'}/api/courses/${courseId}/pomapping`).then(r => r.json());
-      if (Array.isArray(freshPO) && freshPO.length > 0) {
-        DB.poMapping.saveMatrix(courseId, freshPO);
-        console.log(`[CO-PO] Loaded ${freshPO.length} fresh mapping rows from backend for ${courseId}`);
+      const freshCOs = await apiFetch(`/api/courses/${courseId}/cos`);
+      if (Array.isArray(freshCOs) && freshCOs.length > 0) {
+        DB.cos.saveAll(courseId, freshCOs);
       }
     } catch (err) {
-      console.warn('[CO-PO] Could not fetch fresh mapping from backend, using cached data:', err.message);
+      console.warn('[CO-PO] Using cached CO data:', err.message);
     }
 
-    // Update info card
-    document.getElementById('info-card').style.display = '';
-    document.getElementById('empty-state').classList.add('hidden');
-    document.getElementById('matrix-section').classList.remove('hidden');
-    document.getElementById('course-title').textContent = `${course.code} – ${course.name}`;
-    document.getElementById('course-info').textContent =
-      `Sem ${course.semester} | ${course.class} | Div ${course.division} | ${DB.students.byCourse(course.id).length} Students`;
+    try {
+      const freshPO = await apiFetch(`/api/courses/${courseId}/pomapping`);
+      if (Array.isArray(freshPO) && freshPO.length > 0) {
+        DB.poMapping.saveMatrix(courseId, freshPO);
+      }
+    } catch (err) {
+      console.warn('[CO-PO] Using cached matrix data:', err.message);
+    }
 
-    // Load COs (only ones with text)
+    document.getElementById('course-title').textContent = `${course.code || course.id} – ${course.name || course.id}`;
+    document.getElementById('course-info').textContent =
+      `Sem ${course.semester || '—'} | Class ${course.class || '—'} | Div ${course.division || '—'} | ${DB.students.byCourse(course.id).length} Students`;
+
     const allCOs = DB.cos.byCourse(courseId);
     activeCOs = allCOs.filter(co => co.text && co.text.trim() !== '');
 
     buildMatrix();
     buildCORef(allCOs);
     buildSummaryCards();
+    renderAllIcons();
   }
 
-  /* ── Build the matrix table ── */
   function buildMatrix() {
-    buildMatrixHead();
-    buildMatrixBody();
-  }
-
-  function buildMatrixHead() {
     const head = document.getElementById('matrix-head');
-    // Row 1: PO group labels
-    let r1 = '<tr>';
-    r1 += '<th class="co-header" rowspan="2">Course Outcome</th>';
-    r1 += `<th colspan="11" style="text-align:center;background:rgba(37,99,235,0.15)">Program Outcomes (PO)</th>`;
-    r1 += `<th colspan="3" class="pso-divider" style="text-align:center;background:rgba(139,92,246,0.15)">PSO</th>`;
-    r1 += '</tr>';
-    // Row 2: individual PO names
+    let r1 = '<tr><th class="co-header" rowspan="2">Course Outcome</th>';
+    r1 += '<th colspan="12" style="text-align:center;">Program Outcomes (PO1–PO12)</th>';
+    r1 += '<th colspan="3" class="pso-divider" style="text-align:center;">Program Specific Outcomes (PSO)</th></tr>';
+    
     let r2 = '<tr>';
     PO_COLS.forEach((po, i) => {
       const isPSO = po.startsWith('PSO');
-      const cls = isPSO && i === 11 ? 'pso-divider' : '';
+      const cls = isPSO && i === 12 ? 'pso-divider' : '';
       r2 += `<th class="${cls}" title="${PO_FULL[po]}">${po}</th>`;
     });
     r2 += '</tr>';
     head.innerHTML = r1 + r2;
-  }
 
-  function buildMatrixBody() {
     const body = document.getElementById('matrix-body');
     body.innerHTML = '';
 
     activeCOs.forEach(co => {
       const tr = document.createElement('tr');
-      // CO label cell
-      let labelHtml = `<td class="co-label">
-        <div style="display:flex;align-items:center;gap:0">
-          <span class="co-num">${co.no}</span>
-          <div>
-            <div>${co.code}</div>
-            <div class="co-text-small" title="${co.text}">${co.text}</div>
-          </div>
-        </div>
-      </td>`;
-      tr.innerHTML = labelHtml;
+      tr.innerHTML = `<td class="co-label"><strong style="color:var(--primary);margin-right:6px;">${co.code}</strong> ${co.text}</td>`;
 
       PO_COLS.forEach((po, i) => {
         const val = DB.poMapping.getValue(currentCourseId, co.no, po);
         const td = document.createElement('td');
-        if (i === 11) td.classList.add('pso-divider');
+        if (i === 12) td.classList.add('pso-divider');
         const btn = document.createElement('button');
         btn.className = 'cell-btn';
         btn.dataset.coNo = co.no;
         btn.dataset.po = po;
         btn.dataset.val = val;
         btn.textContent = val === 0 ? '—' : val;
-        btn.title = `${co.code} × ${po}: ${val === 0 ? 'Not Mapped' : 'Level ' + val}`;
+        btn.title = `${co.code} × ${po}: Level ${val}`;
         btn.addEventListener('click', () => openJustificationPanel(btn));
         td.appendChild(btn);
         tr.appendChild(td);
@@ -603,38 +385,28 @@
       body.appendChild(tr);
     });
 
-    // Average row
     buildAvgRow(body);
   }
 
   function buildAvgRow(body) {
     const tr = document.createElement('tr');
-    tr.classList.add('avg-row');
-    tr.innerHTML = `<td class="co-label">
-      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--primary);font-weight:700">
-        ∑ Average
-      </div>
-      <div style="font-size:10px;color:var(--text-muted)">Across all COs</div>
-    </td>`;
+    tr.style.background = 'var(--surface-2)';
+    tr.innerHTML = `<td class="co-label" style="background:var(--surface-2);font-weight:700;color:var(--primary);text-transform:uppercase;">Overall Average</td>`;
 
     PO_COLS.forEach((po, i) => {
       const vals = activeCOs.map(co => DB.poMapping.getValue(currentCourseId, co.no, po)).filter(v => v > 0);
       const avg = vals.length > 0 ? (vals.reduce((a,b) => a+b, 0) / vals.length) : 0;
       const td = document.createElement('td');
-      if (i === 11) td.classList.add('pso-divider');
+      if (i === 12) td.classList.add('pso-divider');
       const dispVal = avg > 0 ? avg.toFixed(2) : '—';
       const colorCls = avg >= 2.5 ? 'val-3' : avg >= 1.5 ? 'val-2' : avg > 0 ? 'val-1' : 'val-0';
       td.innerHTML = `<div class="avg-cell ${colorCls}">${dispVal}</div>`;
-      td.dataset.po = po;
       td.id = `avg-${po}`;
       tr.appendChild(td);
     });
 
     body.appendChild(tr);
   }
-
-
-  let currentActiveBtn = null;
 
   function openJustificationPanel(btn) {
     currentActiveBtn = btn;
@@ -643,7 +415,7 @@
     const val  = parseInt(btn.dataset.val);
     const justification = DB.poMapping.getJustification(currentCourseId, coNo, po) || '';
     
-    document.getElementById('jp-title').textContent = `CO${coNo} × ${po}`;
+    document.getElementById('jp-title').textContent = `CO${coNo} × ${po} Mapping`;
     document.getElementById('jp-justification').value = justification;
     
     document.querySelectorAll('.mapping-btn').forEach(b => {
@@ -677,44 +449,14 @@
     const val = activeValBtn ? parseInt(activeValBtn.dataset.val) : 0;
     const justification = document.getElementById('jp-justification').value.trim();
 
-    // Update button
     currentActiveBtn.dataset.val = val;
     currentActiveBtn.textContent = val === 0 ? '—' : val;
-    currentActiveBtn.title = `CO${coNo} × ${po}: ${val === 0 ? 'Not Mapped' : 'Level ' + val}`;
-    if(justification) currentActiveBtn.title += ` | ${justification}`;
 
-    // Persist to DB
     DB.poMapping.setValue(currentCourseId, coNo, po, val, justification);
-
-    // Update average row
     updateAvgCell(po);
     updateSummaryCard(po);
-
     closeJustificationPanel();
-    showSaved();
-  }
-
-  /* ── Cycle cell value on click ── */
-  function cycleCell(btn) {
-    const coNo = parseInt(btn.dataset.coNo);
-    const po   = btn.dataset.po;
-    let   val  = parseInt(btn.dataset.val);
-    val = (val + 1) % 4;
-
-    // Update button
-    btn.dataset.val = val;
-    btn.textContent = val === 0 ? '—' : val;
-    btn.title = `CO${coNo} × ${po}: ${val === 0 ? 'Not Mapped' : 'Level ' + val}`;
-
-    // Persist to DB
-    DB.poMapping.setValue(currentCourseId, coNo, po, val);
-
-    // Update average row
-    updateAvgCell(po);
-    updateSummaryCard(po);
-
-    // Flash save indicator
-    showSaved();
+    Toast.success('Updated mapping weight.');
   }
 
   function updateAvgCell(po) {
@@ -724,8 +466,7 @@
     const avg = vals.length > 0 ? (vals.reduce((a,b) => a+b, 0) / vals.length) : 0;
     const dispVal = avg > 0 ? avg.toFixed(2) : '—';
     const colorCls = avg >= 2.5 ? 'val-3' : avg >= 1.5 ? 'val-2' : avg > 0 ? 'val-1' : 'val-0';
-    avgCell.querySelector('.avg-cell').className = `avg-cell ${colorCls}`;
-    avgCell.querySelector('.avg-cell').textContent = dispVal;
+    avgCell.innerHTML = `<div class="avg-cell ${colorCls}">${dispVal}</div>`;
   }
 
   function updateSummaryCard(po) {
@@ -735,158 +476,98 @@
     const avg = vals.length > 0 ? (vals.reduce((a,b) => a+b, 0) / vals.length) : 0;
     const valEl = card.querySelector('.po-val');
     valEl.textContent = avg > 0 ? avg.toFixed(2) : '—';
-    valEl.style.color = avg >= 2.5 ? 'var(--success)' : avg >= 1.5 ? 'var(--warning)' : avg > 0 ? '#f97316' : 'var(--text-muted)';
+    valEl.style.color = avg >= 2.5 ? 'var(--success)' : avg >= 1.5 ? 'var(--warning)' : avg > 0 ? 'var(--primary)' : 'var(--text-muted)';
   }
 
-  /* ── Build CO Reference table ── */
   function buildCORef(allCOs) {
     const body = document.getElementById('co-ref-body');
     body.innerHTML = '';
     allCOs.forEach(co => {
       const tr = document.createElement('tr');
-      const bloomMap = {L1:'Remember',L2:'Understand',L3:'Apply',L4:'Analyze',L5:'Evaluate',L6:'Create'};
       const assessed = (co.assessedThrough||[]).map(a => a.toUpperCase()).join(', ');
       tr.innerHTML = `
-        <td><span class="badge badge-primary">${co.code}</span></td>
-        <td style="font-size:13px">${co.text || '<span class="text-muted">—</span>'}</td>
-        <td><span class="badge badge-info">${co.bloomsLevel} – ${bloomMap[co.bloomsLevel]||''}</span></td>
-        <td><span style="font-size:12px;color:var(--text-secondary)">${assessed || '—'}</span></td>
+        <td><span class="badge badge-primary font-mono">${co.code}</span></td>
+        <td style="font-size:12.5px;">${co.text || '—'}</td>
+        <td><span class="badge badge-neutral">${co.bloomsLevel || '—'}</span></td>
+        <td style="font-size:12px;color:var(--text-secondary);">${assessed || '—'}</td>
       `;
       body.appendChild(tr);
     });
   }
 
-  /* ── Build summary cards ── */
   function buildSummaryCards() {
     const grid = document.getElementById('po-summary');
     grid.innerHTML = '';
     PO_COLS.forEach(po => {
       const vals = activeCOs.map(co => DB.poMapping.getValue(currentCourseId, co.no, po)).filter(v => v > 0);
       const avg = vals.length > 0 ? (vals.reduce((a,b) => a+b, 0) / vals.length) : 0;
-      const color = avg >= 2.5 ? 'var(--success)' : avg >= 1.5 ? 'var(--warning)' : avg > 0 ? '#f97316' : 'var(--text-muted)';
+      const color = avg >= 2.5 ? 'var(--success)' : avg >= 1.5 ? 'var(--warning)' : avg > 0 ? 'var(--primary)' : 'var(--text-muted)';
       const card = document.createElement('div');
       card.className = 'po-sum-card';
       card.id = `sum-${po}`;
-      card.title = PO_FULL[po] || po;
       card.innerHTML = `
         <div class="po-name">${po}</div>
         <div class="po-val" style="color:${color}">${avg > 0 ? avg.toFixed(2) : '—'}</div>
-        <div style="font-size:9px;color:var(--text-muted);margin-top:2px">${PO_FULL[po]||''}</div>
       `;
       grid.appendChild(card);
     });
   }
 
-  /* ── Save All ── */
   function saveAll() {
-    if (!currentCourseId) { Toast.warning('Please select a course first.'); return; }
-    // All cells auto-save on click, but let's force a sync confirmation
-    Toast.success('CO-PO Mapping saved successfully!');
-    showSaved();
+    if (!currentCourseId) { Toast.warning('Select a course first.'); return; }
+    Toast.success('CO-PO mapping matrix saved.');
   }
 
-  /* ── Reset Matrix ── */
   function resetMatrix() {
     if (!currentCourseId) return;
-    Modal.confirm(
-      'Reset CO-PO Matrix',
-      'This will clear ALL mapping values for this course. This action cannot be undone.',
-      () => {
-        activeCOs.forEach(co => {
-          PO_COLS.forEach(po => {
-            DB.poMapping.setValue(currentCourseId, co.no, po, 0);
-          });
+    Modal.confirm('Reset Matrix', 'Clear all mapping weights for this course?', () => {
+      activeCOs.forEach(co => {
+        PO_COLS.forEach(po => {
+          DB.poMapping.setValue(currentCourseId, co.no, po, 0);
         });
-        buildMatrix();
-        buildSummaryCards();
-        Toast.info('Matrix has been reset.');
-      },
-      'Reset', true
-    );
-  }
-
-  /* ──────────────────────────────────────────────────────────────
-     Auto-Map with AI — ALWAYS returns the same correct mapping.
-     • First click: calls AI, computes the mapping, saves to cache.
-     • Every subsequent click: loads from cache instantly — identical.
-     • Cache key is based on course ID + exact CO texts, so if COs
-       change the system automatically recomputes a fresh mapping.
-  ────────────────────────────────────────────────────────────── */
-  function _copoLocalKey(courseId, cos) {
-    const sig = cos.map(c => `${c.no}:${(c.text||'').trim().toLowerCase()}`).sort().join('|');
-    return `copo_v2_${courseId}_${btoa(unescape(encodeURIComponent(sig))).slice(0, 32)}`;
-  }
-
-  function _applyMappings(mappings) {
-    activeCOs.forEach(co => {
-      PO_COLS.forEach(po => {
-        const val = (mappings[co.no] || mappings['CO'+co.no] || mappings[String(co.no)] || {})[po] || 0;
-        DB.poMapping.setValue(currentCourseId, co.no, po, val);
       });
-    });
-    buildMatrix();
-    buildSummaryCards();
-    showSaved();
+      buildMatrix();
+      buildSummaryCards();
+      Toast.info('Matrix reset.');
+    }, 'Reset', true);
   }
 
   async function autoMapWithAI() {
     if (!currentCourseId) return Toast.warning('Select a course first.');
-    if (activeCOs.length === 0) return Toast.warning('No Course Outcomes found. Set up COs first.');
+    if (activeCOs.length === 0) return Toast.warning('No Course Outcomes found.');
 
-    const localKey = _copoLocalKey(currentCourseId, activeCOs);
-
-    // ── Always try cache first — same COs always give same correct mapping ──
-    const cached = localStorage.getItem(localKey);
-    if (cached) {
-      try {
-        _applyMappings(JSON.parse(cached));
-        Toast.success('✅ CO-PO mapping applied successfully.');
-        return;
-      } catch(_) {
-        localStorage.removeItem(localKey); // corrupt cache — fall through to AI
-      }
-    }
-
-    // ── First time for these COs: call AI once, then cache the result ──
     const btn = document.querySelector('button[onclick="autoMapWithAI()"]');
-    if (btn) { btn.innerHTML = '⏳ Computing...'; btn.disabled = true; }
+    if (btn) { btn.innerHTML = 'Mapping…'; btn.disabled = true; }
 
     try {
       const psoDefs = {
         PSO1: 'Domain-Specific Knowledge in Data Science and Analytics.',
         PSO2: 'Industry-Readiness through practical projects and tool proficiency.',
-        PSO3: 'Research Aptitude and ability to apply scientific reasoning to novel problems.'
+        PSO3: 'Research Aptitude and ability to apply scientific reasoning.'
       };
       const mappings = await AI.autoMapCOPO(activeCOs, PO_COLS, psoDefs);
-      localStorage.setItem(localKey, JSON.stringify(mappings)); // lock it in
-      _applyMappings(mappings);
-      Toast.success('✅ AI successfully computed the CO-PO mapping.');
+      activeCOs.forEach(co => {
+        PO_COLS.forEach(po => {
+          const val = (mappings[co.no] || mappings['CO'+co.no] || mappings[String(co.no)] || {})[po] || 0;
+          DB.poMapping.setValue(currentCourseId, co.no, po, val);
+        });
+      });
+      buildMatrix();
+      buildSummaryCards();
+      Toast.success('AI correlation matrix mapped successfully.');
     } catch(e) {
-      Toast.error(e.message || 'Auto-mapping failed. Is the backend running?');
+      Toast.error(e.message || 'Auto-mapping failed.');
     } finally {
-      if (btn) { btn.innerHTML = '✨ Auto-Map with AI'; btn.disabled = false; }
+      if (btn) { btn.innerHTML = 'Auto-Map with AI'; btn.disabled = false; renderAllIcons(btn); }
     }
   }
 
-  /* ── Show saved indicator ── */
-  let saveTimer = null;
-  function showSaved() {
-    const el = document.getElementById('save-indicator');
-    el.classList.add('show');
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => el.classList.remove('show'), 2000);
-  }
-
-  /* ── Init ── */
-  (async () => {
-    // CRITICAL: Wait for api.js to finish syncing fresh data from backend
-    // before rendering the matrix. Without this, the page renders stale
-    // localStorage data while syncFromBackend() is still loading.
-    if (window._apiReady) {
-      try { await window._apiReady; } catch(e) { console.warn('[CO-PO] API sync had issues, using cached data:', e); }
-    }
-    populateCourses();
-  })();
+  window.saveAll = saveAll;
+  window.resetMatrix = resetMatrix;
+  window.autoMapWithAI = autoMapWithAI;
+  window.closeJustificationPanel = closeJustificationPanel;
+  window.saveJustification = saveJustification;
+})();
 </script>
 </body>
 </html>

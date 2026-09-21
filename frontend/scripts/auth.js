@@ -7,16 +7,21 @@ const Auth = (() => {
   const SESSION_KEY = 'obe_session';
 
   /* ── Find the project root URL ──
-     Works from ANY page at ANY depth.
-     Looks for /OBE/ in the URL and uses everything up to it as root.
-     Example: file:///c:/Users/.../OBE/admin/dashboard.html
-           → root = file:///c:/Users/.../OBE/
+     Works reliably from ANY page at ANY depth and across server ports.
   */
   function _root() {
     const href = window.location.href;
     const lower = href.toLowerCase();
+    
+    // Check if we are inside a specific module directory (admin/faculty/hod/student)
+    const moduleMatch = lower.match(/\/(admin|faculty|hod|student)\//);
+    if (moduleMatch && moduleMatch.index !== undefined) {
+      return href.substring(0, moduleMatch.index + 1);
+    }
+    
     const idx = lower.lastIndexOf('/frontend/');
     if (idx !== -1) return href.substring(0, idx + 10); // includes /frontend/
+    
     // Fallback: assume the project root is the server root
     return window.location.origin + '/';
   }
@@ -47,9 +52,6 @@ const Auth = (() => {
         return { ok: false, error: 'Backend error: ' + res.status };
       }
       const data = await res.json();
-      if (!data.success) {
-        return { ok: false, error: data.error || 'Login failed.' };
-      }
       const user = data.user;
       const session = {
         id      : user.id,
@@ -72,6 +74,9 @@ const Auth = (() => {
   /* ── Logout ── */
   function logout() {
     sessionStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem('obe_chat_session');
+    sessionStorage.removeItem('selected_course_id');
+    sessionStorage.removeItem('6a_selected_course');
     _go('login.html');
   }
 
@@ -194,24 +199,24 @@ const Auth = (() => {
       if (nav) {
         nav.innerHTML = `
           <p class="nav-section-label">Department</p>
-          <a class="nav-item" href="../hod/dashboard.html">📊 Dept Overview</a>
-          <a class="nav-item" href="../hod/reports.html">📄 Dept Reports</a>
+          <a class="nav-item" href="../hod/dashboard.html"><span class="nav-icon" data-icon="dashboard"></span><span>Dept Overview</span></a>
+          <a class="nav-item" href="../hod/reports.html"><span class="nav-icon" data-icon="reports"></span><span>Dept Reports</span></a>
           <p class="nav-section-label">My Teaching</p>
-          <a class="nav-item" href="../faculty/dashboard.html">📈 My Dashboard</a>
-          <a class="nav-item" href="../faculty/courses.html">📚 My Courses</a>
+          <a class="nav-item" href="../faculty/dashboard.html"><span class="nav-icon" data-icon="dashboard"></span><span>My Dashboard</span></a>
+          <a class="nav-item" href="../faculty/courses.html"><span class="nav-icon" data-icon="courses"></span><span>My Courses</span></a>
           <p class="nav-section-label">Course Management</p>
-          <a class="nav-item" href="../faculty/syllabus.html">📖 Syllabus Setup</a>
-          <a class="nav-item" href="../faculty/outcomes.html">🎯 CO & PO Setup</a>
-          <a class="nav-item" href="../faculty/co-po-map.html">🗺️ CO-PO Mapping</a>
-          <a class="nav-item" href="../faculty/6a-matrix.html">📋 6A Indicator Mapping</a>
-          <a class="nav-item" href="../faculty/students.html">👥 Students</a>
+          <a class="nav-item" href="../faculty/syllabus.html"><span class="nav-icon" data-icon="syllabus"></span><span>Syllabus Setup</span></a>
+          <a class="nav-item" href="../faculty/outcomes.html"><span class="nav-icon" data-icon="outcomes"></span><span>CO & PO Setup</span></a>
+          <a class="nav-item" href="../faculty/co-po-map.html"><span class="nav-icon" data-icon="map"></span><span>CO-PO Mapping</span></a>
+          <a class="nav-item" href="../faculty/6a-matrix.html"><span class="nav-icon" data-icon="matrix"></span><span>6A Indicator Matrix</span></a>
+          <a class="nav-item" href="../faculty/students.html"><span class="nav-icon" data-icon="students"></span><span>Students</span></a>
           <p class="nav-section-label">Assessment</p>
-          <a class="nav-item" href="../faculty/marks.html">📝 Marks Entry</a>
-          <a class="nav-item" href="../faculty/attainment.html">📈 Attainment</a>
-          <a class="nav-item" href="../faculty/assignments.html">🤖 Assignments & AI</a>
-          <a class="nav-item" href="../faculty/auto-grade.html">✅ Auto-Grading</a>
-          <a class="nav-item" href="../faculty/question-paper.html">📄 Question Paper</a>
-          <a class="nav-item" href="../faculty/reports.html">📄 Course Reports</a>
+          <a class="nav-item" href="../faculty/marks.html"><span class="nav-icon" data-icon="marks"></span><span>Marks Entry</span></a>
+          <a class="nav-item" href="../faculty/attainment.html"><span class="nav-icon" data-icon="attainment"></span><span>Attainment</span></a>
+          <a class="nav-item" href="../faculty/assignments.html"><span class="nav-icon" data-icon="assignments"></span><span>Assignments</span></a>
+          <a class="nav-item" href="../faculty/auto-grade.html"><span class="nav-icon" data-icon="grade"></span><span>Auto-Grading</span></a>
+          <a class="nav-item" href="../faculty/question-paper.html"><span class="nav-icon" data-icon="paper"></span><span>Question Paper</span></a>
+          <a class="nav-item" href="../faculty/reports.html"><span class="nav-icon" data-icon="reports"></span><span>Course Reports</span></a>
         `;
       }
     }
@@ -240,11 +245,11 @@ const Auth = (() => {
           container.className = 'db-backup-restore-container';
           container.style.cssText = 'display:flex;gap:6px;margin-top:10px;margin-bottom:4px';
           container.innerHTML = `
-            <button class="btn btn-ghost btn-sm db-backup-btn" style="flex:1;justify-content:center;font-size:11px;padding:5px 4px;color:#64748B;border:1px solid rgba(255,255,255,0.08);">
-              📥 Backup
+            <button class="btn btn-secondary btn-sm db-backup-btn" style="flex:1;justify-content:center;font-size:11px;padding:5px 4px;color:#94A3B8;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);">
+              Backup
             </button>
-            <button class="btn btn-ghost btn-sm db-restore-btn" style="flex:1;justify-content:center;font-size:11px;padding:5px 4px;color:#64748B;border:1px solid rgba(255,255,255,0.08);">
-              📤 Restore
+            <button class="btn btn-secondary btn-sm db-restore-btn" style="flex:1;justify-content:center;font-size:11px;padding:5px 4px;color:#94A3B8;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);">
+              Restore
             </button>
           `;
           footer.insertBefore(container, logoutBtn);
@@ -272,5 +277,38 @@ const Auth = (() => {
     });
   }
 
-  return { login, logout, getUser, getToken, requireAuth, redirectToDashboard, populateSidebar, highlightNav, DASHBOARDS, exportDatabase, importDatabasePrompt };
+  /* ── Global Click Listener for Sign Out Delegation ── */
+  document.addEventListener('click', (e) => {
+    const logoutBtn = e.target.closest('[data-action="logout"], .btn-logout, [data-logout]');
+    if (logoutBtn) {
+      e.preventDefault();
+      logout();
+    }
+  });
+
+  /* ── Auto-initialize on load ── */
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      const u = getUser();
+      if (u) populateSidebar(u);
+    });
+  } else {
+    const u = getUser();
+    if (u) populateSidebar(u);
+  }
+
+  return {
+    login,
+    logout,
+    getUser,
+    getToken,
+    requireAuth,
+    requireRole: requireAuth,
+    redirectToDashboard,
+    populateSidebar,
+    highlightNav,
+    DASHBOARDS,
+    exportDatabase,
+    importDatabasePrompt
+  };
 })();
