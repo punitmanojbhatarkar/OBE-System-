@@ -41,7 +41,8 @@ const Auth = (() => {
   /* ── Login ── */
   async function login(email, password) {
     try {
-      const apiBase = typeof window !== 'undefined' && window.API_BASE !== undefined ? window.API_BASE : 'http://127.0.0.1:8080';
+      const isLocal = typeof window !== 'undefined' && (window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+      const apiBase = typeof window !== 'undefined' && window.API_BASE !== undefined ? window.API_BASE : (isLocal ? 'http://127.0.0.1:8080' : 'https://obe-system-backend.onrender.com');
       const res = await fetch(apiBase + '/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
