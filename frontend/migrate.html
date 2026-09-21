@@ -58,7 +58,9 @@
       logMsg('Found old data. Sending to backend...');
 
       try {
-        const res = await fetch('http://127.0.0.1:8080/api/migrate', {
+        const isLocal = window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const apiBase = isLocal ? 'http://127.0.0.1:8080' : 'https://obe-system-backend.onrender.com';
+        const res = await fetch(`${apiBase}/api/migrate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(backup)

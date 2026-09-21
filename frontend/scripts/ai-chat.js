@@ -201,7 +201,8 @@
 
   async function callChatAPI(message) {
     try {
-      const response = await fetch('http://127.0.0.1:8080/api/chat-agent', {
+      const apiBase = typeof window !== 'undefined' && window.API_BASE !== undefined ? window.API_BASE : 'http://127.0.0.1:8080';
+      const response = await fetch(`${apiBase}/api/chat-agent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message, session_id: SESSION_ID }),
@@ -236,7 +237,8 @@
     history = [{ role: 'ai', text: "Chat session cleared. How can I assist you with your course outcomes?" }];
     saveHistory();
     renderHistory();
-    fetch(`http://127.0.0.1:8080/api/chat-agent/memory/${SESSION_ID}`, { method: 'DELETE' }).catch(() => {});
+    const apiBase = typeof window !== 'undefined' && window.API_BASE !== undefined ? window.API_BASE : 'http://127.0.0.1:8080';
+    fetch(`${apiBase}/api/chat-agent/memory/${SESSION_ID}`, { method: 'DELETE' }).catch(() => {});
     SESSION_ID = 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     sessionStorage.setItem('obe_chat_session', SESSION_ID);
   });

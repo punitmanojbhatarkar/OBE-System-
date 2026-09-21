@@ -7,7 +7,8 @@
 const AI = (() => {
 
   async function callBackend(endpoint, payload) {
-    const res = await fetch(`http://127.0.0.1:8080/api/${endpoint}`, {
+    const apiBase = typeof window !== 'undefined' && window.API_BASE !== undefined ? window.API_BASE : 'http://127.0.0.1:8080';
+    const res = await fetch(`${apiBase}/api/${endpoint}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
