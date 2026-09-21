@@ -10,3 +10,4 @@ numpy
 faiss-cpu
 PyJWT
 passlib[bcrypt]
+psycopg2-binary

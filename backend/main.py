@@ -49,10 +49,18 @@ async def add_pna_and_cors(request: Request, call_next):
     response.headers["Access-Control-Allow-Private-Network"] = "true"
     return response
 
+frontend_url = os.getenv("FRONTEND_URL", "https://obe-git-master-punitbhatarkar650s-projects.vercel.app")
+allowed_origins = [
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+    "http://localhost:3000",
+    frontend_url
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
