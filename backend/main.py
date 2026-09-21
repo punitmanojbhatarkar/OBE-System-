@@ -130,22 +130,30 @@ async def migrate_db(request: Request, db: Session = Depends(get_db)):
     # Receives the entire localStorage blob and overwrites db.
     data = await request.json()
     
-    # Very simple migration: we can just drop all tables and recreate them,
-    # then insert the data.
+    # Drop all and recreate to ensure clean slate
     models.Base.metadata.drop_all(bind=engine)
     models.Base.metadata.create_all(bind=engine)
     
-    # For a robust migration, we should insert the provided data.
-    # But since SQLite has many relations, we need to do it carefully.
-    
-    if 'obe_users' in data:
-        for u in data['obe_users']:
-            db.merge(models.User(id=u.get('id'), name=u.get('name'), email=u.get('email'), password=u.get('password', '1234'), role=u.get('role'), deptId=u.get('deptId'), avatar=u.get('avatar')))
-            
+    # 1. Insert Departments first (Parent of Users and Courses)
     if 'obe_departments' in data:
         for d in data['obe_departments']:
-            db.merge(models.Department(id=d.get('id'), name=d.get('name'), code=d.get('code'), hod=d.get('hod'), vision=d.get('vision'), mission=d.get('mission')))
+            db.merge(models.Department(
+                id=d.get('id'), name=d.get('name'), code=d.get('code'), 
+                hod=d.get('hod'), vision=d.get('vision'), mission=d.get('mission')
+            ))
+        db.commit() # Commit so Users can reference them
             
+    # 2. Insert Users (Parent of Courses)
+    if 'obe_users' in data:
+        for u in data['obe_users']:
+            db.merge(models.User(
+                id=u.get('id'), name=u.get('name'), email=u.get('email'), 
+                password=u.get('password', '1234'), role=u.get('role'), 
+                deptId=u.get('deptId'), avatar=u.get('avatar')
+            ))
+        db.commit()
+            
+    # 3. Insert Courses
     if 'obe_courses' in data:
         for c in data['obe_courses']:
             exam = c.get('examScheme') or {}
@@ -161,8 +169,31 @@ async def migrate_db(request: Request, db: Session = Depends(get_db)):
                 attLevel1=att.get('l1', 65), attLevel2=att.get('l2', 75), attLevel3=att.get('l3', 85),
                 directWeight=c.get('directWeight', 80), indirectWeight=c.get('indirectWeight', 20)
             ))
+        db.commit()
+        
+    # 4. Insert COs
+    if 'obe_cos' in data:
+        for co in data['obe_cos']:
+            assessed = co.get('assessedThrough')
+            if isinstance(assessed, list):
+                assessed = ",".join(assessed)
+            db.merge(models.CourseOutcome(
+                id=co.get('id'), courseId=co.get('courseId'), no=co.get('no'), code=co.get('code'),
+                text=co.get('text') or co.get('description'), bloomsLevel=co.get('bloomsLevel') or co.get('btLevel'),
+                assessedThrough=assessed
+            ))
+        db.commit()
+        
+    # 5. Insert Students
+    if 'obe_students' in data:
+        for s in data['obe_students']:
+            db.merge(models.Student(
+                id=s.get('id'), courseId=s.get('courseId'), prn=s.get('prn'),
+                name=s.get('name'), preSurveyScore=s.get('preSurveyScore'),
+                learnerType=s.get('learnerType')
+            ))
+        db.commit()
             
-    db.commit()
     return {"success": True, "message": "Migrated successfully"}
 
 
