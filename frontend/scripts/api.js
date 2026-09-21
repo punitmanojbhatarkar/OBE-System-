@@ -8,7 +8,7 @@
 // Auto-detect: if served from the backend (same origin), use relative URLs.
 // If opened as file:// or locally, use hardcoded local URL. Otherwise use Render backend.
 const isLocal = window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const API_BASE = isLocal ? 'http://127.0.0.1:8080' : 'https://obe-system-backend.onrender.com';
+const API_BASE = isLocal ? 'http://127.0.0.1:8080' : 'https://obe-system-backend-t0ri.onrender.com';
 window.API_BASE = API_BASE;
 
 let apiQueue = Promise.resolve();

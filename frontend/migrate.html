@@ -59,7 +59,7 @@
 
       try {
         const isLocal = window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const apiBase = isLocal ? 'http://127.0.0.1:8080' : 'https://obe-system-backend.onrender.com';
+        const apiBase = isLocal ? 'http://127.0.0.1:8080' : 'https://obe-system-backend-t0ri.onrender.com';
         const res = await fetch(`${apiBase}/api/migrate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
