@@ -275,6 +275,38 @@ def update_config(patch: ConfigPatch, db: Session = Depends(get_db)):
 # DEPARTMENTS
 # ─────────────────────────────────────────────
 @app.get("/api/departments")
+
+@app.get("/api/patterns")
+def get_patterns(db: Session = Depends(get_db)):
+    return db.query(models.CurriculumPattern).all()
+
+@app.post("/api/patterns")
+def add_pattern(body: PatternBody, db: Session = Depends(get_db)):
+    p = models.CurriculumPattern(id=body.id or uid(), name=body.name, year=body.year, departmentId=body.departmentId)
+    db.add(p); db.commit(); db.refresh(p)
+    return p
+
+@app.get("/api/outcomes")
+def get_outcomes(db: Session = Depends(get_db)):
+    return db.query(models.ProgramOutcome).all()
+
+@app.post("/api/outcomes")
+def add_outcome(body: OutcomeBody, db: Session = Depends(get_db)):
+    o = models.ProgramOutcome(code=body.code, description=body.description, type=body.type, departmentId=body.departmentId, patternId=body.patternId)
+    db.add(o); db.commit(); db.refresh(o)
+    return o
+
+@app.post("/api/admin/rollover")
+def academic_rollover(body: RolloverBody, db: Session = Depends(get_db)):
+    cfg = db.query(models.Config).filter(models.Config.id == 1).first()
+    if cfg:
+        cfg.academicYear = body.newAcademicYear
+    db.commit()
+    # In a full system, this might also archive courses or create clones.
+    # For now, it updates the global config and lets new courses attach to the new year.
+    return {"success": True, "academicYear": body.newAcademicYear}
+
+@app.get("/api/departments")
 def get_departments(db: Session = Depends(get_db)):
     return [dept_to_dict(d) for d in db.query(models.Department).all()]
 
@@ -330,6 +362,24 @@ def get_user(user_id: str, db: Session = Depends(get_db)):
     u = db.query(models.User).filter(models.User.id == user_id).first()
     if not u: raise HTTPException(404)
     return user_to_dict(u)
+
+
+class PatternBody(BaseModel):
+    id: Optional[str] = None
+    name: str
+    year: str
+    departmentId: Optional[str] = None
+
+class OutcomeBody(BaseModel):
+    id: Optional[int] = None
+    code: str
+    description: str
+    type: str
+    departmentId: Optional[str] = None
+    patternId: Optional[str] = None
+
+class RolloverBody(BaseModel):
+    newAcademicYear: str
 
 class UserBody(BaseModel):
     id: Optional[str] = None

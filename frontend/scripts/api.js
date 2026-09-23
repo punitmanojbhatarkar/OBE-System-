@@ -85,6 +85,17 @@ function showSyncOverlay() {
   } else {
     document.addEventListener('DOMContentLoaded', () => document.body.prepend(el));
   }
+  
+  // Phase 2: Patterns and Outcomes
+  async function getPatterns() {
+    const res = await fetch(API_BASE + '/api/patterns');
+    return await res.json();
+  }
+  async function getOutcomes() {
+    const res = await fetch(API_BASE + '/api/outcomes');
+    return await res.json();
+  }
+
   return {
     msg: (t) => { const m = el.querySelector('#api-sync-msg'); if (m) m.textContent = t; },
     done: () => { el.remove(); }
@@ -120,6 +131,17 @@ function showOfflineError(err) {
 
 /* ── Transform backend course to match frontend data.js shape ── */
 function normalizeCourse(c) {
+  
+  // Phase 2: Patterns and Outcomes
+  async function getPatterns() {
+    const res = await fetch(API_BASE + '/api/patterns');
+    return await res.json();
+  }
+  async function getOutcomes() {
+    const res = await fetch(API_BASE + '/api/outcomes');
+    return await res.json();
+  }
+
   return {
     ...c,
     class: c.class || c.klass || '',

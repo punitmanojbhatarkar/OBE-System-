@@ -322,7 +322,26 @@
     });
   }
 
+  
   function renderPOs() {
+    const list = document.getElementById('poList');
+    list.innerHTML = '';
+    const outcomes = DB.outcomes.all();
+    if (outcomes.length === 0) {
+      list.innerHTML = '<div style="padding:16px; color:var(--text-secondary);">No Outcomes Defined in Database.</div>';
+      return;
+    }
+    outcomes.forEach(o => {
+      list.innerHTML += 
+        <div class="po-item">
+          <div class="po-badge "></div>
+          <div class="po-text"></div>
+        </div>
+      ;
+    });
+  }
+
+function _old_renderPOs() {
     const body = document.getElementById('po-body');
     body.innerHTML = '';
     Object.entries(PO_DEFS).forEach(([po, desc]) => {

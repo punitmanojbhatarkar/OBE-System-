@@ -21,7 +21,34 @@ class Department(Base):
     vision = Column(Text, nullable=True)
     mission = Column(Text, nullable=True)
 
+
+class CurriculumPattern(Base):
+    __tablename__ = "curriculum_patterns"
+    id = Column(String, primary_key=True, index=True)
+    name = Column(String)  # e.g., "2019 Pattern"
+    year = Column(String)
+    departmentId = Column(String, ForeignKey("departments.id"), nullable=True)
+    department = relationship("Department")
+    patternId = Column(String, ForeignKey("curriculum_patterns.id"), nullable=True)
+    academicYear = Column(String, nullable=True)
+    pattern = relationship("CurriculumPattern")
+
+class ProgramOutcome(Base):
+    __tablename__ = "program_outcomes"
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    code = Column(String)  # e.g., "PO1", "PSO1"
+    description = Column(Text)
+    type = Column(String)  # "PO" or "PSO"
+    departmentId = Column(String, ForeignKey("departments.id"), nullable=True) # Null for standard POs
+    patternId = Column(String, ForeignKey("curriculum_patterns.id", ondelete="CASCADE"), nullable=True)
+    department = relationship("Department")
+    patternId = Column(String, ForeignKey("curriculum_patterns.id"), nullable=True)
+    academicYear = Column(String, nullable=True)
+    pattern = relationship("CurriculumPattern")
+    pattern = relationship("CurriculumPattern")
+
 class Course(Base):
+
     __tablename__ = "courses"
     id = Column(String, primary_key=True, index=True)
     code = Column(String, index=True)
@@ -52,6 +79,9 @@ class Course(Base):
     indirectWeight = Column(Integer, default=20)
     faculty = relationship("User")
     department = relationship("Department")
+    patternId = Column(String, ForeignKey("curriculum_patterns.id"), nullable=True)
+    academicYear = Column(String, nullable=True)
+    pattern = relationship("CurriculumPattern")
 
 class CourseOutcome(Base):
     __tablename__ = "course_outcomes"

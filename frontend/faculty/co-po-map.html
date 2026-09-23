@@ -264,13 +264,20 @@
   const user = Auth.requireAuth(['faculty', 'hod']);
   if (!user) throw new Error('Not authorized');
 
-  const PO_COLS = ['PO1','PO2','PO3','PO4','PO5','PO6','PO7','PO8','PO9','PO10','PO11','PO12','PSO1','PSO2','PSO3'];
-  const PO_FULL = {
-    PO1:'Engineering Knowledge',PO2:'Problem Analysis',PO3:'Design/Development',PO4:'Investigation',
-    PO5:'Modern Tool Usage',PO6:'Engineer & Society',PO7:'Environment & Sustainability',
-    PO8:'Ethics',PO9:'Individual & Team Work',PO10:'Communication',PO11:'Project Management',PO12:'Life-Long Learning',
-    PSO1:'Domain Specific Knowledge',PSO2:'Industry Readiness',PSO3:'Research Aptitude'
-  };
+  
+  
+  // Dynamic PO/PSO from DB
+  let PO_COLS = [];
+  let PO_FULL = {};
+
+  function initPOs() {
+    const outcomes = DB.outcomes.all();
+    PO_COLS = outcomes.map(o => o.code);
+    outcomes.forEach(o => {
+      PO_FULL[o.code] = o.description;
+    });
+  }
+
 
   let currentCourseId = null;
   let activeCOs = [];
@@ -347,8 +354,15 @@
   function buildMatrix() {
     const head = document.getElementById('matrix-head');
     let r1 = '<tr><th class="co-header" rowspan="2">Course Outcome</th>';
-    r1 += '<th colspan="12" style="text-align:center;">Program Outcomes (PO1–PO12)</th>';
-    r1 += '<th colspan="3" class="pso-divider" style="text-align:center;">Program Specific Outcomes (PSO)</th></tr>';
+    
+    const poList = DB.outcomes.getPOList();
+    const psoList = DB.outcomes.getPSOList();
+    r1 += <th colspan="" style="text-align:center;">Program Outcomes (POs)</th>;
+    if (psoList.length > 0) {
+      r1 += <th colspan="" class="pso-divider" style="text-align:center;">Program Specific Outcomes (PSO)</th>;
+    }
+    r1 += '</tr>';
+
     
     let r2 = '<tr>';
     PO_COLS.forEach((po, i) => {
