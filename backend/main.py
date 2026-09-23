@@ -1451,3 +1451,51 @@ def save_action_plan(body: ActionPlanBody, db: Session = Depends(get_db)):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True)
+
+
+class BulkUsersBody(BaseModel):
+    users: list
+
+@app.post('/api/admin/bulk-import/users')
+def bulk_import_users(body: BulkUsersBody, db: Session = Depends(get_db)):
+    count = 0
+    for u_data in body.users:
+        email = u_data.get('email')
+        if not email: continue
+        u = db.query(models.User).filter(models.User.email == email).first()
+        if not u:
+            u = models.User(id=u_data.get('id') or uid(), email=email)
+            db.add(u)
+        u.name = u_data.get('name', u.name)
+        u.role = u_data.get('role', u.role or 'student')
+        if u_data.get('password'): u.password = u_data['password']
+        if u_data.get('deptId'): u.deptId = u_data['deptId']
+        u.avatar = u.avatar or (u.name[0].upper() if u.name else 'U')
+        count += 1
+    db.commit()
+    return {'success': True, 'imported': count}
+
+
+
+class BulkStudentsBody(BaseModel):
+    students: list
+
+@app.post('/api/admin/bulk-import/students')
+def bulk_import_students(body: BulkStudentsBody, db: Session = Depends(get_db)):
+    count = 0
+    for s_data in body.students:
+        prn = s_data.get('prn')
+        courseId = s_data.get('courseId')
+        if not prn or not courseId: continue
+        _ensure_course(db, courseId)
+        s = db.query(models.Student).filter(models.Student.prn == prn, models.Student.courseId == courseId).first()
+        if not s:
+            s = models.Student(id=s_data.get('id') or uid(), prn=prn, courseId=courseId)
+            db.add(s)
+        s.name = s_data.get('name', s.name)
+        if s_data.get('preSurveyScore') is not None: s.preSurveyScore = s_data['preSurveyScore']
+        s.learnerType = s_data.get('learnerType', s.learnerType or 'average')
+        count += 1
+    db.commit()
+    return {'success': True, 'imported': count}
+

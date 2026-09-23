@@ -102,13 +102,18 @@
           </div>
           <div class="stat-card-val" id="stat-assess">0</div>
         </div>
+        
         <div class="stat-card">
           <div class="stat-card-header">
-            <span class="stat-card-label">System Health</span>
-            <span class="stat-card-icon" data-icon="check"></span>
+            <span class="stat-card-label">Gemini AI Quota</span>
+            <span class="stat-card-icon" data-icon="config"></span>
           </div>
-          <div class="stat-card-val" style="color:var(--success)">100%</div>
+          <div class="stat-card-val" id="stat-ai-quota" style="color:var(--primary); font-size:18px;">0 / 50</div>
+          <div style="width:100%; height:4px; background:var(--border); border-radius:2px; margin-top:8px;">
+            <div id="ai-quota-bar" style="width:0%; height:100%; background:var(--primary); border-radius:2px;"></div>
+          </div>
         </div>
+
       </div>
 
       <!-- Charts Row -->
@@ -175,7 +180,8 @@
   renderDepts();
   renderAllIcons();
 
-  function renderStats() {
+  
+  async function renderStats() {
     const depts = DB.departments.all();
     const users = DB.users.all();
     const courses = DB.courses.all();
@@ -187,7 +193,21 @@
     document.getElementById('stat-courses').textContent = courses.length;
     document.getElementById('stat-students').textContent = students.length;
     document.getElementById('stat-assess').textContent = assess.length;
+
+    try {
+      const res = await fetch((window.API_BASE || 'http://127.0.0.1:8080') + '/api/config');
+      const cfg = await res.json();
+      const used = cfg.aiCallsUsed || 0;
+      const mx = cfg.maxAICalls || 50;
+      document.getElementById('stat-ai-quota').textContent = ${used} / ;
+      const pct = Math.min(100, Math.round((used / mx) * 100));
+      document.getElementById('ai-quota-bar').style.width = ${pct}%;
+      if (pct > 80) document.getElementById('ai-quota-bar').style.background = 'red';
+    } catch (e) {
+      console.warn('Could not load AI quota', e);
+    }
   }
+
 
   function renderDepts() {
     const tbody = document.getElementById('dept-tbody');

@@ -33,6 +33,8 @@ const Auth = (() => {
   /* Role → dashboard page */
   const DASHBOARDS = {
     admin   : 'admin/dashboard.html',
+    nba_coordinator: 'admin/dashboard.html',
+    exam_cell: 'admin/dashboard.html',
     faculty : 'faculty/dashboard.html',
     hod     : 'hod/dashboard.html',
     student : 'student/dashboard.html',
@@ -94,10 +96,17 @@ const Auth = (() => {
   }
 
   /* ── Require auth (call at top of each protected page) ── */
-  function requireAuth(allowedRoles) {
+    function requireAuth(allowedRoles) {
     const user = getUser();
     if (!user) { _go('login.html'); return null; }
-    if (allowedRoles && !allowedRoles.includes(user.role)) {
+    
+    // Admins, NBA Coordinators, and Exam Cell share the admin view by default
+    let expandedRoles = allowedRoles ? [...allowedRoles] : null;
+    if (expandedRoles && expandedRoles.includes('admin')) {
+        expandedRoles.push('nba_coordinator', 'exam_cell');
+    }
+
+    if (expandedRoles && !expandedRoles.includes(user.role)) {
       _go(DASHBOARDS[user.role] || 'login.html');
       return null;
     }
