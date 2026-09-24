@@ -96,6 +96,26 @@ function showSyncOverlay() {
     return await res.json();
   }
 
+  
+  // Phase 3: Reports
+  async function generateNBAReport(course_id) {
+    const res = await fetch(API_BASE + '/api/nba-report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ course_id })
+    });
+    return await res.json();
+  }
+  
+  async function generateCurriculumGapPlan(course_id) {
+    const res = await fetch(API_BASE + '/api/curriculum-gap-plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ course_id })
+    });
+    return await res.json();
+  }
+
   return {
     msg: (t) => { const m = el.querySelector('#api-sync-msg'); if (m) m.textContent = t; },
     done: () => { el.remove(); }
@@ -139,6 +159,26 @@ function normalizeCourse(c) {
   }
   async function getOutcomes() {
     const res = await fetch(API_BASE + '/api/outcomes');
+    return await res.json();
+  }
+
+  
+  // Phase 3: Reports
+  async function generateNBAReport(course_id) {
+    const res = await fetch(API_BASE + '/api/nba-report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ course_id })
+    });
+    return await res.json();
+  }
+  
+  async function generateCurriculumGapPlan(course_id) {
+    const res = await fetch(API_BASE + '/api/curriculum-gap-plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ course_id })
+    });
     return await res.json();
   }
 

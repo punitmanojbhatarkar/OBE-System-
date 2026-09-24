@@ -40,6 +40,7 @@
   </style>
   <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
 <div class="app-shell">
@@ -111,6 +112,9 @@
           </select>
         </div>
         <div style="margin-left:auto;display:flex;gap:8px;">
+          <button class="btn btn-primary btn-sm" onclick="generateAIReport()" id="btn-ai-report" style="background:var(--secondary);border-color:var(--secondary);">
+            <span data-icon="magic"></span><span>Generate AI NBA Report</span>
+          </button>
           <button class="btn btn-secondary btn-sm" onclick="exportOfficialSPPUExcel()">
             <span data-icon="download"></span><span>Export Excel Workbook</span>
           </button>
@@ -167,6 +171,10 @@
     const indirectData = Attainment.calcCOIndirect(cid);
     const finalData = Attainment.calcCOFinal(cid);
     const poData = Attainment.calcPOAttainment(cid);
+
+    const poList = DB.outcomes.getPOList();
+    const psoList = DB.outcomes.getPSOList();
+    const allOutcomes = [...poList, ...psoList];
 
     const container = document.getElementById('report-container');
 
@@ -228,23 +236,26 @@
         </tbody>
       </table>
 
-      <h4>3. Program Outcome (PO1–PO12 & PSO1–PSO3) Attainment</h4>
+      <h4>3. Program Outcomes & Program Specific Outcomes Attainment</h4>
       <table class="rpt-table">
         <thead>
           <tr>
-            <th>Program Outcome</th>
+            <th>Outcome</th>
             <th>Calculated Attainment Score</th>
             <th>Attainment Level</th>
           </tr>
         </thead>
         <tbody>
-          ${Object.entries(poData).map(([po, info]) => `
+          ${allOutcomes.map(po => {
+            const info = poData[po] || {score:0, level:''};
+            return `
             <tr>
               <td><strong>${po}</strong></td>
               <td>${info.score > 0 ? info.score.toFixed(2) : '—'}</td>
               <td>${info.level || '—'}</td>
             </tr>
-          `).join('')}
+            `;
+          }).join('')}
         </tbody>
       </table>
 
@@ -256,12 +267,48 @@
     `;
   }
 
+  async function generateAIReport() {
+    const cid = document.getElementById('course-select').value;
+    if (!cid) return;
+    
+    const btn = document.getElementById('btn-ai-report');
+    const ogHtml = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;display:inline-block;animation:spin 1s linear infinite;"></span> Generating AI Report...';
+    btn.disabled = true;
+    
+    try {
+      const res = await API.generateNBAReport(cid);
+      if (res.success && res.data.report) {
+        const container = document.getElementById('report-container');
+        container.innerHTML = `
+          <div style="margin-bottom: 20px; padding: 12px; background: #E0F2FE; color: #0369A1; border-radius: var(--r-md); border: 1px solid #BAE6FD; display: flex; align-items: center; gap: 8px;">
+            <span data-icon="magic"></span>
+            <strong>AI Generated NBA Report:</strong> This is a formal narrative report synthesized from your course data.
+          </div>
+          <div class="markdown-body" style="text-align: left; padding: 20px; font-family: 'Inter', sans-serif;">
+            ${marked.parse(res.data.report)}
+          </div>
+        `;
+        renderAllIcons();
+      } else {
+        Toast.error('Failed to generate report.');
+      }
+    } catch (e) {
+      console.error(e);
+      Toast.error('Error connecting to AI service.');
+    } finally {
+      btn.innerHTML = ogHtml;
+      btn.disabled = false;
+    }
+  }
+
   function exportOfficialSPPUExcel() {
     Toast.success('Generating comprehensive Excel workbook…');
   }
 
   window.loadReport = loadReport;
   window.exportOfficialSPPUExcel = exportOfficialSPPUExcel;
+  window.generateAIReport = generateAIReport;
 })();
 </script>
 </body>
