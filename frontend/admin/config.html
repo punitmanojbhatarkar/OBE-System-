@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>System Settings & Parameters | OBE System – MITAOE</title>
+  <title>System Settings & Parameters | OBE System â€“ MITAOE</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../styles/main.css">
@@ -29,6 +29,7 @@
       <p class="nav-section-label">Institutional Management</p>
       <a class="nav-item" href="dashboard.html"><span class="nav-icon" data-icon="dashboard"></span><span>Admin Dashboard</span></a>
       <a class="nav-item" href="departments.html"><span class="nav-icon" data-icon="matrix"></span><span>Departments</span></a>
+      <a class="nav-item" href="patterns.html"><span class="nav-icon" data-icon="document"></span><span>Curriculum Patterns</span></a>
       <a class="nav-item" href="users.html"><span class="nav-icon" data-icon="students"></span><span>User Directory</span></a>
       <a class="nav-item active" href="config.html"><span class="nav-icon" data-icon="config"></span><span>System Settings</span></a>
       <a class="nav-item" href="audit.html"><span class="nav-icon" data-icon="audit"></span><span>Audit Trail</span></a>
@@ -49,7 +50,7 @@
     <header class="topbar">
       <div class="topbar-left">
         <h1 class="topbar-title">Institutional Parameters & Configuration</h1>
-        <div class="topbar-breadcrumb">Admin Console <span>›</span> System Preferences</div>
+        <div class="topbar-breadcrumb">Admin Console <span>â€º</span> System Preferences</div>
       </div>
       <div class="topbar-right">
         <button class="btn btn-primary btn-sm" onclick="saveAllConfig()">
@@ -110,6 +111,25 @@
         </div>
       </div>
 
+      <!-- Academic Rollover -->
+      <div class="card" style="margin-bottom:16px; border-color:var(--primary);">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Academic Year Rollover</div>
+            <div class="card-subtitle">Advance the system to the next academic year or semester. This updates the global academic year and prepares the database.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-end;padding:16px;">
+          <div class="form-group" style="margin-bottom:0; flex:1; max-width:300px;">
+            <label class="form-label">New Academic Year</label>
+            <input type="text" class="form-input" id="cfg-rollover-year" placeholder="e.g. 2026-27">
+          </div>
+          <button class="btn btn-primary" onclick="triggerRollover()">
+            <span data-icon="refresh"></span><span>Initiate Rollover</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Database Maintenance -->
       <div class="card" style="border-color:var(--border);">
         <div class="card-header">
@@ -153,9 +173,39 @@
     }, 'Reset', true);
   }
 
+  async function triggerRollover() {
+    const newYear = document.getElementById('cfg-rollover-year').value.trim();
+    if (!newYear) {
+      Toast.error('Please specify the new academic year.');
+      return;
+    }
+
+    Modal.confirm('Initiate Academic Rollover', `Are you sure you want to transition the system to the  academic year? This will update global settings and prepare the database.`, async () => {
+      try {
+        await window.apiFetch('/api/admin/rollover', {
+          method: 'POST',
+          body: { newAcademicYear: newYear }
+        });
+        
+        Toast.success('Academic Rollover Complete.');
+        document.getElementById('cfg-ay').value = newYear;
+        
+        const config = DB.config.get();
+        config.academicYear = newYear;
+        DB.config.update(config);
+
+      } catch (err) {
+        Toast.error('Rollover failed.');
+      }
+    }, 'Initiate', false);
+  }
+
   window.saveAllConfig = saveAllConfig;
   window.resetToDefaults = resetToDefaults;
+  window.triggerRollover = triggerRollover;
 })();
 </script>
 </body>
 </html>
+
+

@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Curriculum Patterns | OBE System – MITAOE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles/main.css">
+  <link rel="stylesheet" href="../styles/components.css">
+  <style>
+    .pattern-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px;
+    }
+    .pattern-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-md); overflow: hidden; display: flex; flex-direction: column;
+    }
+    .pattern-card:hover { border-color: var(--primary); }
+    .pattern-card-header {
+      padding: 16px; border-bottom: 1px solid var(--border); display: flex;
+      justify-content: space-between; align-items: center; background: var(--surface-2);
+    }
+    .pattern-card-body { padding: 16px; flex: 1; display: flex; flex-direction: column; gap: 12px; }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">OBE</div>
+      <div><div class="logo-text">OBE System</div><div class="logo-sub">MITAOE</div></div>
+    </div>
+    <nav class="sidebar-nav">
+      <p class="nav-section-label">Institutional Management</p>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon" data-icon="dashboard"></span><span>Admin Dashboard</span></a>
+      <a class="nav-item" href="departments.html"><span class="nav-icon" data-icon="matrix"></span><span>Departments</span></a>
+      <a class="nav-item active" href="patterns.html"><span class="nav-icon" data-icon="document"></span><span>Curriculum Patterns</span></a>
+      <a class="nav-item" href="users.html"><span class="nav-icon" data-icon="students"></span><span>User Directory</span></a>
+      <a class="nav-item" href="config.html"><span class="nav-icon" data-icon="config"></span><span>System Settings</span></a>
+      <a class="nav-item" href="audit.html"><span class="nav-icon" data-icon="audit"></span><span>Audit Trail</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-card" onclick="Auth.logout()">
+        <div class="user-avatar"></div>
+        <div><div class="user-name"></div><div class="user-role"></div></div>
+      </div>
+      <button class="btn btn-secondary btn-sm w-full" data-action="logout" style="margin-top:8px; width:100%;">
+        <span data-icon="logout"></span><span>Sign Out</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <h1 class="topbar-title">Curriculum Patterns (PO & PSO)</h1>
+        <div class="topbar-breadcrumb">Admin Console <span>›</span> Curriculum Patterns</div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-primary btn-sm" onclick="openAddPatternModal()">
+          <span data-icon="plus"></span><span>Add Pattern</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="page-content">
+
+      <!-- Pattern Cards Grid -->
+      <div id="patternGrid" class="pattern-grid"></div>
+
+    </div>
+  </main>
+</div>
+
+<script src="../scripts/icons.js"></script>
+<script src="../scripts/data.js"></script>
+<script src="../scripts/api.js"></script>
+<script src="../scripts/auth.js"></script>
+<script src="../scripts/utils.js"></script>
+<script>
+(async () => {
+  await (window._apiReady || Promise.resolve());
+  const user = Auth.requireAuth(['admin']);
+  if (!user) throw new Error('Not authorized');
+
+  renderPatterns();
+  renderAllIcons();
+
+  function renderPatterns() {
+    const grid = document.getElementById('patternGrid');
+    const patterns = DB.patterns.all();
+    const depts = DB.departments.all();
+    const outcomes = DB.outcomes.all();
+
+    if (patterns.length === 0) {
+      grid.innerHTML = '<div style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--text-secondary); background: var(--surface-2); border-radius: var(--r-md);">No curriculum patterns found. Create one to define POs and PSOs.</div>';
+      return;
+    }
+
+    grid.innerHTML = patterns.map(p => {
+      const dept = depts.find(d => d.id === p.departmentId);
+      const pOutcomes = outcomes.filter(o => o.patternId === p.id);
+      const pos = pOutcomes.filter(o => o.type === 'PO').length;
+      const psos = pOutcomes.filter(o => o.type === 'PSO').length;
+
+      return `
+        <div class="pattern-card">
+          <div class="pattern-card-header">
+            <div>
+              <span class="badge badge-primary font-mono" style="font-size:12px;">${p.year}</span>
+            </div>
+            <div style="font-size:12px;color:var(--text-secondary);font-weight:600;">${pos} POs, ${psos} PSOs</div>
+          </div>
+          <div class="pattern-card-body">
+            <h3 style="font-size:16px;font-weight:700;color:var(--text-primary);margin:0;">${p.name}</h3>
+            <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;font-size:12.5px;">
+              <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;margin-bottom:2px;">Department</div>
+              <div style="font-weight:600;color:var(--text-primary);">${dept ? dept.name : 'All Departments'}</div>
+            </div>
+          </div>
+          <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;">
+            <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="openManageOutcomesModal('${p.id}')">
+              <span data-icon="matrix"></span><span>Manage Outcomes</span>
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+    renderAllIcons(grid);
+  }
+
+  function openAddPatternModal() {
+    const depts = DB.departments.all();
+    const deptOptions = depts.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+
+    const html = `
+      <div class="modal-header">
+        <h3 class="modal-title">Add Curriculum Pattern</h3>
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="Modal.close()"><span data-icon="close"></span></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Pattern Name *</label>
+          <input class="form-input" id="p-name" placeholder="e.g. 2019 Pattern">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Effective Year *</label>
+          <input class="form-input" id="p-year" placeholder="e.g. 2019">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Department</label>
+          <select class="form-select" id="p-dept">
+            <option value="">-- Applicable to All --</option>
+            ${deptOptions}
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+        <button class="btn btn-primary" onclick="savePattern()">Create Pattern</button>
+      </div>
+    `;
+    Modal.open(html);
+    renderAllIcons();
+  }
+
+  async function savePattern() {
+    const name = document.getElementById('p-name').value.trim();
+    const year = document.getElementById('p-year').value.trim();
+    const dept = document.getElementById('p-dept').value || null;
+
+    if (!name || !year) { Toast.error('Name and Year are required.'); return; }
+
+    const btn = event.currentTarget;
+    btn.disabled = true;
+    btn.innerHTML = 'Saving...';
+
+    try {
+      await window.apiFetch('/api/patterns', {
+        method: 'POST',
+        body: { name, year, departmentId: dept }
+      });
+      Toast.success('Curriculum pattern added.');
+      Modal.close();
+      // Reload patterns data manually to avoid full page reload
+      const patterns = await window.apiFetch('/api/patterns');
+      localStorage.setItem('obe_patterns', JSON.stringify(patterns || []));
+      renderPatterns();
+    } catch(e) {
+      Toast.error('Failed to create pattern.');
+      btn.disabled = false;
+      btn.innerHTML = 'Create Pattern';
+    }
+  }
+
+  window.currentPatternId = null;
+
+  function openManageOutcomesModal(pid) {
+    window.currentPatternId = pid;
+    const p = DB.patterns.all().find(x => x.id === pid);
+    const outcomes = DB.outcomes.all().filter(o => o.patternId === pid);
+    
+    const pos = outcomes.filter(o => o.type === 'PO').sort((a,b) => a.code.localeCompare(b.code, undefined, {numeric: true}));
+    const psos = outcomes.filter(o => o.type === 'PSO').sort((a,b) => a.code.localeCompare(b.code, undefined, {numeric: true}));
+
+    const html = `
+      <div class="modal-header">
+        <h3 class="modal-title">Manage Outcomes (${p.name})</h3>
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="Modal.close()"><span data-icon="close"></span></button>
+      </div>
+      <div class="modal-body" style="max-height:60vh;overflow-y:auto;padding-right:8px;">
+        
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h4 style="margin:0;font-size:14px;">Program Outcomes (POs)</h4>
+          <button class="btn btn-secondary btn-sm" onclick="addOutcomeRow('PO')"><span data-icon="plus"></span> Add PO</button>
+        </div>
+        <table class="rpt-table" style="margin-bottom:24px;">
+          <thead><tr><th style="width:100px;">Code</th><th>Description</th></tr></thead>
+          <tbody id="po-tbody">
+            ${pos.length ? pos.map(o => `
+              <tr>
+                <td><strong>${o.code}</strong></td>
+                <td style="text-align:left;">${o.description}</td>
+              </tr>
+            `).join('') : '<tr><td colspan="2" style="text-align:center;padding:24px;">No POs defined.</td></tr>'}
+          </tbody>
+        </table>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h4 style="margin:0;font-size:14px;">Program Specific Outcomes (PSOs)</h4>
+          <button class="btn btn-secondary btn-sm" onclick="addOutcomeRow('PSO')"><span data-icon="plus"></span> Add PSO</button>
+        </div>
+        <table class="rpt-table">
+          <thead><tr><th style="width:100px;">Code</th><th>Description</th></tr></thead>
+          <tbody id="pso-tbody">
+            ${psos.length ? psos.map(o => `
+              <tr>
+                <td><strong>${o.code}</strong></td>
+                <td style="text-align:left;">${o.description}</td>
+              </tr>
+            `).join('') : '<tr><td colspan="2" style="text-align:center;padding:24px;">No PSOs defined.</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    `;
+    
+    // override default width for larger modal
+    const originalOpen = Modal.open;
+    Modal.open(html);
+    const mbox = document.querySelector('.modal-box');
+    if(mbox) {
+        mbox.style.width = '700px';
+        mbox.style.maxWidth = '90vw';
+    }
+    renderAllIcons();
+  }
+
+  function addOutcomeRow(type) {
+    const tbody = document.getElementById(type.toLowerCase() + '-tbody');
+    if (tbody.innerHTML.includes('No ' + type + 's defined')) tbody.innerHTML = '';
+    
+    const count = tbody.querySelectorAll('tr').length + 1;
+    const defaultCode = type + count;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="padding:4px;"><input type="text" class="form-input" placeholder="${defaultCode}" id="new-${type}-code" style="font-size:12px;padding:4px 8px;"></td>
+      <td style="padding:4px;display:flex;gap:4px;">
+        <input type="text" class="form-input" placeholder="Outcome description..." id="new-${type}-desc" style="flex:1;font-size:12px;padding:4px 8px;">
+        <button class="btn btn-primary btn-sm" onclick="saveNewOutcome('${type}', this)">Save</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  async function saveNewOutcome(type, btn) {
+    const tr = btn.closest('tr');
+    const code = tr.querySelector(`#new-${type}-code`).value.trim();
+    const desc = tr.querySelector(`#new-${type}-desc`).value.trim();
+    const pid = window.currentPatternId;
+
+    if(!code || !desc) { Toast.error('Code and description required'); return; }
+
+    btn.disabled = true;
+    btn.textContent = '...';
+
+    try {
+      await window.apiFetch('/api/outcomes', {
+        method: 'POST',
+        body: { code, description: desc, type, patternId: pid }
+      });
+      Toast.success(type + ' added.');
+      
+      // reload
+      const outcomes = await window.apiFetch('/api/outcomes');
+      localStorage.setItem('obe_outcomes', JSON.stringify(outcomes || []));
+      openManageOutcomesModal(pid); // refresh modal
+
+    } catch(e) {
+      Toast.error('Failed to add ' + type);
+      btn.disabled = false;
+      btn.textContent = 'Save';
+    }
+  }
+
+  window.openAddPatternModal = openAddPatternModal;
+  window.savePattern = savePattern;
+  window.openManageOutcomesModal = openManageOutcomesModal;
+  window.addOutcomeRow = addOutcomeRow;
+  window.saveNewOutcome = saveNewOutcome;
+})();
+</script>
+</body>
+</html>

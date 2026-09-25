@@ -1,5 +1,5 @@
-/* ============================================================
-   OBE SYSTEM — Data Layer (localStorage CRUD + Institutional OBE Data)
+﻿/* ============================================================
+   OBE SYSTEM â€” Data Layer (localStorage CRUD + Institutional OBE Data)
    All data operations go through this module.
    ============================================================ */
 
@@ -7,7 +7,7 @@ const COMPETENCY_INDICATORS = [{"po": "PO1", "comp_id": "1.1", "comp_text": "Dem
 
 const DB = (() => {
 
-  /* ── Keys ── */
+  /* â”€â”€ Keys â”€â”€ */
   const KEYS = {
     departments : 'obe_departments',
     users       : 'obe_users',
@@ -23,12 +23,13 @@ const DB = (() => {
     remedial    : 'obe_remedial',
     gaps        : 'obe_gaps',
     courseAudit : 'obe_course_audit',
+    auditLogs : 'obe_audit_logs',
     syllabus    : 'obe_syllabus',
     indicatorMapping: 'obe_indicator_mapping',
     initialized : 'obe_initialized_v2',
   };
 
-  /* ── Generic CRUD ── */
+  /* â”€â”€ Generic CRUD â”€â”€ */
   function get(key)       { try { const v = JSON.parse(localStorage.getItem(key)); return Array.isArray(v) ? v : []; } catch(e){ return []; } }
   function getObj(key)    { try { return JSON.parse(localStorage.getItem(key)) || {}; } catch(e){ return {}; } }
   function set(key, val)  { localStorage.setItem(key, JSON.stringify(val)); }
@@ -57,12 +58,13 @@ const DB = (() => {
     set(KEYS.remedial, []);
     set(KEYS.gaps, []);
     set(KEYS.courseAudit, []);
+    if(!get(KEYS.auditLogs)) set(KEYS.auditLogs, []);
     set(KEYS.indicatorMapping, {});
     localStorage.setItem(KEYS.initialized, '1');
   }
   }
 
-  /* ── Departments ── */
+  /* â”€â”€ Departments â”€â”€ */
   const departments = {
     all()       { return get(KEYS.departments); },
     byId(id)    { return departments.all().find(d=>d.id===id); },
@@ -71,7 +73,7 @@ const DB = (() => {
     delete(id)  { set(KEYS.departments, departments.all().filter(d=>d.id!==id)); },
   };
 
-  /* ── Users ── */
+  /* â”€â”€ Users â”€â”€ */
   const users = {
     all()              { return get(KEYS.users); },
     byId(id)           { return users.all().find(u=>u.id===id); },
@@ -84,7 +86,7 @@ const DB = (() => {
     delete(id)         { set(KEYS.users, users.all().filter(u=>u.id!==id)); },
   };
 
-  /* ── Courses ── */
+  /* â”€â”€ Courses â”€â”€ */
   const courses = {
     all()            { return get(KEYS.courses); },
     get()            { return get(KEYS.courses); }, // alias for all()
@@ -102,7 +104,7 @@ const DB = (() => {
     delete(id)       { set(KEYS.courses, courses.all().filter(c=>c.id!==id)); },
   };
 
-  /* ── Course Outcomes ── */
+  /* â”€â”€ Course Outcomes â”€â”€ */
   const cos = {
     all()              { return get(KEYS.cos); },
     byCourse(cid)      { 
@@ -143,7 +145,7 @@ const DB = (() => {
     delete(id)         { set(KEYS.cos, cos.all().filter(c=>c.id!==id)); },
   };
 
-  /* ── PO Mapping ── */
+  /* â”€â”€ PO Mapping â”€â”€ */
   const poMapping = {
     byCourse(cid)      { return get(KEYS.poMapping).filter(m=>m.courseId===cid); },
     getValue(cid,coNo,po) {
@@ -171,7 +173,7 @@ const DB = (() => {
     },
   };
 
-  /* ── Students ── */
+  /* â”€â”€ Students â”€â”€ */
   const students = {
     all()              { return get(KEYS.students); },
     byCourse(cid)      { return students.all().filter(s=>s.courseId===cid); },
@@ -182,7 +184,7 @@ const DB = (() => {
     delete(id)         { set(KEYS.students, students.all().filter(s=>s.id!==id)); },
   };
 
-  /* ── Marks (Unified) ── */
+  /* â”€â”€ Marks (Unified) â”€â”€ */
   const marks = {
     get(cid) { return get(KEYS.marksUnified).filter(m=>m.courseId===cid); },
     set(cid, prn, assessId, qNo, v) {
@@ -201,7 +203,7 @@ const DB = (() => {
     }
   };
 
-  /* ── Survey ── */
+  /* â”€â”€ Survey â”€â”€ */
   const survey = {
     byCourse(cid)         { return get(KEYS.survey).filter(s=>s.courseId===cid); },
     getScore(cid,prn,co)  { const s=get(KEYS.survey).find(x=>x.courseId===cid&&x.prn===prn&&String(x.co)===String(co)); return s?s.score:null; },
@@ -214,7 +216,7 @@ const DB = (() => {
     saveAll(cid,list)     { const others=get(KEYS.survey).filter(s=>s.courseId!==cid); set(KEYS.survey,[...others,...list]); },
   };
 
-  /* ── Assessments (Unified) ── */
+  /* â”€â”€ Assessments (Unified) â”€â”€ */
   const assessments = {
     all()              { return get(KEYS.assessments); },
     byCourse(cid) {
@@ -308,7 +310,7 @@ const DB = (() => {
     delete(id)         { set(KEYS.assessments, assessments.all().filter(a=>a.id!==id)); },
   };
 
-  /* ── Submissions ── */
+  /* â”€â”€ Submissions â”€â”€ */
   const submissions = {
     all()              { return get(KEYS.submissions); },
     byAssessId(aid)    { return submissions.all().filter(s=>s.assessId===aid); },
@@ -316,7 +318,7 @@ const DB = (() => {
     add(s)             { const all=submissions.all(); s.id=uid(); s.submittedAt=new Date().toISOString(); all.push(s); set(KEYS.submissions,all); return s; },
     update(s)          { const all=submissions.all().map(x=>x.id===s.id?s:x); set(KEYS.submissions,all); return s; },
   };
-  /* ── Config ── */
+  /* â”€â”€ Config â”€â”€ */
   const config = {
     get()           { return getObj(KEYS.config); },
     set(cfg)        { set(KEYS.config, cfg); },
@@ -335,7 +337,7 @@ const DB = (() => {
     }
   };
 
-  /* ── Reset (for dev) ── */
+  /* â”€â”€ Reset (for dev) â”€â”€ */
   function reset() {
     Object.values(KEYS).forEach(k=>localStorage.removeItem(k));
     init();
@@ -380,6 +382,16 @@ const DB = (() => {
     delete(id) { set(KEYS.gaps, gaps.all().filter(g => g.id !== id)); }
   };
 
+    const auditLogs = {
+    all() { return get(KEYS.auditLogs) || []; },
+    add(log) { 
+      let all = auditLogs.all();
+      all.unshift({ id: uid(), timestamp: Date.now(), ...log });
+      if(all.length > 500) all.length = 500; // Keep last 500
+      set(KEYS.auditLogs, all);
+    }
+  };
+
   const courseAudit = {
     all() { return get(KEYS.courseAudit); },
     byCourse(cid) { return courseAudit.all().find(a => a.courseId === cid); },
@@ -416,10 +428,35 @@ const DB = (() => {
     }
   };
 
-  /* ── Public API ── */
-  return { init, reset, uid, departments, users, courses, cos, poMapping, indicatorMapping, remedial, students, marks, survey, assessments, assignments: assessments, submissions, config, gaps, courseAudit, syllabus, actionPlans, KEYS };
+  /* â”€â”€ Public API â”€â”€ */
+
+  /* ?? Outcomes */
+  const outcomes = {
+    all() { return get('obe_outcomes') || []; },
+    byPattern(pid) { return outcomes.all().filter(o => o.patternId === pid); },
+    getPOList(pid=null) { 
+      let all = outcomes.all().filter(o => o.type === 'PO');
+      if(pid) all = all.filter(o => o.patternId === pid);
+      if(all.length === 0) return Array.from({length:12}, (_,i)=>PO);
+      return all.map(o => o.code);
+    },
+    getPSOList(pid=null) { 
+      let all = outcomes.all().filter(o => o.type === 'PSO');
+      if(pid) all = all.filter(o => o.patternId === pid);
+      if(all.length === 0) return Array.from({length:3}, (_,i)=>PSO);
+      return all.map(o => o.code);
+    }
+  };
+
+  /* ?? Patterns */
+  const patterns = {
+    all() { return get('obe_patterns') || []; }
+  };
+
+  return { init, reset, uid, departments, users, courses, cos, poMapping, indicatorMapping, remedial, students, marks, survey, assessments, assignments: assessments, submissions, config, gaps, courseAudit, auditLogs, syllabus, actionPlans, KEYS };
 
 })();
 
 // Auto-initialize on load
 DB.init();
+

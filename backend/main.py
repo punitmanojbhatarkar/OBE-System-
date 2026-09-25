@@ -1549,3 +1549,50 @@ def bulk_import_students(body: BulkStudentsBody, db: Session = Depends(get_db)):
     db.commit()
     return {'success': True, 'imported': count}
 
+@app.get('/api/audit-logs')
+def get_audit_logs(db: Session = Depends(get_db)):
+    logs = db.query(models.AuditLog).order_by(models.AuditLog.timestamp.desc()).limit(100).all()
+    return [{
+        'id': l.id,
+        'user_id': l.user_id,
+        'action': l.action,
+        'details': l.details,
+        'timestamp': l.timestamp
+    } for l in logs]
+
+@app.post('/api/admin/rollover')
+def admin_rollover(db: Session = Depends(get_db)):
+    try:
+        # Create an audit log for the rollover
+        import uuid
+        from datetime import datetime
+        audit = models.AuditLog(
+            id=str(uuid.uuid4()),
+            user_id='admin',
+            action='ACADEMIC_ROLLOVER',
+            details='Initiated system rollover to next academic year.',
+            timestamp=datetime.now().isoformat()
+        )
+        db.add(audit)
+        
+        # Simple rollover logic for demonstration: archive students, reset courses, etc.
+        # In a real system this would be more complex.
+        db.query(models.Student).delete() # Remove previous year students
+        db.query(models.MarksUnified).delete() # Clear previous marks
+        
+        config = db.query(models.SystemConfig).first()
+        if config:
+            parts = config.academicYear.split('-')
+            if len(parts) == 2:
+                try:
+                    start_yr = int(parts[0])
+                    end_yr = int(parts[1])
+                    config.academicYear = f"{start_yr+1}-{end_yr+1}"
+                except:
+                    pass
+                    
+        db.commit()
+        return {'success': True, 'message': 'Rollover completed successfully'}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))

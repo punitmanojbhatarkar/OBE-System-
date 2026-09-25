@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>User Accounts & Roles | OBE System – MITAOE</title>
+  <title>User Accounts & Roles | OBE System â€“ MITAOE</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../styles/main.css">
@@ -48,6 +48,7 @@
       <p class="nav-section-label">Institutional Management</p>
       <a class="nav-item" href="dashboard.html"><span class="nav-icon" data-icon="dashboard"></span><span>Admin Dashboard</span></a>
       <a class="nav-item" href="departments.html"><span class="nav-icon" data-icon="matrix"></span><span>Departments</span></a>
+      <a class="nav-item" href="patterns.html"><span class="nav-icon" data-icon="document"></span><span>Curriculum Patterns</span></a>
       <a class="nav-item active" href="users.html"><span class="nav-icon" data-icon="students"></span><span>User Directory</span></a>
       <a class="nav-item" href="config.html"><span class="nav-icon" data-icon="config"></span><span>System Settings</span></a>
       <a class="nav-item" href="audit.html"><span class="nav-icon" data-icon="audit"></span><span>Audit Trail</span></a>
@@ -68,7 +69,7 @@
     <header class="topbar">
       <div class="topbar-left">
         <h1 class="topbar-title">Institutional User Directory</h1>
-        <div class="topbar-breadcrumb">Admin Console <span>›</span> Accounts & Permissions</div>
+        <div class="topbar-breadcrumb">Admin Console <span>â€º</span> Accounts & Permissions</div>
       </div>
       <div class="topbar-right">
         <button class="btn btn-secondary btn-sm" onclick="openBulkImportModal()" style="margin-right: 8px;"><span data-icon="upload"></span><span>Bulk Import</span></button>
@@ -230,7 +231,7 @@
       }
     }
     
-    status.textContent = Parsed  users. Uploading...;
+    status.textContent = `Parsed ${users.length} users. Uploading...`;
     try {
       const res = await fetch((window.API_BASE || 'http://127.0.0.1:8080') + '/api/admin/bulk-import/users', {
         method: 'POST',
@@ -239,7 +240,7 @@
       });
       const data = await res.json();
       if (data.success) {
-        status.textContent = Successfully imported  users.;
+        status.textContent = `Successfully imported ${users.length} users.`;
         setTimeout(() => {
           closeBulkImportModal();
           location.reload();
@@ -385,3 +386,5 @@
 </script>
 </body>
 </html>
+
+

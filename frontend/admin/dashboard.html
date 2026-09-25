@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>System Administration | OBE System – MITAOE</title>
-  <meta name="description" content="OBE System Admin Dashboard – Overview of departments, users, courses, and system health.">
+  <title>System Administration | OBE System â€“ MITAOE</title>
+  <meta name="description" content="OBE System Admin Dashboard â€“ Overview of departments, users, courses, and system health.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../styles/main.css">
@@ -34,6 +34,7 @@
       <p class="nav-section-label">Institutional Management</p>
       <a class="nav-item active" href="dashboard.html"><span class="nav-icon" data-icon="dashboard"></span><span>Admin Dashboard</span></a>
       <a class="nav-item" href="departments.html"><span class="nav-icon" data-icon="matrix"></span><span>Departments</span></a>
+      <a class="nav-item" href="patterns.html"><span class="nav-icon" data-icon="document"></span><span>Curriculum Patterns</span></a>
       <a class="nav-item" href="users.html"><span class="nav-icon" data-icon="students"></span><span>User Directory</span></a>
       <a class="nav-item" href="config.html"><span class="nav-icon" data-icon="config"></span><span>System Settings</span></a>
       <a class="nav-item" href="audit.html"><span class="nav-icon" data-icon="audit"></span><span>Audit Trail</span></a>
@@ -54,7 +55,7 @@
     <header class="topbar">
       <div class="topbar-left">
         <h1 class="topbar-title">Institutional Overview & Health</h1>
-        <div class="topbar-breadcrumb">Admin Console <span>›</span> System Analytics</div>
+        <div class="topbar-breadcrumb">Admin Console <span>â€º</span> System Analytics</div>
       </div>
       <div class="topbar-right">
         <button class="btn btn-secondary btn-sm" onclick="exportSystemState()">
@@ -195,16 +196,13 @@
     document.getElementById('stat-assess').textContent = assess.length;
 
     try {
-      const res = await fetch((window.API_BASE || 'http://127.0.0.1:8080') + '/api/config');
-      const cfg = await res.json();
-      const used = cfg.aiCallsUsed || 0;
-      const mx = cfg.maxAICalls || 50;
-      document.getElementById('stat-ai-quota').textContent = ${used} / ;
-      const pct = Math.min(100, Math.round((used / mx) * 100));
-      document.getElementById('ai-quota-bar').style.width = ${pct}%;
-      if (pct > 80) document.getElementById('ai-quota-bar').style.background = 'red';
+      const config = DB.config.get();
+      document.getElementById('stat-ai-quota').parentElement.querySelector('.stat-card-label').textContent = 'Academic Year';
+      document.getElementById('stat-ai-quota').parentElement.querySelector('.stat-card-icon').setAttribute('data-icon', 'calendar');
+      document.getElementById('stat-ai-quota').innerHTML = `<strong style="color:var(--text-primary)"></strong>`;
+      document.getElementById('ai-quota-bar').style.width = '100%';
     } catch (e) {
-      console.warn('Could not load AI quota', e);
+      console.warn('Could not load config', e);
     }
   }
 
@@ -224,7 +222,7 @@
         <tr>
           <td><span class="badge badge-primary font-mono">${d.code}</span></td>
           <td style="font-weight:600;">${d.name}</td>
-          <td>${hod ? hod.name : '—'}</td>
+          <td>${hod ? hod.name : 'â€”'}</td>
           <td>${fCount}</td>
           <td>${cCount}</td>
           <td><span class="badge badge-success">Active</span></td>
@@ -283,3 +281,5 @@
 </script>
 </body>
 </html>
+
+

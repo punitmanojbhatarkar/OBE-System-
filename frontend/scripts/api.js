@@ -245,6 +245,14 @@ async function syncFromBackend() {
     const users = await apiFetch('/api/users');
     localStorage.setItem('obe_users', JSON.stringify(users || []));
 
+    overlay.msg('Loading curriculum patterns...');
+    const patterns = await apiFetch('/api/patterns');
+    localStorage.setItem('obe_patterns', JSON.stringify(patterns || []));
+
+    overlay.msg('Loading program outcomes...');
+    const outcomes = await apiFetch('/api/outcomes');
+    localStorage.setItem('obe_outcomes', JSON.stringify(outcomes || []));
+
     overlay.msg('Loading courses…');
     const courses = await apiFetch('/api/courses');
     mergeLocalStore('obe_courses', courses.map(normalizeCourse), (a, b) => a.id === b.id);
