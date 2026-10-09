@@ -1720,7 +1720,7 @@ Be precise, professional, and data-driven. Reference specific CO/PO numbers and 
 # 10A. NBA Table III Curriculum Gap-Bridging Plan Generator (Paper 5: JEET Jan 2026)
 # ==========================================
 
-def generate_curriculum_gap_plan(course_name: str, cos: list, pomapping: dict, attainment_data: dict = None) -> str:
+def generate_curriculum_gap_plan(course_name: str, cos: list, pomapping: dict, attainment_data: dict = None, historical_data: list = None) -> str:
     """
     Generates an NBA Table III: Content Beyond Syllabus & Innovative Gap-Bridging Action Plan
     based on Paper 5 (JEET Jan 2026) research findings.
@@ -1793,7 +1793,7 @@ Render a complete GitHub-flavored Markdown Table matching **JEET 2026 Table III*
 # 11. NBA Report Generator Agent
 # ==========================================
 
-def generate_nba_report(course: dict, cos: list, attainment: dict, copo_mapping: dict) -> str:
+def generate_nba_report(course: dict, cos: list, attainment: dict, copo_mapping: dict, historical_data: dict = None) -> str:
     """
     Generate a complete NBA-format course report as Markdown.
     Ready to be exported as a Word document for accreditation.
@@ -1812,6 +1812,9 @@ CO ATTAINMENT DATA:
 
 CO-PO MAPPING:
 {copo}
+
+HISTORICAL REPORTS (from previous academic years, if any):
+{historical_data}
 
 Generate a complete NBA Course Assessment Report in this exact structure:
 
@@ -1837,7 +1840,10 @@ Generate a complete NBA Course Assessment Report in this exact structure:
 ## 6. Corrective Actions for Underperforming COs
 [Numbered list: Specific actions for each unattained CO]
 
-## 7. Faculty Signature
+## 7. Continuous Quality Improvement (CQI)
+[Compare the current attainment with the historical reports (if any are provided). Explain how previous corrective actions impacted current results. If no historical data is available, state that this is the first offering in the system.]
+
+## 8. Faculty Signature
 _Course Faculty: ___________  Date: ___________  HOD Approval: ___________
 
 Be thorough, professional, and ready for NBA submission."""
@@ -1847,7 +1853,8 @@ Be thorough, professional, and ready for NBA submission."""
         "course": json.dumps(course, indent=2, default=str),
         "cos": json.dumps(cos, indent=2),
         "attainment": json.dumps(attainment, indent=2),
-        "copo": json.dumps(copo_mapping, indent=2)
+        "copo": json.dumps(copo_mapping, indent=2),
+        "historical_data": json.dumps(historical_data, indent=2) if historical_data else "No previous records."
     }).content
 
 # ==========================================

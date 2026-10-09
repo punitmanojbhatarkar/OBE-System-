@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>System Administration | OBE System â€“ MITAOE</title>
-  <meta name="description" content="OBE System Admin Dashboard â€“ Overview of departments, users, courses, and system health.">
+  <title>System Administration | OBE System – MITAOE</title>
+  <meta name="description" content="OBE System Admin Dashboard – Overview of departments, users, courses, and system health.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../styles/main.css">
@@ -55,7 +55,7 @@
     <header class="topbar">
       <div class="topbar-left">
         <h1 class="topbar-title">Institutional Overview & Health</h1>
-        <div class="topbar-breadcrumb">Admin Console <span>â€º</span> System Analytics</div>
+        <div class="topbar-breadcrumb">Admin Console <span>›</span> System Analytics</div>
       </div>
       <div class="topbar-right">
         <button class="btn btn-secondary btn-sm" onclick="exportSystemState()">
@@ -176,36 +176,47 @@
   const user = Auth.requireAuth(['admin']);
   if (!user) throw new Error('Not authorized');
 
-  renderStats();
-  renderCharts();
+  let analyticsData = null;
+  try {
+    const res = await getAdminAnalytics();
+    if (res && res.success) {
+      analyticsData = res.data;
+    }
+  } catch(e) {
+    console.error('Failed to load admin analytics', e);
+  }
+
+  renderStats(analyticsData);
+  renderCharts(analyticsData);
   renderDepts();
   renderAllIcons();
 
-  
-  async function renderStats() {
-    const depts = DB.departments.all();
-    const users = DB.users.all();
-    const courses = DB.courses.all();
-    const students = DB.students.all();
-    const assess = DB.assessments.all();
-
-    document.getElementById('stat-depts').textContent = depts.length;
-    document.getElementById('stat-faculty').textContent = users.filter(u => u.role === 'faculty' || u.role === 'hod').length;
-    document.getElementById('stat-courses').textContent = courses.length;
-    document.getElementById('stat-students').textContent = students.length;
-    document.getElementById('stat-assess').textContent = assess.length;
+  function renderStats(analytics) {
+    if (analytics) {
+      document.getElementById('stat-depts').textContent = analytics.counts.departments;
+      document.getElementById('stat-faculty').textContent = analytics.counts.faculty;
+      document.getElementById('stat-courses').textContent = analytics.counts.courses;
+      document.getElementById('stat-students').textContent = analytics.counts.students;
+      document.getElementById('stat-assess').textContent = analytics.counts.assessments;
+    } else {
+      // Fallback
+      document.getElementById('stat-depts').textContent = DB.departments.all().length;
+      document.getElementById('stat-faculty').textContent = DB.users.all().filter(u => u.role === 'faculty' || u.role === 'hod').length;
+      document.getElementById('stat-courses').textContent = DB.courses.all().length;
+      document.getElementById('stat-students').textContent = DB.students.all().length;
+      document.getElementById('stat-assess').textContent = DB.assessments.all().length;
+    }
 
     try {
       const config = DB.config.get();
       document.getElementById('stat-ai-quota').parentElement.querySelector('.stat-card-label').textContent = 'Academic Year';
       document.getElementById('stat-ai-quota').parentElement.querySelector('.stat-card-icon').setAttribute('data-icon', 'calendar');
-      document.getElementById('stat-ai-quota').innerHTML = `<strong style="color:var(--text-primary)"></strong>`;
+      document.getElementById('stat-ai-quota').innerHTML = <strong style="color:var(--text-primary)">\</strong>;
       document.getElementById('ai-quota-bar').style.width = '100%';
     } catch (e) {
       console.warn('Could not load config', e);
     }
   }
-
 
   function renderDepts() {
     const tbody = document.getElementById('dept-tbody');
@@ -215,32 +226,47 @@
 
     tbody.innerHTML = depts.map(d => {
       const hod = users.find(u => u.id === d.hodId);
-      const fCount = users.filter(u => u.deptId === d.id && u.role === 'faculty').length;
+      const fCount = users.filter(u => u.deptId === d.id && (u.role === 'faculty' || u.role === 'hod')).length;
       const cCount = courses.filter(c => c.deptId === d.id).length;
 
-      return `
+      return 
         <tr>
-          <td><span class="badge badge-primary font-mono">${d.code}</span></td>
-          <td style="font-weight:600;">${d.name}</td>
-          <td>${hod ? hod.name : 'â€”'}</td>
-          <td>${fCount}</td>
-          <td>${cCount}</td>
+          <td><span class="badge badge-primary font-mono">\</span></td>
+          <td style="font-weight:600;">\</td>
+          <td>\</td>
+          <td>\</td>
+          <td>\</td>
           <td><span class="badge badge-success">Active</span></td>
         </tr>
-      `;
+      ;
     }).join('');
   }
 
-  function renderCharts() {
+  function renderCharts(analytics) {
+    let deptLabels = ['Computer', 'Mechanical', 'Civil', 'Electronics', 'IT', 'Chemical'];
+    let deptData = [2.4, 2.1, 1.9, 2.3, 2.5, 2.0];
+    let learnerData = [35, 50, 15];
+
+    if (analytics) {
+      if (analytics.deptAttainment && analytics.deptAttainment.length > 0) {
+         deptLabels = analytics.deptAttainment.map(d => d.deptCode);
+         deptData = analytics.deptAttainment.map(d => d.avgAttainment);
+      }
+      if (analytics.learnerDistribution) {
+         const ld = analytics.learnerDistribution;
+         learnerData = [ld.advanced || 0, ld.average || 0, ld.slow || 0];
+      }
+    }
+
     const ctx1 = document.getElementById('deptAttainmentChart')?.getContext('2d');
     if (ctx1) {
       new Chart(ctx1, {
         type: 'bar',
         data: {
-          labels: ['Computer', 'Mechanical', 'Civil', 'Electronics', 'IT', 'Chemical'],
+          labels: deptLabels,
           datasets: [{
-            label: 'Average Attainment Score',
-            data: [2.4, 2.1, 1.9, 2.3, 2.5, 2.0],
+            label: 'Average Attainment Score (out of 3.0)',
+            data: deptData,
             backgroundColor: '#2563EB',
             borderRadius: 4
           }]
@@ -259,7 +285,7 @@
         data: {
           labels: ['Advanced Learners', 'Average Learners', 'Slow Learners'],
           datasets: [{
-            data: [35, 50, 15],
+            data: learnerData,
             backgroundColor: ['#10B981', '#F59E0B', '#EF4444'],
             borderWidth: 0
           }]
@@ -281,5 +307,6 @@
 </script>
 </body>
 </html>
+
 
 

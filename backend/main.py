@@ -44,6 +44,12 @@ for table in ["courses", "program_outcomes"]:
         except Exception:
             pass
 
+try:
+    with engine.begin() as conn:
+        conn.execute(text('ALTER TABLE po_mapping ADD COLUMN justification TEXT'))
+except Exception:
+    pass
+
 app = FastAPI(title="AI OBE System", version="2.0.0")
 
 from fastapi import Request
@@ -637,7 +643,7 @@ def delete_co(co_id: str, db: Session = Depends(get_db)):
 @app.get("/api/courses/{course_id}/pomapping")
 def get_pomapping(course_id: str, db: Session = Depends(get_db)):
     rows = db.query(models.PoMapping).filter(models.PoMapping.courseId == course_id).all()
-    return [{"courseId":r.courseId,"coNo":r.coNo,"po":r.po,"val":r.val,"justification":r.justification} for r in rows]
+    return [{"courseId":r.courseId,"coNo":r.coNo,"po":r.po,"val":r.val,"justification":getattr(r, "justification", "")} for r in rows]
 
 class POMapSave(BaseModel):
     courseId: str
@@ -1446,7 +1452,7 @@ if os.path.isdir(FRONTEND_DIR):
 @app.get('/api/courses/{course_id}/pomapping')
 def get_pomapping(course_id: str, db: Session = Depends(get_db)):
     rows = db.query(models.PoMapping).filter(models.PoMapping.courseId == course_id).all()
-    return [{'courseId': r.courseId, 'coNo': r.coNo, 'po': r.po, 'val': r.val, 'justification': r.justification} for r in rows]
+    return [{'courseId': r.courseId, 'coNo': r.coNo, 'po': r.po, 'val': r.val, 'justification': getattr(r, 'justification', '')} for r in rows]
 
 @app.get('/api/courses/{course_id}/indicatormapping')
 def get_indicatormapping(course_id: str, db: Session = Depends(get_db)):

@@ -101,6 +101,7 @@ class PoMapping(Base):
     coNo = Column(Integer)
     po = Column(String)
     val = Column(Integer)
+    justification = Column(Text, nullable=True)
     course = relationship("Course")
 
 class Student(Base):
@@ -257,3 +258,12 @@ class ActionPlan(Base):
     actionProposed = Column(Text)
     actionTaken = Column(Boolean, default=False)
     academicYear = Column(String)
+
+class HistoricalReport(Base):
+    __tablename__ = 'historical_reports'
+    id = Column(String, primary_key=True, index=True)
+    academicYear = Column(String, index=True)
+    courseId = Column(String, index=True)
+    courseName = Column(String)
+    reportData = Column(Text) # JSON string containing final attainment, gap analysis, and action plans
+    timestamp = Column(String)

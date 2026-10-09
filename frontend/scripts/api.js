@@ -97,7 +97,14 @@ function showSyncOverlay() {
   }
 
   
-  // Phase 3: Reports
+  
+    // Phase 4: Admin Analytics
+    async function getAdminAnalytics() {
+      const res = await fetch(API_BASE + '/api/admin/analytics');
+      return await res.json();
+    }
+
+    // Phase 3: Reports
   async function generateNBAReport(course_id) {
     const res = await fetch(API_BASE + '/api/nba-report', {
       method: 'POST',
@@ -163,7 +170,14 @@ function normalizeCourse(c) {
   }
 
   
-  // Phase 3: Reports
+  
+    // Phase 4: Admin Analytics
+    async function getAdminAnalytics() {
+      const res = await fetch(API_BASE + '/api/admin/analytics');
+      return await res.json();
+    }
+
+    // Phase 3: Reports
   async function generateNBAReport(course_id) {
     const res = await fetch(API_BASE + '/api/nba-report', {
       method: 'POST',
@@ -719,3 +733,4 @@ function patchDBWriteMethods() {
       console.warn('[API] Sync failed, pages will use cached localStorage data:', e);
     }
   })();
+
