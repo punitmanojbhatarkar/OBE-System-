@@ -36,16 +36,13 @@ models.Base.metadata.create_all(bind=engine)
 
 # Auto-migrate new columns if they are missing (for existing databases)
 from sqlalchemy import text
-try:
-    with engine.begin() as conn:
-        for table in ["courses", "program_outcomes"]:
-            for col in ["patternId", "academicYear"]:
-                try:
-                    conn.execute(text(f'ALTER TABLE {table} ADD COLUMN "{col}" VARCHAR'))
-                except Exception:
-                    pass
-except Exception:
-    pass
+for table in ["courses", "program_outcomes"]:
+    for col in ["patternId", "academicYear"]:
+        try:
+            with engine.begin() as conn:
+                conn.execute(text(f'ALTER TABLE {table} ADD COLUMN "{col}" VARCHAR'))
+        except Exception:
+            pass
 
 app = FastAPI(title="AI OBE System", version="2.0.0")
 
