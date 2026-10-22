@@ -86,42 +86,7 @@ function showSyncOverlay() {
     document.addEventListener('DOMContentLoaded', () => document.body.prepend(el));
   }
   
-  // Phase 2: Patterns and Outcomes
-  async function getPatterns() {
-    const res = await fetch(API_BASE + '/api/patterns');
-    return await res.json();
-  }
-  async function getOutcomes() {
-    const res = await fetch(API_BASE + '/api/outcomes');
-    return await res.json();
-  }
 
-  
-  
-    // Phase 4: Admin Analytics
-    async function getAdminAnalytics() {
-      const res = await fetch(API_BASE + '/api/admin/analytics');
-      return await res.json();
-    }
-
-    // Phase 3: Reports
-  async function generateNBAReport(course_id) {
-    const res = await fetch(API_BASE + '/api/nba-report', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ course_id })
-    });
-    return await res.json();
-  }
-  
-  async function generateCurriculumGapPlan(course_id) {
-    const res = await fetch(API_BASE + '/api/curriculum-gap-plan', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ course_id })
-    });
-    return await res.json();
-  }
 
   return {
     msg: (t) => { const m = el.querySelector('#api-sync-msg'); if (m) m.textContent = t; },
@@ -159,42 +124,7 @@ function showOfflineError(err) {
 /* ── Transform backend course to match frontend data.js shape ── */
 function normalizeCourse(c) {
   
-  // Phase 2: Patterns and Outcomes
-  async function getPatterns() {
-    const res = await fetch(API_BASE + '/api/patterns');
-    return await res.json();
-  }
-  async function getOutcomes() {
-    const res = await fetch(API_BASE + '/api/outcomes');
-    return await res.json();
-  }
 
-  
-  
-    // Phase 4: Admin Analytics
-    async function getAdminAnalytics() {
-      const res = await fetch(API_BASE + '/api/admin/analytics');
-      return await res.json();
-    }
-
-    // Phase 3: Reports
-  async function generateNBAReport(course_id) {
-    const res = await fetch(API_BASE + '/api/nba-report', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ course_id })
-    });
-    return await res.json();
-  }
-  
-  async function generateCurriculumGapPlan(course_id) {
-    const res = await fetch(API_BASE + '/api/curriculum-gap-plan', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ course_id })
-    });
-    return await res.json();
-  }
 
   return {
     ...c,
@@ -235,6 +165,118 @@ async function syncFromBackend() {
   const overlay = showSyncOverlay();
 
   try {
+    // ── Fast Bulk Bootstrap: 1 HTTP request fetches the complete system dataset ──
+    try {
+      overlay.msg('Syncing with OBE cloud backend…');
+      const bootstrap = await apiFetch('/api/bootstrap');
+      if (bootstrap && bootstrap.departments && Array.isArray(bootstrap.departments)) {
+        if (bootstrap.config) {
+          const storedCfg = { ...bootstrap.config };
+          const iaQGrouped = {};
+          for (const item of (bootstrap.config.iaQuestions || [])) {
+            const key = `${item.courseId}::${item.assessmentType}::${item.assessmentNo}`;
+            if (!iaQGrouped[key]) {
+              iaQGrouped[key] = { courseId: item.courseId, assessmentType: item.assessmentType, assessmentNo: item.assessmentNo, questions: [] };
+            }
+            if (item.questions) {
+              iaQGrouped[key].questions.push(...item.questions);
+            }
+          }
+          storedCfg.iaQuestions = Object.values(iaQGrouped);
+          localStorage.setItem('obe_config', JSON.stringify(storedCfg));
+        }
+        localStorage.setItem('obe_departments', JSON.stringify(bootstrap.departments || []));
+        localStorage.setItem('obe_users', JSON.stringify(bootstrap.users || []));
+        localStorage.setItem('obe_patterns', JSON.stringify(bootstrap.patterns || []));
+        localStorage.setItem('obe_outcomes', JSON.stringify(bootstrap.outcomes || []));
+
+        const courses = (bootstrap.courses || []).map(normalizeCourse);
+        mergeLocalStore('obe_courses', courses, (a, b) => a.id === b.id);
+        mergeLocalStore('obe_cos', bootstrap.cos || [], (a, b) => a.id === b.id || (a.courseId === b.courseId && String(a.no) === String(b.no)));
+        mergeLocalStore('obe_po_mapping', bootstrap.po_mappings || [], (a, b) => a.courseId === b.courseId && String(a.coNo) === String(b.coNo) && a.po === b.po);
+        localStorage.setItem('obe_indicator_mapping', JSON.stringify(bootstrap.indicator_mappings || {}));
+        mergeLocalStore('obe_students', bootstrap.students || [], (a, b) => a.id === b.id || (a.courseId === b.courseId && a.prn === b.prn));
+        mergeLocalStore('obe_marks_ia', bootstrap.marks_ia || [], (a, b) => a.courseId === b.courseId && a.prn === b.prn && String(a.qNo) === String(b.qNo));
+        mergeLocalStore('obe_marks_mse', bootstrap.marks_mse || [], (a, b) => a.courseId === b.courseId && a.prn === b.prn && String(a.qNo) === String(b.qNo));
+        mergeLocalStore('obe_marks_ese', bootstrap.marks_ese || [], (a, b) => a.courseId === b.courseId && a.prn === b.prn && String(a.qNo) === String(b.qNo));
+
+        const mergedCfg = JSON.parse(localStorage.getItem('obe_config') || '{}');
+        mergedCfg.iaQuestions = bootstrap.ia_questions || [];
+        localStorage.setItem('obe_config', JSON.stringify(mergedCfg));
+
+        mergeLocalStore('obe_assignments', bootstrap.assignments || [], (a, b) => a.id === b.id);
+
+        let allAssessments = [];
+        (bootstrap.assignments || []).forEach(asgn => {
+          allAssessments.push({
+            id: asgn.id,
+            courseId: asgn.courseId,
+            type: asgn.type || 'assignment',
+            no: asgn.no || 1,
+            title: asgn.title || 'Assignment',
+            description: asgn.description || '',
+            maxMarks: asgn.maxMarks || 10,
+            dueDate: asgn.dueDate || null,
+            rbtLevel: asgn.rbtLevel || null,
+            coNos: asgn.coNos || (asgn.coNo ? [asgn.coNo] : []),
+            aiGenerated: asgn.aiGenerated || false,
+            questions: asgn.questions || [],
+            rubrics: asgn.rubrics || [],
+            createdAt: asgn.createdAt || new Date().toISOString()
+          });
+        });
+        {
+          const existingRaw = JSON.parse(localStorage.getItem('obe_assessments') || '[]');
+          const cleaned = existingRaw.filter(a => !String(a.id || '').startsWith('iaq-'));
+          const merged = [...allAssessments];
+          cleaned.forEach(localItem => {
+            if (!allAssessments.some(b => b.id === localItem.id)) { merged.push(localItem); }
+          });
+          localStorage.setItem('obe_assessments', JSON.stringify(merged));
+        }
+
+        let allMarksUnified = [];
+        (bootstrap.marks_ia || []).forEach(m => {
+          allMarksUnified.push({
+            courseId: m.courseId,
+            prn: m.prn,
+            assessId: `iaq-${m.courseId}-ia-${m.assessmentNo || 1}`,
+            qNo: m.qNo,
+            marks: m.marks
+          });
+        });
+        (bootstrap.marks_mse || []).forEach(m => {
+          allMarksUnified.push({
+            courseId: m.courseId,
+            prn: m.prn,
+            assessId: `iaq-${m.courseId}-mse-1`,
+            qNo: m.qNo,
+            marks: m.marks
+          });
+        });
+        (bootstrap.marks_ese || []).forEach(m => {
+          allMarksUnified.push({
+            courseId: m.courseId,
+            prn: m.prn,
+            assessId: `iaq-${m.courseId}-ese-1`,
+            qNo: m.qNo,
+            marks: m.marks
+          });
+        });
+        mergeLocalStore('obe_marks_unified', allMarksUnified, (a, b) => a.courseId === b.courseId && a.prn === b.prn && a.assessId === b.assessId && String(a.qNo) === String(b.qNo));
+        mergeLocalStore('obe_survey', bootstrap.surveys || [], (a, b) => a.courseId === b.courseId && a.prn === b.prn && String(a.co) === String(b.co));
+
+        localStorage.setItem('obe_initialized_v2', '1');
+        overlay.done();
+        console.log('[API] Bootstrap sync complete — instant bulk load finished in single roundtrip.');
+        window.dispatchEvent(new CustomEvent('obe_data_synced'));
+        return;
+      }
+    } catch (bootstrapErr) {
+      console.warn('[API] Bootstrap endpoint unavailable or returned error, falling back to sequential sync:', bootstrapErr);
+    }
+
+    // ── Fallback: Sequential endpoint sync ──
     overlay.msg('Loading configuration…');
     const config = await apiFetch('/api/config');
     const storedCfg = { ...config };

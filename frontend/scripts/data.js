@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    OBE SYSTEM â€” Data Layer (localStorage CRUD + Institutional OBE Data)
    All data operations go through this module.
    ============================================================ */
@@ -62,9 +62,8 @@ const DB = (() => {
     set(KEYS.indicatorMapping, {});
     localStorage.setItem(KEYS.initialized, '1');
   }
-  }
 
-  /* â”€â”€ Departments â”€â”€ */
+  /* ── Departments ── */
   const departments = {
     all()       { return get(KEYS.departments); },
     byId(id)    { return departments.all().find(d=>d.id===id); },
@@ -437,13 +436,13 @@ const DB = (() => {
     getPOList(pid=null) { 
       let all = outcomes.all().filter(o => o.type === 'PO');
       if(pid) all = all.filter(o => o.patternId === pid);
-      if(all.length === 0) return Array.from({length:12}, (_,i)=>PO);
+      if(all.length === 0) return Array.from({length:12}, (_,i)=>`PO${i+1}`);
       return all.map(o => o.code);
     },
     getPSOList(pid=null) { 
       let all = outcomes.all().filter(o => o.type === 'PSO');
       if(pid) all = all.filter(o => o.patternId === pid);
-      if(all.length === 0) return Array.from({length:3}, (_,i)=>PSO);
+      if(all.length === 0) return Array.from({length:3}, (_,i)=>`PSO${i+1}`);
       return all.map(o => o.code);
     }
   };

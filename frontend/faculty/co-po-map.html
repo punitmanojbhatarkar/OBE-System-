@@ -357,9 +357,9 @@
     
     const poList = DB.outcomes.getPOList();
     const psoList = DB.outcomes.getPSOList();
-    r1 += <th colspan="" style="text-align:center;">Program Outcomes (POs)</th>;
+    r1 += `<th colspan="${poList.length || 12}" style="text-align:center;">Program Outcomes (POs)</th>`;
     if (psoList.length > 0) {
-      r1 += <th colspan="" class="pso-divider" style="text-align:center;">Program Specific Outcomes (PSO)</th>;
+      r1 += `<th colspan="${psoList.length}" class="pso-divider" style="text-align:center;">Program Specific Outcomes (PSO)</th>`;
     }
     r1 += '</tr>';
 

@@ -52,6 +52,18 @@ except Exception:
 
 app = FastAPI(title="AI OBE System", version="2.0.0")
 
+# Auto-seed initial database if no courses exist
+try:
+    from database import SessionLocal
+    import init_db
+    with SessionLocal() as db_check:
+        if db_check.query(models.Course).count() == 0:
+            print("[DB] No courses found in database. Seeding initial institutional data...")
+            init_db.seed_db()
+            print("[DB] Initial database seeding completed.")
+except Exception as e:
+    print(f"[DB] Auto-seed check failed or skipped: {e}")
+
 from fastapi import Request
 from fastapi.responses import JSONResponse
 import traceback
@@ -274,6 +286,90 @@ def get_config(db: Session = Depends(get_db)):
             "directWeight": cfg.directWeight, "indirectWeight": cfg.indirectWeight,
             "collegeFullName": cfg.collegeFullName,
             "iaQuestions": ia_q_list}
+
+@app.get("/api/bootstrap")
+def get_bootstrap_data(db: Session = Depends(get_db)):
+    if db.query(models.Course).count() == 0:
+        try:
+            import init_db
+            init_db.seed_db()
+        except Exception as e:
+            print(f"[BOOTSTRAP] Seed failed: {e}")
+            
+    cfg_data = get_config(db)
+    depts = db.query(models.Department).all()
+    users = db.query(models.User).all()
+    patterns = db.query(models.CurriculumPattern).all()
+    outcomes = db.query(models.ProgramOutcome).all()
+    courses = db.query(models.Course).all()
+    cos = db.query(models.CourseOutcome).all()
+    po_mappings = db.query(models.PoMapping).all()
+    indicator_mappings = db.query(models.IndicatorMapping).all()
+    students = db.query(models.Student).all()
+    marks_ia = db.query(models.MarksIA).all()
+    marks_mse = db.query(models.MarksMSE).all()
+    marks_ese = db.query(models.MarksESE).all()
+    ia_questions = db.query(models.IAQuestion).all()
+    assignments = db.query(models.Assignment).all()
+    surveys = db.query(models.Survey).all()
+
+    ind_map_dict = {}
+    for im in indicator_mappings:
+        data = im.mappingData
+        if isinstance(data, str):
+            try:
+                data = json.loads(data)
+            except:
+                data = {}
+        ind_map_dict[im.courseId] = data or {}
+
+    def _safe_json(val, default):
+        if not val:
+            return default
+        if isinstance(val, (list, dict)):
+            return val
+        try:
+            return json.loads(val)
+        except:
+            return default
+
+    return {
+        "success": True,
+        "config": cfg_data,
+        "departments": [dept_to_dict(d) for d in depts],
+        "users": [user_to_dict(u) for u in users],
+        "patterns": [{"id": p.id, "name": p.name, "year": p.year} for p in patterns],
+        "outcomes": [{"id": o.id, "code": o.code, "description": o.description, "type": o.type} for o in outcomes],
+        "courses": [course_to_dict(c) for c in courses],
+        "cos": [co_to_dict(co) for co in cos],
+        "po_mappings": [{"courseId": p.courseId, "coNo": p.coNo, "po": p.po, "val": p.val, "justification": getattr(p, "justification", "")} for p in po_mappings],
+        "indicator_mapping": ind_map_dict,
+        "students": [student_to_dict(s) for s in students],
+        "marks_ia": [{"courseId": m.courseId, "prn": m.prn, "assessmentNo": m.assessmentNo, "qNo": m.qNo, "marks": m.marks} for m in marks_ia],
+        "marks_mse": [{"courseId": m.courseId, "prn": m.prn, "qNo": m.qNo, "marks": m.marks} for m in marks_mse],
+        "marks_ese": [{"courseId": m.courseId, "prn": m.prn, "qNo": m.qNo, "marks": m.marks} for m in marks_ese],
+        "ia_questions": [{"courseId": q.courseId, "assessmentType": q.assessmentType, "assessmentNo": q.assessmentNo, "qNo": q.qNo, "desc": q.desc, "bloomsLevel": q.bloomsLevel, "coNo": q.coNo, "maxMarks": q.maxMarks} for q in ia_questions],
+        "assignments": [{
+            "id": a.id, "courseId": a.courseId, "type": a.type, "no": a.no,
+            "title": a.title, "description": a.description, "topic": a.topic, "level": a.level,
+            "dueDate": a.dueDate, "rbtLevel": a.rbtLevel, "coNo": a.coNo,
+            "coNos": _safe_json(a.coNos, [a.coNo] if a.coNo else []),
+            "maxMarks": a.maxMarks,
+            "questions": _safe_json(a.questions, []),
+            "rubrics": _safe_json(a.rubrics, []),
+            "aiGenerated": a.aiGenerated, "createdAt": a.createdAt
+        } for a in assignments],
+        "surveys": [{"courseId": s.courseId, "prn": s.prn, "co": s.co, "score": s.score} for s in surveys]
+    }
+
+@app.post("/api/admin/seed-demo")
+def seed_demo_data(db: Session = Depends(get_db)):
+    try:
+        import init_db
+        init_db.seed_db()
+        return {"success": True, "message": "Demo data seeded successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 class ConfigPatch(BaseModel):
     academicYear: Optional[str] = None

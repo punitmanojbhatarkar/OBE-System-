@@ -2,9 +2,7 @@ import json
 from database import engine, SessionLocal
 import models
 
-# Drop all and recreate so new tables appear cleanly
-models.Base.metadata.drop_all(bind=engine)
-models.Base.metadata.create_all(bind=engine)
+# Base schemas are created by database.py/models.py on startup
 
 def seed_db():
     db = SessionLocal()

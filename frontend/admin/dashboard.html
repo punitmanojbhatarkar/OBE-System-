@@ -211,7 +211,7 @@
       const config = DB.config.get();
       document.getElementById('stat-ai-quota').parentElement.querySelector('.stat-card-label').textContent = 'Academic Year';
       document.getElementById('stat-ai-quota').parentElement.querySelector('.stat-card-icon').setAttribute('data-icon', 'calendar');
-      document.getElementById('stat-ai-quota').innerHTML = <strong style="color:var(--text-primary)">\</strong>;
+      document.getElementById('stat-ai-quota').innerHTML = `<strong style="color:var(--text-primary)">${config.academicYear || '2025-26'}</strong>`;
       document.getElementById('ai-quota-bar').style.width = '100%';
     } catch (e) {
       console.warn('Could not load config', e);
@@ -229,16 +229,15 @@
       const fCount = users.filter(u => u.deptId === d.id && (u.role === 'faculty' || u.role === 'hod')).length;
       const cCount = courses.filter(c => c.deptId === d.id).length;
 
-      return 
+      return `
         <tr>
-          <td><span class="badge badge-primary font-mono">\</span></td>
-          <td style="font-weight:600;">\</td>
-          <td>\</td>
-          <td>\</td>
-          <td>\</td>
+          <td><span class="badge badge-primary font-mono">${d.code || d.id}</span></td>
+          <td style="font-weight:600;">${d.name}</td>
+          <td>${d.hod || (hod ? hod.name : 'Not Assigned')}</td>
+          <td>${fCount}</td>
+          <td>${cCount}</td>
           <td><span class="badge badge-success">Active</span></td>
-        </tr>
-      ;
+        </tr>`;
     }).join('');
   }
 
