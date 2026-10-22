@@ -755,6 +755,28 @@ function patchDBWriteMethods() {
   window.apiFetch = apiFetch;
   window.mergeLocalStore = mergeLocalStore;
 
+  async function getAdminAnalytics() {
+    try { return await apiFetch('/api/admin/analytics'); } catch(e) { return null; }
+  }
+  async function getPatterns() {
+    try { return await apiFetch('/api/patterns'); } catch(e) { return []; }
+  }
+  async function getOutcomes() {
+    try { return await apiFetch('/api/outcomes'); } catch(e) { return []; }
+  }
+  async function generateNBAReport(course_id) {
+    try { return await apiFetch('/api/nba-report', { method: 'POST', body: { course_id } }); } catch(e) { return null; }
+  }
+  async function generateCurriculumGapPlan(course_id) {
+    try { return await apiFetch('/api/curriculum-gap-plan', { method: 'POST', body: { course_id } }); } catch(e) { return null; }
+  }
+
+  window.getAdminAnalytics = getAdminAnalytics;
+  window.getPatterns = getPatterns;
+  window.getOutcomes = getOutcomes;
+  window.generateNBAReport = generateNBAReport;
+  window.generateCurriculumGapPlan = generateCurriculumGapPlan;
+
   /* ════════════════════════════════════════════
      BOOTSTRAP — exposes window._apiReady Promise
      All protected pages await this before init.
