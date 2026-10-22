@@ -26,6 +26,9 @@ const DB = (() => {
     auditLogs : 'obe_audit_logs',
     syllabus    : 'obe_syllabus',
     indicatorMapping: 'obe_indicator_mapping',
+    marksIA     : 'obe_marks_ia',
+    marksMSE    : 'obe_marks_mse',
+    marksESE    : 'obe_marks_ese',
     initialized : 'obe_initialized_v2',
   };
 
@@ -186,6 +189,21 @@ const DB = (() => {
   /* â”€â”€ Marks (Unified) â”€â”€ */
   const marks = {
     get(cid) { return get(KEYS.marksUnified).filter(m=>m.courseId===cid); },
+    getIA(cid) {
+      const specific = get(KEYS.marksIA).filter(m=>m.courseId===cid);
+      if (specific.length > 0) return specific;
+      return get(KEYS.marksUnified).filter(m=>m.courseId===cid && m.assessId && m.assessId.includes('-ia-'));
+    },
+    getMSE(cid) {
+      const specific = get(KEYS.marksMSE).filter(m=>m.courseId===cid);
+      if (specific.length > 0) return specific;
+      return get(KEYS.marksUnified).filter(m=>m.courseId===cid && m.assessId && m.assessId.includes('-mse-'));
+    },
+    getESE(cid) {
+      const specific = get(KEYS.marksESE).filter(m=>m.courseId===cid);
+      if (specific.length > 0) return specific;
+      return get(KEYS.marksUnified).filter(m=>m.courseId===cid && m.assessId && m.assessId.includes('-ese-'));
+    },
     set(cid, prn, assessId, qNo, v) {
       let all = get(KEYS.marksUnified);
       const idx = all.findIndex(m=>m.courseId===cid && m.prn===prn && m.assessId===assessId && m.qNo===qNo);
@@ -452,7 +470,7 @@ const DB = (() => {
     all() { return get('obe_patterns') || []; }
   };
 
-  return { init, reset, uid, departments, users, courses, cos, poMapping, indicatorMapping, remedial, students, marks, survey, assessments, assignments: assessments, submissions, config, gaps, courseAudit, auditLogs, syllabus, actionPlans, KEYS };
+  return { init, reset, uid, departments, users, courses, cos, poMapping, indicatorMapping, remedial, students, marks, survey, assessments, assignments: assessments, submissions, config, gaps, courseAudit, auditLogs, syllabus, actionPlans, outcomes, patterns, getPOList: outcomes.getPOList, getPSOList: outcomes.getPSOList, KEYS };
 
 })();
 

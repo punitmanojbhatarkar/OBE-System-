@@ -31,25 +31,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnCopy             = document.getElementById('btn-copy-feedback');
 
   // ── File drag-drop ────────────────────────────────────────────────────────
-  dropZone.addEventListener('click', () => fileInput.click());
-  dropZone.addEventListener('dragover',  (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
-  dropZone.addEventListener('dragleave', ()  => dropZone.classList.remove('dragover'));
-  dropZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropZone.classList.remove('dragover');
-    if (e.dataTransfer.files.length) {
-      const dt = new DataTransfer();
-      dt.items.add(e.dataTransfer.files[0]);
-      fileInput.files = dt.files;
-      showFileName(e.dataTransfer.files[0].name);
-    }
-  });
-  fileInput.addEventListener('change', () => {
-    if (fileInput.files.length) {
-      showFileName(fileInput.files[0].name);
-      textInput.value = '';
-    }
-  });
+  if (dropZone && fileInput) {
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover',  (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', ()  => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) {
+        const dt = new DataTransfer();
+        dt.items.add(e.dataTransfer.files[0]);
+        fileInput.files = dt.files;
+        showFileName(e.dataTransfer.files[0].name);
+      }
+    });
+  }
+  if (fileInput) {
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files && fileInput.files.length) {
+        showFileName(fileInput.files[0].name);
+        if (textInput) textInput.value = '';
+      }
+    });
+  }
   function showFileName(name) {
     fileSelectedName.textContent = name;
     fileSelectedName.style.display = 'block';
