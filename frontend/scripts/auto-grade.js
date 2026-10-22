@@ -62,62 +62,66 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ── Load courses belonging strictly to this login ID ─────────────
   let myCourses = DB.courses.byFaculty(user.id);
 
-  myCourses.forEach(c => {
-    const opt = document.createElement('option');
-    opt.value = c.id;
-    opt.textContent = `${c.code} – ${c.name}`;
-    courseSelect.appendChild(opt);
-  });
-
-  // ── Course → Assignments ──────────────────────────────────────────────────
-  courseSelect.addEventListener('change', () => {
-    const cid = courseSelect.value;
-    assignmentSelect.innerHTML = '<option value="">-- Choose Assignment --</option><option value="manual">-- Custom / Manual --</option>';
-    if (!cid) return;
-
-    const allAssignments = JSON.parse(localStorage.getItem('obe_assignments') || '[]');
-    const courseAsgn = allAssignments.filter(a => a.courseId === cid);
-    courseAsgn.forEach(a => {
+  if (courseSelect) {
+    myCourses.forEach(c => {
       const opt = document.createElement('option');
-      opt.value = a.id;
-      opt.dataset.marks = a.marks || a.maxMarks || 10;
-      opt.dataset.topic = a.title || a.topic || '';
-      opt.textContent = a.title || a.topic || `Assignment ${a.id}`;
-      assignmentSelect.appendChild(opt);
+      opt.value = c.id;
+      opt.textContent = `${c.code} – ${c.name}`;
+      courseSelect.appendChild(opt);
     });
-  });
+
+    courseSelect.addEventListener('change', () => {
+      const cid = courseSelect.value;
+      if (!assignmentSelect) return;
+      assignmentSelect.innerHTML = '<option value="">-- Choose Assignment --</option><option value="manual">-- Custom / Manual --</option>';
+      if (!cid) return;
+
+      const allAssignments = JSON.parse(localStorage.getItem('obe_assignments') || '[]');
+      const courseAsgn = allAssignments.filter(a => a.courseId === cid);
+      courseAsgn.forEach(a => {
+        const opt = document.createElement('option');
+        opt.value = a.id;
+        opt.dataset.marks = a.marks || a.maxMarks || 10;
+        opt.dataset.topic = a.title || a.topic || '';
+        opt.textContent = a.title || a.topic || `Assignment ${a.id}`;
+        assignmentSelect.appendChild(opt);
+      });
+    });
+  }
 
   // ── Assignment → Pre-fill question & marks ────────────────────────────────
-  assignmentSelect.addEventListener('change', () => {
-    const sel = assignmentSelect.value;
-    if (!sel || sel === 'manual') {
-      maxMarksInput.value = '';
-      manualQuestionInput.value = '';
-      rubricsInput.value = '';
-      return;
-    }
-    const allAssignments = JSON.parse(localStorage.getItem('obe_assignments') || '[]');
-    const a = allAssignments.find(x => x.id === sel);
-    if (!a) return;
-    
-    maxMarksInput.value = a.maxMarks || a.marks || 10;
-    
-    // Assemble all questions into a single text block
-    if (a.questions && a.questions.length > 0) {
-      manualQuestionInput.value = a.questions.map(q => `Q${q.qNo}: ${q.text} [${q.marks} marks]`).join('\n\n');
-      
-      // Assemble all rubrics
-      const rList = [];
-      if (a.rubrics && a.rubrics.length > 0) {
-        a.rubrics.forEach(r => { if(r.criterion) rList.push(r.criterion); });
-      } else {
-        a.questions.forEach(q => { if(q.rubric) rList.push(`Q${q.qNo}: ${q.rubric}`); });
+  if (assignmentSelect) {
+    assignmentSelect.addEventListener('change', () => {
+      const sel = assignmentSelect.value;
+      if (!sel || sel === 'manual') {
+        if (maxMarksInput) maxMarksInput.value = '';
+        if (manualQuestionInput) manualQuestionInput.value = '';
+        if (rubricsInput) rubricsInput.value = '';
+        return;
       }
-      rubricsInput.value = rList.join('\n');
-    } else {
-      manualQuestionInput.value = a.title || '';
-    }
-  });
+      const allAssignments = JSON.parse(localStorage.getItem('obe_assignments') || '[]');
+      const a = allAssignments.find(x => x.id === sel);
+      if (!a) return;
+      
+      if (maxMarksInput) maxMarksInput.value = a.maxMarks || a.marks || 10;
+      
+      // Assemble all questions into a single text block
+      if (a.questions && a.questions.length > 0) {
+        if (manualQuestionInput) manualQuestionInput.value = a.questions.map(q => `Q${q.qNo}: ${q.text} [${q.marks} marks]`).join('\n\n');
+        
+        // Assemble all rubrics
+        const rList = [];
+        if (a.rubrics && a.rubrics.length > 0) {
+          a.rubrics.forEach(r => { if(r.criterion) rList.push(r.criterion); });
+        } else {
+          a.questions.forEach(q => { if(q.rubric) rList.push(`Q${q.qNo}: ${q.rubric}`); });
+        }
+        if (rubricsInput) rubricsInput.value = rList.join('\n');
+      } else {
+        if (manualQuestionInput) manualQuestionInput.value = a.title || '';
+      }
+    });
+  }
 
   // ── Copy feedback ─────────────────────────────────────────────────────────
   if (btnCopy) {
