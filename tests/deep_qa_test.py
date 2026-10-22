@@ -50,18 +50,19 @@ def do_login(page, role_name, email, password, expected_path):
             page.wait_for_url(f"**/{expected_path}**", timeout=8000)
         except Exception:
             print("   Using session injection fallback...")
+            user_role = 'admin' if 'admin' in role_name.lower() else role_name.lower()
             page.evaluate(f"""() => {{
                 sessionStorage.setItem('obe_session', JSON.stringify({{
-                    id: 'usr-{role_name.lower()[:3]}',
+                    id: 'usr-{user_role[:3]}',
                     name: '{role_name}',
                     email: '{email}',
-                    role: '{role_name.lower()}',
+                    role: '{user_role}',
                     deptId: 'dept-cs',
                     token: 'test-token'
                 }}));
-                window.location.href = '{expected_path}';
             }}""")
-            page.wait_for_timeout(2500)
+            page.goto(f"{BASE_URL}/{expected_path}", wait_until="networkidle")
+            page.wait_for_timeout(2000)
 
     print(f"   Successfully reached {page.url}")
 
