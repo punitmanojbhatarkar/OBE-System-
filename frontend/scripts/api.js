@@ -22,11 +22,15 @@ window.addEventListener('beforeunload', (e) => {
   }
 });
 
-/* ── Low-level fetch helper ── */
+/* ── Low-level fetch helper with strict AbortController timeout ── */
 async function apiFetch(path, opts = {}) {
   const isWrite = opts.method && ['POST', 'PUT', 'DELETE'].includes(opts.method.toUpperCase());
   
   const exec = async () => {
+    const controller = new AbortController();
+    const timeoutMs = opts.timeout || (isWrite ? 12000 : 5000);
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
     try {
       const sessionRaw = sessionStorage.getItem('obe_session');
       const session = sessionRaw ? JSON.parse(sessionRaw) : null;
@@ -36,6 +40,7 @@ async function apiFetch(path, opts = {}) {
       }
 
       const res = await fetch(API_BASE + path, {
+        signal: controller.signal,
         headers: headers,
         ...opts,
         body: opts.body ? JSON.stringify(opts.body) : undefined,
@@ -51,8 +56,14 @@ async function apiFetch(path, opts = {}) {
       }
       return await res.json();
     } catch (e) {
+      if (e.name === 'AbortError') {
+        console.warn(`[API] Network request timed out after ${timeoutMs}ms:`, path);
+        throw new Error(`Request timed out (${timeoutMs}ms)`);
+      }
       console.error('[API]', path, e.message);
       throw e;
+    } finally {
+      clearTimeout(timer);
     }
   };
 
@@ -65,59 +76,80 @@ async function apiFetch(path, opts = {}) {
   return exec();
 }
 
-/* ── Show loading overlay while syncing ── */
+/* ── Sleek non-blocking sync status indicator (never freezes or covers the UI) ── */
 function showSyncOverlay() {
-  const el = document.createElement('div');
-  el.id = 'api-sync-overlay';
-  el.style.cssText = `
-    position:fixed;inset:0;background:rgba(15,23,42,0.85);z-index:99999;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
-    font-family:'Plus Jakarta Sans',sans-serif;color:#fff;
-  `;
-  el.innerHTML = `
-    <div style="width:48px;height:48px;border:4px solid rgba(255,255,255,0.2);border-top-color:#3B82F6;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
-    <div style="font-size:18px;font-weight:700;">Connecting to database…</div>
-    <div style="font-size:13px;color:rgba(255,255,255,0.6);" id="api-sync-msg">Loading data from backend</div>
-    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
-  `;
-  if (document.body) {
-    document.body.prepend(el);
+  let el = document.getElementById('api-sync-indicator');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'api-sync-indicator';
+    el.style.cssText = `
+      position:fixed;bottom:20px;right:20px;z-index:9999;
+      background:rgba(15,23,42,0.92);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+      border:1px solid rgba(59,130,246,0.3);border-radius:30px;
+      padding:8px 16px;display:flex;align-items:center;gap:10px;
+      font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;color:#94A3B8;
+      box-shadow:0 10px 25px rgba(0,0,0,0.4);transition:opacity 0.4s ease, transform 0.4s ease;
+      pointer-events:none;
+    `;
+    el.innerHTML = `
+      <div id="api-sync-spinner" style="width:13px;height:13px;border:2px solid rgba(59,130,246,0.25);border-top-color:#3B82F6;border-radius:50%;animation:api-spin 0.8s linear infinite;"></div>
+      <span id="api-sync-msg" style="color:#E2E8F0;font-weight:600;letter-spacing:0.2px;">Syncing cloud data…</span>
+      <style>@keyframes api-spin{to{transform:rotate(360deg)}}</style>
+    `;
+    if (document.body) {
+      document.body.appendChild(el);
+    } else {
+      document.addEventListener('DOMContentLoaded', () => document.body.appendChild(el));
+    }
   } else {
-    document.addEventListener('DOMContentLoaded', () => document.body.prepend(el));
+    el.style.opacity = '1';
+    el.style.transform = 'translateY(0)';
+    const spinner = el.querySelector('#api-sync-spinner');
+    if (spinner) spinner.style.display = 'block';
   }
-  
-
 
   return {
-    msg: (t) => { const m = el.querySelector('#api-sync-msg'); if (m) m.textContent = t; },
-    done: () => { el.remove(); }
+    msg: (t) => {
+      const m = document.getElementById('api-sync-msg');
+      if (m) m.textContent = t;
+    },
+    done: (status = 'success') => {
+      const pill = document.getElementById('api-sync-indicator');
+      if (!pill) return;
+      const spinner = document.getElementById('api-sync-spinner');
+      const m = document.getElementById('api-sync-msg');
+      if (spinner) spinner.style.display = 'none';
+      if (m) {
+        if (status === 'success') {
+          m.innerHTML = '<span style="color:#10B981;">✓ Cloud Synced</span>';
+        } else if (status === 'offline') {
+          m.innerHTML = '<span style="color:#94A3B8;">• Offline Mode</span>';
+        } else {
+          m.innerHTML = '<span style="color:#3B82F6;">• Ready</span>';
+        }
+      }
+      setTimeout(() => {
+        pill.style.opacity = '0';
+        pill.style.transform = 'translateY(8px)';
+        setTimeout(() => pill.remove(), 400);
+      }, 1500);
+    }
   };
 }
 
-/* ── Show error overlay if backend is down ── */
+/* ── Non-blocking offline notice ── */
 function showOfflineError(err) {
-  const el = document.getElementById('api-sync-overlay');
-  if (el) {
-    el.innerHTML = `
-      <div style="color:#EF4444;margin-bottom:12px;">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
-          <line x1="12" y1="9" x2="12" y2="13"></line>
-          <line x1="12" y1="17" x2="12.01" y2="17"></line>
-        </svg>
-      </div>
-      <div style="font-size:20px;font-weight:700;color:#EF4444;">Backend Not Running</div>
-      <div style="font-size:14px;color:rgba(255,255,255,0.7);max-width:420px;text-align:center;">
-        Could not connect to the Python backend at <strong>${API_BASE}</strong>.<br>
-        Please start it by running:<br>
-        <code style="background:rgba(255,255,255,0.1);padding:6px 12px;border-radius:6px;margin-top:8px;display:inline-block;">
-          cd backend && .\\venv\\Scripts\\activate && uvicorn main:app --reload
-        </code>
-      </div>
-      <button onclick="location.reload()" style="margin-top:16px;padding:10px 24px;background:#2563EB;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;">
-        Retry Connection
-      </button>
-    `;
+  console.warn('[API] Cloud sync unavailable or offline:', err);
+  const pill = document.getElementById('api-sync-indicator');
+  if (pill) {
+    const spinner = document.getElementById('api-sync-spinner');
+    const m = document.getElementById('api-sync-msg');
+    if (spinner) spinner.style.display = 'none';
+    if (m) m.innerHTML = '<span style="color:#94A3B8;">• Offline Mode (Local Cache Active)</span>';
+    setTimeout(() => {
+      pill.style.opacity = '0';
+      setTimeout(() => pill.remove(), 400);
+    }, 2000);
   }
 }
 
@@ -162,13 +194,21 @@ function mergeLocalStore(key, newItems, isMatch) {
 
 /* ── Main sync function: load ALL data from backend into localStorage ── */
 async function syncFromBackend() {
+  // Session throttling: don't re-sync every single page navigation if synced within last 3 minutes
+  const lastSync = sessionStorage.getItem('obe_last_synced_at');
+  const now = Date.now();
+  if (lastSync && (now - parseInt(lastSync, 10)) < 180000) {
+    console.log('[API] Backend sync skipped — synced within the last 3 minutes.');
+    return;
+  }
+
   const overlay = showSyncOverlay();
 
   try {
     // ── Fast Bulk Bootstrap: 1 HTTP request fetches the complete system dataset ──
     try {
       overlay.msg('Syncing with OBE cloud backend…');
-      const bootstrap = await apiFetch('/api/bootstrap');
+      const bootstrap = await apiFetch('/api/bootstrap', { timeout: 6500 });
       if (bootstrap && bootstrap.departments && Array.isArray(bootstrap.departments)) {
         if (bootstrap.config) {
           const storedCfg = { ...bootstrap.config };
@@ -266,201 +306,64 @@ async function syncFromBackend() {
         mergeLocalStore('obe_marks_unified', allMarksUnified, (a, b) => a.courseId === b.courseId && a.prn === b.prn && a.assessId === b.assessId && String(a.qNo) === String(b.qNo));
         mergeLocalStore('obe_survey', bootstrap.surveys || [], (a, b) => a.courseId === b.courseId && a.prn === b.prn && String(a.co) === String(b.co));
 
+        sessionStorage.setItem('obe_last_synced_at', now.toString());
         localStorage.setItem('obe_initialized_v2', '1');
-        overlay.done();
+        overlay.done('success');
         console.log('[API] Bootstrap sync complete — instant bulk load finished in single roundtrip.');
         window.dispatchEvent(new CustomEvent('obe_data_synced'));
         return;
       }
     } catch (bootstrapErr) {
-      console.warn('[API] Bootstrap endpoint unavailable or returned error, falling back to sequential sync:', bootstrapErr);
+      console.warn('[API] Bootstrap endpoint unavailable or timed out:', bootstrapErr.message);
     }
 
-    // ── Fallback: Sequential endpoint sync ──
-    overlay.msg('Loading configuration…');
-    const config = await apiFetch('/api/config');
-    const storedCfg = { ...config };
-    const iaQGrouped = {};
-    for (const item of (config.iaQuestions || [])) {
-      const key = `${item.courseId}::${item.assessmentType}::${item.assessmentNo}`;
-      if (!iaQGrouped[key]) {
-        iaQGrouped[key] = { courseId: item.courseId, assessmentType: item.assessmentType, assessmentNo: item.assessmentNo, questions: [] };
-      }
-      if (item.questions) {
-        iaQGrouped[key].questions.push(...item.questions);
-      }
-    }
-    storedCfg.iaQuestions = Object.values(iaQGrouped);
-    localStorage.setItem('obe_config', JSON.stringify(storedCfg));
-
-    overlay.msg('Loading departments…');
-    const depts = await apiFetch('/api/departments');
-    localStorage.setItem('obe_departments', JSON.stringify(depts || []));
-
-    overlay.msg('Loading users…');
-    const users = await apiFetch('/api/users');
-    localStorage.setItem('obe_users', JSON.stringify(users || []));
-
-    overlay.msg('Loading curriculum patterns...');
-    const patterns = await apiFetch('/api/patterns');
-    localStorage.setItem('obe_patterns', JSON.stringify(patterns || []));
-
-    overlay.msg('Loading program outcomes...');
-    const outcomes = await apiFetch('/api/outcomes');
-    localStorage.setItem('obe_outcomes', JSON.stringify(outcomes || []));
-
-    overlay.msg('Loading courses…');
-    const courses = await apiFetch('/api/courses');
-    mergeLocalStore('obe_courses', courses.map(normalizeCourse), (a, b) => a.id === b.id);
-
-    overlay.msg('Loading course outcomes…');
-    let allCOs = [];
-    for (const c of courses) {
-      const cos = await apiFetch(`/api/courses/${c.id}/cos`);
-      allCOs = allCOs.concat(cos);
-    }
-    mergeLocalStore('obe_cos', allCOs, (a, b) => a.id === b.id || (a.courseId === b.courseId && String(a.no) === String(b.no)));
-
-    overlay.msg('Loading PO mappings…');
-    let allPO = [];
-    let allIndicatorMapping = {};
-    for (const c of courses) {
-      const po = await apiFetch(`/api/courses/${c.id}/pomapping`);
-      allPO = allPO.concat(po);
-      
-      try {
-        const im = await apiFetch(`/api/courses/${c.id}/indicatormapping`);
-        if (im && Object.keys(im.mappingData || {}).length > 0) {
-          allIndicatorMapping[c.id] = im.mappingData;
-        }
-      } catch (err) {
-        console.warn(`Failed to fetch indicator mapping for course ${c.id}:`, err);
-      }
-    }
-    mergeLocalStore('obe_po_mapping', allPO, (a, b) => a.courseId === b.courseId && String(a.coNo) === String(b.coNo) && a.po === b.po);
-    localStorage.setItem('obe_indicator_mapping', JSON.stringify(allIndicatorMapping));
-
-    overlay.msg('Loading students…');
-    let allStudents = [];
-    for (const c of courses) {
-      const sts = await apiFetch(`/api/courses/${c.id}/students`);
-      allStudents = allStudents.concat(sts);
-    }
-    mergeLocalStore('obe_students', allStudents, (a, b) => a.id === b.id || (a.courseId === b.courseId && a.prn === b.prn));
-
-    overlay.msg('Loading marks…');
-    let allIA = [], allMSE = [], allESE = [];
-    for (const c of courses) {
-      const ia = await apiFetch(`/api/courses/${c.id}/marks/ia`);
-      const mse = await apiFetch(`/api/courses/${c.id}/marks/mse`);
-      const ese = await apiFetch(`/api/courses/${c.id}/marks/ese`);
-      allIA = allIA.concat(ia);
-      allMSE = allMSE.concat(mse);
-      allESE = allESE.concat(ese);
-    }
-    mergeLocalStore('obe_marks_ia', allIA, (a, b) => a.courseId === b.courseId && a.prn === b.prn && String(a.qNo) === String(b.qNo));
-    mergeLocalStore('obe_marks_mse', allMSE, (a, b) => a.courseId === b.courseId && a.prn === b.prn && String(a.qNo) === String(b.qNo));
-    mergeLocalStore('obe_marks_ese', allESE, (a, b) => a.courseId === b.courseId && a.prn === b.prn && String(a.qNo) === String(b.qNo));
-
-    overlay.msg('Loading IA questions…');
-    let allIAQ = [];
-    for (const c of courses) {
-      const iaq = await apiFetch(`/api/courses/${c.id}/ia-questions`);
-      allIAQ = allIAQ.concat(iaq);
-    }
-    const mergedCfg = JSON.parse(localStorage.getItem('obe_config') || '{}');
-    mergedCfg.iaQuestions = allIAQ;
-    localStorage.setItem('obe_config', JSON.stringify(mergedCfg));
-
-    overlay.msg('Loading assignments & syllabus…');
-    let allAssignments = [];
-    for (const c of courses) {
-      const asgn = await apiFetch(`/api/courses/${c.id}/assignments`);
-      allAssignments = allAssignments.concat(asgn);
-    }
-    mergeLocalStore('obe_assignments', allAssignments, (a, b) => a.id === b.id);
-
-    // Hydrate unified obe_assessments — only REAL faculty-created assessments from the DB.
-    // ia_questions are for marks-entry structure only and must NOT create assessment cards.
-    let allAssessments = [];
-    allAssignments.forEach(asgn => {
-      allAssessments.push({
-        id: asgn.id,
-        courseId: asgn.courseId,
-        type: asgn.type || 'assignment',
-        no: asgn.no || 1,
-        title: asgn.title || 'Assignment',
-        description: asgn.description || '',
-        maxMarks: asgn.maxMarks || 10,
-        dueDate: asgn.dueDate || null,
-        rbtLevel: asgn.rbtLevel || null,
-        coNos: asgn.coNos || (asgn.coNo ? [asgn.coNo] : []),
-        aiGenerated: asgn.aiGenerated || false,
-        questions: asgn.questions || [],
-        rubrics: asgn.rubrics || [],
-        createdAt: asgn.createdAt || new Date().toISOString()
-      });
-    });
-    // Purge stale iaq- ghost entries from old code, then hard-set from backend.
-    {
-      const existingRaw = JSON.parse(localStorage.getItem('obe_assessments') || '[]');
-      const cleaned = existingRaw.filter(a => !String(a.id || '').startsWith('iaq-'));
-      const merged = [...allAssessments];
-      cleaned.forEach(localItem => {
-        if (!allAssessments.some(b => b.id === localItem.id)) { merged.push(localItem); }
-      });
-      localStorage.setItem('obe_assessments', JSON.stringify(merged));
+    // ── Resilient Fallback ──
+    // If local courses already exist, DO NOT execute a 50-request waterfall that freezes the browser.
+    const localCourses = JSON.parse(localStorage.getItem('obe_courses') || '[]');
+    if (localCourses && localCourses.length > 0) {
+      console.log('[API] Existing cached dataset active; skipping slow sequential waterfall.');
+      sessionStorage.setItem('obe_last_synced_at', now.toString());
+      overlay.done('offline');
+      return;
     }
 
-    let allMarksUnified = [];
-    allIA.forEach(m => {
-      allMarksUnified.push({
-        courseId: m.courseId,
-        prn: m.prn,
-        assessId: `iaq-${m.courseId}-ia-${m.assessmentNo || 1}`,
-        qNo: m.qNo,
-        marks: m.marks
-      });
-    });
-    allMSE.forEach(m => {
-      allMarksUnified.push({
-        courseId: m.courseId,
-        prn: m.prn,
-        assessId: `iaq-${m.courseId}-mse-1`,
-        qNo: m.qNo,
-        marks: m.marks
-      });
-    });
-    allESE.forEach(m => {
-      allMarksUnified.push({
-        courseId: m.courseId,
-        prn: m.prn,
-        assessId: `iaq-${m.courseId}-ese-1`,
-        qNo: m.qNo,
-        marks: m.marks
-      });
-    });
-    mergeLocalStore('obe_marks_unified', allMarksUnified, (a, b) => a.courseId === b.courseId && a.prn === b.prn && a.assessId === b.assessId && String(a.qNo) === String(b.qNo));
+    // If device is completely empty (first run), fetch core collections concurrently
+    overlay.msg('Loading initial core datasets…');
+    const [cfgRes, deptsRes, usersRes, patternsRes, outcomesRes, coursesRes] = await Promise.allSettled([
+      apiFetch('/api/config', { timeout: 4500 }),
+      apiFetch('/api/departments', { timeout: 4500 }),
+      apiFetch('/api/users', { timeout: 4500 }),
+      apiFetch('/api/patterns', { timeout: 4500 }),
+      apiFetch('/api/outcomes', { timeout: 4500 }),
+      apiFetch('/api/courses', { timeout: 4500 })
+    ]);
 
-    let allSurvey = [];
-    for (const c of courses) {
-      const sv = await apiFetch(`/api/courses/${c.id}/survey`);
-      allSurvey = allSurvey.concat(sv);
+    if (cfgRes.status === 'fulfilled' && cfgRes.value) {
+      localStorage.setItem('obe_config', JSON.stringify(cfgRes.value));
     }
-    mergeLocalStore('obe_survey', allSurvey, (a, b) => a.courseId === b.courseId && a.prn === b.prn && String(a.co) === String(b.co));
+    if (deptsRes.status === 'fulfilled' && deptsRes.value) {
+      localStorage.setItem('obe_departments', JSON.stringify(deptsRes.value));
+    }
+    if (usersRes.status === 'fulfilled' && usersRes.value) {
+      localStorage.setItem('obe_users', JSON.stringify(usersRes.value));
+    }
+    if (patternsRes.status === 'fulfilled' && patternsRes.value) {
+      localStorage.setItem('obe_patterns', JSON.stringify(patternsRes.value));
+    }
+    if (outcomesRes.status === 'fulfilled' && outcomesRes.value) {
+      localStorage.setItem('obe_outcomes', JSON.stringify(outcomesRes.value));
+    }
+    if (coursesRes.status === 'fulfilled' && Array.isArray(coursesRes.value)) {
+      mergeLocalStore('obe_courses', coursesRes.value.map(normalizeCourse), (a, b) => a.id === b.id);
+    }
 
-    // Mark as initialized so data.js doesn't re-seed with initial institutional data
+    sessionStorage.setItem('obe_last_synced_at', now.toString());
     localStorage.setItem('obe_initialized_v2', '1');
-
-    overlay.done();
-    console.log('[API] Sync complete — all data loaded from backend.');
+    overlay.done('success');
     window.dispatchEvent(new CustomEvent('obe_data_synced'));
   } catch (e) {
     console.warn('[API] Cloud sync timed out or offline, operating in resilient local DB mode:', e);
-    if (overlay && overlay.done) {
-      overlay.done();
-    }
-    // Allow pages to render smoothly using local institutional database
+    overlay.done('offline');
     window.dispatchEvent(new CustomEvent('obe_data_synced'));
   }
 }
@@ -756,7 +659,7 @@ function patchDBWriteMethods() {
   window.mergeLocalStore = mergeLocalStore;
 
   async function getAdminAnalytics() {
-    try { return await apiFetch('/api/admin/analytics'); } catch(e) { return null; }
+    try { return await apiFetch('/api/admin/analytics', { timeout: 4000 }); } catch(e) { return null; }
   }
   async function getPatterns() {
     try { return await apiFetch('/api/patterns'); } catch(e) { return []; }
@@ -780,8 +683,9 @@ function patchDBWriteMethods() {
   /* ════════════════════════════════════════════
      BOOTSTRAP — exposes window._apiReady Promise
      All protected pages await this before init.
-     _apiReady now AWAITS the full backend sync so
-     all localStorage data is ready before pages run.
+     If local data exists, resolves INSTANTLY in 0ms
+     so the page renders immediately with 0 delay.
+     Background sync runs non-blockingly.
      ════════════════════════════════════════════ */
   window._apiReady = (async function bootstrap() {
     const sessionRaw = sessionStorage.getItem('obe_session');
@@ -793,11 +697,22 @@ function patchDBWriteMethods() {
     // Patch write methods immediately so local DB writes persist
     patchDBWriteMethods();
 
-    // AWAIT full sync — pages should not render until data is ready
+    // Check if local cached data is already available
+    const hasCachedCourses = !!(localStorage.getItem('obe_courses') && JSON.parse(localStorage.getItem('obe_courses') || '[]').length > 0);
+
+    if (hasCachedCourses) {
+      // INSTANT RESOLVE: Allow pages to render immediately in 0ms!
+      // Background sync runs quietly without blocking page init.
+      syncFromBackend().catch(e => console.warn('[API] Background sync error:', e));
+      return;
+    }
+
+    // First time on an empty browser: await sync with a short fallback
     try {
       await syncFromBackend();
     } catch(e) {
-      console.warn('[API] Sync failed, pages will use cached localStorage data:', e);
+      console.warn('[API] Initial sync error, using local defaults:', e);
     }
   })();
+
 

@@ -176,22 +176,31 @@
   const user = Auth.requireAuth(['admin']);
   if (!user) throw new Error('Not authorized');
 
-  let analyticsData = null;
+  // 1. Immediately render stats, charts, and departments from local database (0ms delay)
+  renderStats(null);
+  renderCharts(null);
+  renderDepts();
+  renderAllIcons();
+
+  // 2. Fetch fresh cloud analytics asynchronously in the background
   try {
     if (typeof getAdminAnalytics === 'function') {
       const res = await getAdminAnalytics();
-      if (res && res.success) {
-        analyticsData = res.data;
+      if (res && res.success && res.data) {
+        renderStats(res.data);
+        renderCharts(res.data);
       }
     }
   } catch(e) {
     console.warn('Admin analytics API endpoint deferred, using local metric fallback:', e);
   }
 
-  renderStats(analyticsData);
-  renderCharts(analyticsData);
-  renderDepts();
-  renderAllIcons();
+  // 3. Re-render if background cloud sync updates data
+  window.addEventListener('obe_data_synced', () => {
+    renderStats(null);
+    renderCharts(null);
+    renderDepts();
+  });
 
   function renderStats(analytics) {
     if (analytics) {
