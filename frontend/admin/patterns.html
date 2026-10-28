@@ -3,25 +3,306 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Curriculum Patterns | OBE System – MITAOE</title>
+  <title>Curriculum Patterns & Outcomes Explorer | OBE System – MITAOE</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../styles/main.css">
   <link rel="stylesheet" href="../styles/components.css">
   <style>
+    /* ── Windows Explorer / Modern OS Style Address Bar ── */
+    .explorer-address-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      padding: 6px 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .addr-nav-group {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .addr-btn {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      border-radius: var(--r-sm);
+      width: 32px;
+      height: 32px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-size: 13px;
+    }
+    .addr-btn:hover:not(:disabled) {
+      background: var(--primary-light);
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+    .addr-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    .addr-path-box {
+      display: flex;
+      align-items: center;
+      flex: 1;
+      gap: 4px;
+      padding: 4px 10px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .addr-path-box::-webkit-scrollbar { display: none; }
+    .path-crumb {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 3px 8px;
+      border-radius: 4px;
+      transition: all 0.15s;
+      white-space: nowrap;
+      font-weight: 500;
+    }
+    .path-crumb:hover {
+      background: var(--surface);
+      color: var(--primary);
+    }
+    .path-crumb.active {
+      color: var(--text-primary);
+      font-weight: 700;
+      cursor: default;
+    }
+    .path-sep {
+      color: var(--text-muted);
+      font-size: 12px;
+      user-select: none;
+    }
+    .addr-search-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      padding: 2px 10px;
+      width: 220px;
+    }
+    .addr-search-wrapper input {
+      border: none;
+      background: transparent;
+      outline: none;
+      font-size: 12.5px;
+      color: var(--text-primary);
+      width: 100%;
+      font-family: inherit;
+    }
+
+    /* ── Pattern Catalog Grid ── */
     .pattern-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 16px;
     }
     .pattern-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--r-md); overflow: hidden; display: flex; flex-direction: column;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+      cursor: pointer;
     }
-    .pattern-card:hover { border-color: var(--primary); }
+    .pattern-card:hover {
+      border-color: var(--primary);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+      transform: translateY(-2px);
+    }
     .pattern-card-header {
-      padding: 16px; border-bottom: 1px solid var(--border); display: flex;
-      justify-content: space-between; align-items: center; background: var(--surface-2);
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--surface-2);
     }
-    .pattern-card-body { padding: 16px; flex: 1; display: flex; flex-direction: column; gap: 12px; }
+    .pattern-card-body {
+      padding: 16px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* ── Full-Page Explorer Header Banner ── */
+    .explorer-banner {
+      background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      padding: 20px 24px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .explorer-banner-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin: 0 0 6px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .explorer-meta-chips {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    .explorer-chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 3px 10px;
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+    }
+
+    /* ── Toolbar & View Switcher ── */
+    .explorer-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .view-toggle-group {
+      display: inline-flex;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      padding: 2px;
+    }
+    .view-toggle-btn {
+      background: transparent;
+      border: none;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      border-radius: 4px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .view-toggle-btn.active {
+      background: var(--surface);
+      color: var(--text-primary);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+
+    /* ── Outcomes Grid View ── */
+    .outcomes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .outcome-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .outcome-card:hover {
+      border-color: var(--primary);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.05);
+    }
+    .outcome-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .outcome-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: var(--primary-light);
+      color: var(--primary);
+      letter-spacing: 0.5px;
+    }
+    .outcome-pill.pso {
+      background: rgba(245, 158, 11, 0.15);
+      color: #d97706;
+    }
+    .outcome-title {
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--text-primary);
+      margin: 0;
+    }
+    .outcome-desc {
+      font-size: 12.5px;
+      line-height: 1.6;
+      color: var(--text-secondary);
+      flex: 1;
+    }
+    .outcome-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--border);
+      padding-top: 10px;
+      margin-top: 4px;
+    }
+
+    /* ── Inline Add Drawer ── */
+    .inline-add-drawer {
+      background: var(--surface);
+      border: 1px solid var(--primary);
+      border-radius: var(--r-md);
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      display: none;
+      box-shadow: 0 6px 20px rgba(59,130,246,0.1);
+    }
+    .inline-add-drawer.open {
+      display: block;
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
 <body>
@@ -57,11 +338,11 @@
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
-        <h1 class="topbar-title">Curriculum Patterns (PO & PSO)</h1>
-        <div class="topbar-breadcrumb">Admin Console <span>›</span> Curriculum Patterns</div>
+        <h1 class="topbar-title" id="pageMainTitle">Curriculum Patterns (PO & PSO)</h1>
+        <div class="topbar-breadcrumb" id="pageBreadcrumb">Admin Console <span>›</span> Curriculum Patterns</div>
       </div>
       <div class="topbar-right">
-        <button class="btn btn-primary btn-sm" onclick="openAddPatternModal()">
+        <button class="btn btn-primary btn-sm" id="topAddPatternBtn" onclick="openAddPatternModal()">
           <span data-icon="plus"></span><span>Add Pattern</span>
         </button>
       </div>
@@ -69,8 +350,159 @@
 
     <div class="page-content">
 
-      <!-- Pattern Cards Grid -->
-      <div id="patternGrid" class="pattern-grid"></div>
+      <!-- WINDOWS EXPLORER / ADDRESS PATH BAR -->
+      <div class="explorer-address-bar">
+        <div class="addr-nav-group">
+          <button class="addr-btn" id="addrBackBtn" onclick="showPatternsCatalog()" title="Back to Patterns Catalog" disabled>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          </button>
+          <button class="addr-btn" onclick="refreshCurrentView()" title="Refresh Explorer">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          </button>
+        </div>
+
+        <div class="addr-path-box" id="addrPathBox">
+          <span class="path-crumb" onclick="showPatternsCatalog()">
+            <span>📁</span>
+            <span>Curriculum Patterns</span>
+          </span>
+          <span class="path-sep" id="addrSep1" style="display:none;">›</span>
+          <span class="path-crumb active" id="addrPatternCrumb" style="display:none;">
+            <span>📄</span>
+            <span id="addrPatternName">Pattern Details</span>
+          </span>
+          <span class="path-sep" id="addrSep2" style="display:none;">›</span>
+          <span class="path-crumb active" id="addrLeafCrumb" style="display:none;">
+            <span>🎯</span>
+            <span>Outcomes Explorer</span>
+          </span>
+        </div>
+
+        <div class="addr-search-wrapper" id="addrSearchWrapper" style="display:none;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="outcomeSearchInput" placeholder="Filter outcomes..." oninput="filterOutcomes(this.value)">
+        </div>
+      </div>
+
+      <!-- VIEW 1: PATTERNS CATALOG (GRID) -->
+      <div id="patternsCatalogView">
+        <div id="patternGrid" class="pattern-grid"></div>
+      </div>
+
+      <!-- VIEW 2: FULL-PAGE OUTCOMES EXPLORER -->
+      <div id="outcomesExplorerView" style="display:none;">
+        
+        <!-- Header Banner -->
+        <div class="explorer-banner">
+          <div>
+            <h2 class="explorer-banner-title" id="expBannerTitle">
+              <span id="expPatternName">2024 NEP Pattern (MITAOE Autonomous)</span>
+              <span class="badge badge-primary font-mono" id="expYearBadge">2024</span>
+            </h2>
+            <div class="explorer-meta-chips">
+              <span class="explorer-chip" id="expUnivChip">🏛️ Savitribai Phule Pune University (SPPU)</span>
+              <span class="explorer-chip" id="expStatusChip">🎓 Autonomous Engineering Institute</span>
+              <span class="explorer-chip" id="expDeptChip">🏢 All Departments</span>
+              <span class="explorer-chip" id="expCountChip">🎯 11 POs, 2 PSOs</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="showPatternsCatalog()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+              <span>Back to Patterns</span>
+            </button>
+            <button class="btn btn-secondary btn-sm" id="expAutoLoadBtn" onclick="autoLoadOfficialPOs(window.currentPatternId)">
+              <span data-icon="sparkles"></span><span>Auto-Load Official Outcomes</span>
+            </button>
+            <button class="btn btn-primary btn-sm" onclick="toggleInlineAddForm()">
+              <span data-icon="plus"></span><span>Add Outcome</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Inline Add Drawer -->
+        <div class="inline-add-drawer" id="inlineAddDrawer">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div style="font-weight:700;font-size:14px;color:var(--text-primary);">
+              Add Program Outcome to this Pattern
+            </div>
+            <button class="btn btn-secondary btn-sm btn-icon" onclick="toggleInlineAddForm(false)">
+              <span data-icon="close"></span>
+            </button>
+          </div>
+          <div style="display:grid;grid-template-columns:120px 180px 1fr 100px;gap:12px;align-items:flex-end;">
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Type</label>
+              <select class="form-select" id="new-outcome-type" onchange="onNewOutcomeTypeChange(this.value)">
+                <option value="PO">PO (Program)</option>
+                <option value="PSO">PSO (Specific)</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Code</label>
+              <input class="form-input" id="new-outcome-code" placeholder="e.g. PO12">
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Description / Graduate Attribute</label>
+              <input class="form-input" id="new-outcome-desc" placeholder="Describe the engineering competency or program outcome statement...">
+            </div>
+            <div>
+              <button class="btn btn-primary" style="width:100%;height:38px;" onclick="saveInlineOutcome()">
+                <span>Save</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Explorer Toolbar -->
+        <div class="explorer-toolbar">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-weight:700;font-size:15px;color:var(--text-primary);">Outcomes Explorer</span>
+            <span class="badge badge-neutral" id="expFilteredBadge">Showing all outcomes</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="view-toggle-group">
+              <button class="view-toggle-btn active" id="btnViewCards" onclick="setOutcomesViewMode('cards')">
+                <span>▦</span><span>Cards</span>
+              </button>
+              <button class="view-toggle-btn" id="btnViewTable" onclick="setOutcomesViewMode('table')">
+                <span>☰</span><span>Table</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cards View Container -->
+        <div id="outcomesCardsContainer">
+          <div style="margin-bottom:12px;font-size:13px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;">
+            Program Outcomes (POs)
+          </div>
+          <div class="outcomes-grid" id="poCardsGrid"></div>
+
+          <div style="margin:24px 0 12px 0;font-size:13px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;">
+            Program Specific Outcomes (PSOs)
+          </div>
+          <div class="outcomes-grid" id="psoCardsGrid"></div>
+        </div>
+
+        <!-- Table View Container -->
+        <div id="outcomesTableContainer" style="display:none;">
+          <div class="table-responsive" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);margin-bottom:24px;">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th style="width:100px;">Identifier</th>
+                  <th style="width:110px;">Type</th>
+                  <th>Graduate Attribute Statement</th>
+                  <th style="width:90px;text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="outcomesTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
 
     </div>
   </main>
@@ -87,51 +519,9 @@
   const user = Auth.requireAuth(['admin']);
   if (!user) throw new Error('Not authorized');
 
-  renderPatterns();
-  renderAllIcons();
-
-  function renderPatterns() {
-    const grid = document.getElementById('patternGrid');
-    const patterns = DB.patterns.all();
-    const depts = DB.departments.all();
-    const outcomes = DB.outcomes.all();
-
-    if (patterns.length === 0) {
-      grid.innerHTML = '<div style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--text-secondary); background: var(--surface-2); border-radius: var(--r-md);">No curriculum patterns found. Create one to define POs and PSOs.</div>';
-      return;
-    }
-
-    grid.innerHTML = patterns.map(p => {
-      const dept = depts.find(d => d.id === p.departmentId);
-      const pOutcomes = outcomes.filter(o => o.patternId === p.id);
-      const pos = pOutcomes.filter(o => o.type === 'PO').length;
-      const psos = pOutcomes.filter(o => o.type === 'PSO').length;
-
-      return `
-        <div class="pattern-card">
-          <div class="pattern-card-header">
-            <div>
-              <span class="badge badge-primary font-mono" style="font-size:12px;">${p.year}</span>
-            </div>
-            <div style="font-size:12px;color:var(--text-secondary);font-weight:600;">${pos} POs, ${psos} PSOs</div>
-          </div>
-          <div class="pattern-card-body">
-            <h3 style="font-size:16px;font-weight:700;color:var(--text-primary);margin:0;">${p.name}</h3>
-            <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;font-size:12.5px;">
-              <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;margin-bottom:2px;">Department</div>
-              <div style="font-weight:600;color:var(--text-primary);">${dept ? dept.name : 'All Departments'}</div>
-            </div>
-          </div>
-          <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;">
-            <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="openManageOutcomesModal('${p.id}')">
-              <span data-icon="matrix"></span><span>Manage Outcomes</span>
-            </button>
-          </div>
-        </div>
-      `;
-    }).join('');
-    renderAllIcons(grid);
-  }
+  window.currentPatternId = null;
+  window.currentViewMode = 'cards'; // 'cards' or 'table'
+  window.currentFilterQuery = '';
 
   // 1. Latest 2024 NBA GAPC v4.0 Framework (11 Program Outcomes — Washington Accord aligned)
   const NBA_GAPC_11_POS = [
@@ -260,6 +650,358 @@
     }
   };
 
+  renderPatterns();
+  renderAllIcons();
+
+  /* ── 1. PATTERNS CATALOG VIEW ── */
+  function renderPatterns() {
+    const grid = document.getElementById('patternGrid');
+    const patterns = DB.patterns.all();
+    const depts = DB.departments.all();
+    const outcomes = DB.outcomes.all();
+
+    if (patterns.length === 0) {
+      grid.innerHTML = '<div style="grid-column: 1/-1; padding: 48px; text-align: center; color: var(--text-secondary); background: var(--surface-2); border-radius: var(--r-md); border:1px dashed var(--border);"><div style="font-size:28px;margin-bottom:8px;">📁</div><div style="font-weight:700;font-size:15px;color:var(--text-primary);margin-bottom:4px;">No Curriculum Patterns Found</div><div>Click <strong>+ Add Pattern</strong> above to create your first curriculum scheme with official POs.</div></div>';
+      return;
+    }
+
+    grid.innerHTML = patterns.map(p => {
+      const dept = depts.find(d => d.id === p.departmentId);
+      const pOutcomes = outcomes.filter(o => o.patternId === p.id);
+      const pos = pOutcomes.filter(o => o.type === 'PO').length;
+      const psos = pOutcomes.filter(o => o.type === 'PSO').length;
+      const isNep2024 = p && (String(p.year) >= '2024' || (p.name && p.name.includes('2024')));
+
+      return `
+        <div class="pattern-card" onclick="openOutcomesExplorer('${p.id}')">
+          <div class="pattern-card-header">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="badge badge-primary font-mono" style="font-size:12px;">${p.year}</span>
+              ${isNep2024 ? '<span class="badge badge-success" style="font-size:10.5px;">NEP 2024</span>' : '<span class="badge badge-neutral" style="font-size:10.5px;">Legacy</span>'}
+            </div>
+            <div style="font-size:12px;color:var(--text-secondary);font-weight:700;">
+              ${pos} POs, ${psos} PSOs
+            </div>
+          </div>
+          <div class="pattern-card-body">
+            <h3 style="font-size:16px;font-weight:800;color:var(--text-primary);margin:0;line-height:1.4;">${p.name}</h3>
+            <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;font-size:12px;">
+              <div style="font-size:10.5px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;margin-bottom:2px;">Scope</div>
+              <div style="font-weight:600;color:var(--text-primary);">${dept ? dept.name : 'All Departments (College-Wide)'}</div>
+            </div>
+          </div>
+          <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;background:var(--surface-2);">
+            <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center;" onclick="event.stopPropagation(); openOutcomesExplorer('${p.id}')">
+              <span>📂</span><span>Explore Outcomes</span>
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+    renderAllIcons(grid);
+  }
+
+  /* ── 2. OPEN OUTCOMES EXPLORER (DRILL-DOWN) ── */
+  function openOutcomesExplorer(pid) {
+    window.currentPatternId = pid;
+    const p = DB.patterns.all().find(x => x.id === pid);
+    if (!p) return;
+
+    // Switch Views
+    document.getElementById('patternsCatalogView').style.display = 'none';
+    document.getElementById('outcomesExplorerView').style.display = 'block';
+    document.getElementById('topAddPatternBtn').style.display = 'none';
+
+    // Update Topbar
+    document.getElementById('pageMainTitle').textContent = p.name;
+    document.getElementById('pageBreadcrumb').innerHTML = `Admin Console <span>›</span> Curriculum Patterns <span>›</span> <strong style="color:var(--text-primary);">${p.name}</strong>`;
+
+    // Update Windows Explorer Address Bar
+    document.getElementById('addrBackBtn').removeAttribute('disabled');
+    document.getElementById('addrSep1').style.display = 'inline';
+    document.getElementById('addrPatternCrumb').style.display = 'inline-flex';
+    document.getElementById('addrPatternName').textContent = p.name;
+    document.getElementById('addrSep2').style.display = 'inline';
+    document.getElementById('addrLeafCrumb').style.display = 'inline-flex';
+    document.getElementById('addrSearchWrapper').style.display = 'flex';
+
+    // Update Banner
+    const isNep2024 = p && (String(p.year) >= '2024' || (p.name && p.name.includes('2024')));
+    const dept = DB.departments.all().find(d => d.id === p.departmentId);
+    const outcomes = DB.outcomes.all().filter(o => o.patternId === pid);
+    const pos = outcomes.filter(o => o.type === 'PO').length;
+    const psos = outcomes.filter(o => o.type === 'PSO').length;
+
+    document.getElementById('expPatternName').textContent = p.name;
+    document.getElementById('expYearBadge').textContent = p.year;
+    document.getElementById('expDeptChip').textContent = '🏢 ' + (dept ? dept.name : 'All Departments (College-Wide)');
+    document.getElementById('expCountChip').textContent = `🎯 ${pos} POs, ${psos} PSOs`;
+    document.getElementById('expStatusChip').textContent = isNep2024 ? '🎓 NEP 2024 (NBA GAPC v4.0)' : '🎓 Legacy NBA 12-PO Scheme';
+
+    // Reset Search & Render
+    document.getElementById('outcomeSearchInput').value = '';
+    window.currentFilterQuery = '';
+    renderExplorerOutcomes(pid);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function showPatternsCatalog() {
+    window.currentPatternId = null;
+    document.getElementById('patternsCatalogView').style.display = 'block';
+    document.getElementById('outcomesExplorerView').style.display = 'none';
+    document.getElementById('topAddPatternBtn').style.display = 'inline-flex';
+    document.getElementById('inlineAddDrawer').classList.remove('open');
+
+    // Reset Topbar
+    document.getElementById('pageMainTitle').textContent = 'Curriculum Patterns (PO & PSO)';
+    document.getElementById('pageBreadcrumb').innerHTML = 'Admin Console <span>›</span> Curriculum Patterns';
+
+    // Reset Explorer Address Bar
+    document.getElementById('addrBackBtn').setAttribute('disabled', 'true');
+    document.getElementById('addrSep1').style.display = 'none';
+    document.getElementById('addrPatternCrumb').style.display = 'none';
+    document.getElementById('addrSep2').style.display = 'none';
+    document.getElementById('addrLeafCrumb').style.display = 'none';
+    document.getElementById('addrSearchWrapper').style.display = 'none';
+
+    renderPatterns();
+  }
+
+  function refreshCurrentView() {
+    if (window.currentPatternId) {
+      renderExplorerOutcomes(window.currentPatternId);
+      Toast.info('Outcomes explorer refreshed.');
+    } else {
+      renderPatterns();
+      Toast.info('Patterns catalog refreshed.');
+    }
+  }
+
+  /* ── 3. RENDER OUTCOMES INSIDE EXPLORER ── */
+  function renderExplorerOutcomes(pid) {
+    const q = (window.currentFilterQuery || '').toLowerCase().trim();
+    let outcomes = DB.outcomes.all().filter(o => o.patternId === pid);
+
+    if (q) {
+      outcomes = outcomes.filter(o => 
+        (o.code && o.code.toLowerCase().includes(q)) || 
+        (o.description && o.description.toLowerCase().includes(q))
+      );
+      document.getElementById('expFilteredBadge').textContent = `Filtered (${outcomes.length} matches)`;
+    } else {
+      document.getElementById('expFilteredBadge').textContent = `Total: ${outcomes.length} outcomes`;
+    }
+
+    const pos = outcomes.filter(o => o.type === 'PO').sort((a,b) => a.code.localeCompare(b.code, undefined, {numeric: true}));
+    const psos = outcomes.filter(o => o.type === 'PSO').sort((a,b) => a.code.localeCompare(b.code, undefined, {numeric: true}));
+
+    // Render Cards View
+    const poGrid = document.getElementById('poCardsGrid');
+    const psoGrid = document.getElementById('psoCardsGrid');
+
+    if (pos.length === 0) {
+      poGrid.innerHTML = `
+        <div style="grid-column: 1/-1; padding: 36px; text-align: center; color: var(--text-secondary); background: var(--surface); border-radius: var(--r-md); border:1px dashed var(--border);">
+          <div style="font-size:24px;margin-bottom:6px;">🎯</div>
+          <div style="font-weight:700;font-size:14px;color:var(--text-primary);margin-bottom:4px;">No Program Outcomes defined</div>
+          <div style="margin-bottom:12px;">Click <strong>Auto-Load Official Outcomes</strong> above to populate the official NBA attributes automatically.</div>
+        </div>
+      `;
+    } else {
+      poGrid.innerHTML = pos.map(o => {
+        // Extract title before colon if present (e.g. "Engineering Knowledge: Apply...")
+        let title = o.code;
+        let desc = o.description || '';
+        const colonIdx = desc.indexOf(':');
+        if (colonIdx > 0 && colonIdx < 45) {
+          title = desc.substring(0, colonIdx).trim();
+          desc = desc.substring(colonIdx + 1).trim();
+        }
+
+        return `
+          <div class="outcome-card">
+            <div class="outcome-card-top">
+              <span class="outcome-pill">${o.code}</span>
+              <span class="badge badge-neutral" style="font-size:11px;">NBA Graduate Attribute</span>
+            </div>
+            <h4 class="outcome-title">${title}</h4>
+            <div class="outcome-desc">${desc}</div>
+            <div class="outcome-card-footer">
+              <span style="font-size:11px;color:var(--text-secondary);">Direct / Indirect Attainment Metric</span>
+              <button class="btn btn-secondary btn-sm" style="color:var(--danger);padding:4px 8px;font-size:11.5px;" onclick="deleteOutcome('${o.id}')" title="Delete Outcome">
+                <span>Delete</span>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    if (psos.length === 0) {
+      psoGrid.innerHTML = `
+        <div style="grid-column: 1/-1; padding: 28px; text-align: center; color: var(--text-secondary); background: var(--surface); border-radius: var(--r-md); border:1px dashed var(--border);">
+          <div style="font-weight:600;font-size:13px;color:var(--text-primary);margin-bottom:4px;">No Program Specific Outcomes (PSOs) defined</div>
+          <div style="font-size:12px;">Click <strong>+ Add Outcome</strong> above to define department-specialized competencies.</div>
+        </div>
+      `;
+    } else {
+      psoGrid.innerHTML = psos.map(o => {
+        let title = o.code;
+        let desc = o.description || '';
+        const colonIdx = desc.indexOf(':');
+        if (colonIdx > 0 && colonIdx < 45) {
+          title = desc.substring(0, colonIdx).trim();
+          desc = desc.substring(colonIdx + 1).trim();
+        }
+
+        return `
+          <div class="outcome-card" style="border-left: 3px solid #d97706;">
+            <div class="outcome-card-top">
+              <span class="outcome-pill pso">${o.code}</span>
+              <span class="badge badge-warning" style="font-size:11px;">Department PSO</span>
+            </div>
+            <h4 class="outcome-title">${title}</h4>
+            <div class="outcome-desc">${desc}</div>
+            <div class="outcome-card-footer">
+              <span style="font-size:11px;color:var(--text-secondary);">Domain Specialization Metric</span>
+              <button class="btn btn-secondary btn-sm" style="color:var(--danger);padding:4px 8px;font-size:11.5px;" onclick="deleteOutcome('${o.id}')" title="Delete Outcome">
+                <span>Delete</span>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Render Table View
+    const tableBody = document.getElementById('outcomesTableBody');
+    const allSorted = [...pos, ...psos];
+    if (allSorted.length === 0) {
+      tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:32px;color:var(--text-secondary);">No outcomes match your search filter.</td></tr>';
+    } else {
+      tableBody.innerHTML = allSorted.map(o => `
+        <tr>
+          <td><span class="outcome-pill ${o.type === 'PSO' ? 'pso' : ''}">${o.code}</span></td>
+          <td><span class="badge ${o.type === 'PSO' ? 'badge-warning' : 'badge-primary'}">${o.type === 'PSO' ? 'Department PSO' : 'NBA PO'}</span></td>
+          <td style="font-size:13px;line-height:1.5;">${o.description}</td>
+          <td style="text-align:right;">
+            <button class="btn btn-secondary btn-sm" style="color:var(--danger);padding:3px 8px;" onclick="deleteOutcome('${o.id}')">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    renderAllIcons();
+  }
+
+  function filterOutcomes(val) {
+    window.currentFilterQuery = val;
+    if (window.currentPatternId) {
+      renderExplorerOutcomes(window.currentPatternId);
+    }
+  }
+
+  function setOutcomesViewMode(mode) {
+    window.currentViewMode = mode;
+    const btnCards = document.getElementById('btnViewCards');
+    const btnTable = document.getElementById('btnViewTable');
+    const cardsWrap = document.getElementById('outcomesCardsContainer');
+    const tableWrap = document.getElementById('outcomesTableContainer');
+
+    if (mode === 'cards') {
+      btnCards.classList.add('active');
+      btnTable.classList.remove('active');
+      cardsWrap.style.display = 'block';
+      tableWrap.style.display = 'none';
+    } else {
+      btnCards.classList.remove('active');
+      btnTable.classList.add('active');
+      cardsWrap.style.display = 'none';
+      tableWrap.style.display = 'block';
+    }
+  }
+
+  function toggleInlineAddForm(show) {
+    const drawer = document.getElementById('inlineAddDrawer');
+    if (show === false) {
+      drawer.classList.remove('open');
+      return;
+    }
+    const isOpen = drawer.classList.contains('open');
+    if (isOpen) {
+      drawer.classList.remove('open');
+    } else {
+      drawer.classList.add('open');
+      onNewOutcomeTypeChange(document.getElementById('new-outcome-type').value);
+      document.getElementById('new-outcome-desc').focus();
+    }
+  }
+
+  function onNewOutcomeTypeChange(type) {
+    if (!window.currentPatternId) return;
+    const outcomes = DB.outcomes.all().filter(o => o.patternId === window.currentPatternId && o.type === type);
+    const nextNum = outcomes.length + 1;
+    document.getElementById('new-outcome-code').value = `${type}${nextNum}`;
+  }
+
+  async function saveInlineOutcome() {
+    const pid = window.currentPatternId;
+    if (!pid) return;
+
+    const type = document.getElementById('new-outcome-type').value;
+    const code = document.getElementById('new-outcome-code').value.trim();
+    const desc = document.getElementById('new-outcome-desc').value.trim();
+
+    if (!code || !desc) {
+      Toast.error('Code and description are required.');
+      return;
+    }
+
+    const p = DB.patterns.all().find(x => x.id === pid);
+    const dept = p ? p.departmentId : null;
+    const newOutcome = {
+      id: `${type.toLowerCase()}_${pid}_${Date.now()}`,
+      code,
+      description: desc,
+      type,
+      departmentId: dept,
+      patternId: pid
+    };
+
+    // Save locally
+    const currentOutcomes = JSON.parse(localStorage.getItem('obe_outcomes') || '[]');
+    currentOutcomes.push(newOutcome);
+    localStorage.setItem('obe_outcomes', JSON.stringify(currentOutcomes));
+
+    // Reset input
+    document.getElementById('new-outcome-desc').value = '';
+    onNewOutcomeTypeChange(type);
+    toggleInlineAddForm(false);
+    Toast.success(`${type} added successfully.`);
+    renderExplorerOutcomes(pid);
+
+    // Sync to backend
+    window.apiFetch('/api/outcomes', {
+      method: 'POST',
+      body: newOutcome
+    }).catch(err => console.warn('Background sync deferred:', err));
+  }
+
+  async function deleteOutcome(id) {
+    if (!confirm('Are you sure you want to remove this outcome from this pattern?')) return;
+    const currentOutcomes = JSON.parse(localStorage.getItem('obe_outcomes') || '[]');
+    const updated = currentOutcomes.filter(x => String(x.id) !== String(id));
+    localStorage.setItem('obe_outcomes', JSON.stringify(updated));
+
+    Toast.info('Outcome removed.');
+    if (window.currentPatternId) {
+      renderExplorerOutcomes(window.currentPatternId);
+    }
+
+    window.apiFetch(`/api/outcomes/${id}`, { method: 'DELETE' }).catch(() => {});
+  }
+
+  /* ── 4. PRESETS & MODAL CREATION (FOR + ADD PATTERN) ── */
   function onCollegePresetChange(key) {
     const preset = INSTITUTION_PRESETS[key] || INSTITUTION_PRESETS.mitaoe;
     const framework = document.getElementById('p-framework') ? document.getElementById('p-framework').value : 'nep2024';
@@ -300,10 +1042,11 @@
 
     const html = `
       <div class="modal-header">
-        <h3 class="modal-title">Add Curriculum Pattern</h3>
+        <h3 class="modal-title">Create Curriculum Pattern</h3>
         <button class="btn btn-secondary btn-sm btn-icon" onclick="Modal.close()"><span data-icon="close"></span></button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;">
+
         <div class="form-group">
           <label class="form-label" style="display:flex;justify-content:space-between;align-items:center;">
             <span>Select College / Institution Preset</span>
@@ -311,17 +1054,18 @@
           </label>
           <select class="form-select" id="p-college" onchange="onCollegePresetChange(this.value)">
             <option value="mitaoe" selected>MIT Academy of Engineering (MITAOE), Alandi, Pune</option>
-            <option value="sppu">Savitribai Phule Pune University (SPPU) — Affiliated Colleges</option>
-            <option value="coep">COEP Technological University (COEP Tech)</option>
+            <option value="sppu">Savitribai Phule Pune University (SPPU) Affiliated Colleges</option>
+            <option value="coep">COEP Technological University (COEP Tech), Pune</option>
             <option value="vit">Vishwakarma Institute of Technology (VIT Pune)</option>
-            <option value="nba_aicte">Universal AICTE / NBA Standard (Tier-I / Tier-II)</option>
-            <option value="custom">Custom / Other Institution</option>
+            <option value="nba_aicte">Universal AICTE / NBA Washington Accord Template</option>
+            <option value="custom">Custom / Other Engineering Institution</option>
           </select>
         </div>
 
-        <div id="p-univ-badge" style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.25);border-radius:var(--r-sm);padding:12px;margin-bottom:16px;">
-          <div style="font-weight:700;color:var(--primary);font-size:13px;display:flex;align-items:center;gap:6px;">
-            <span>🏛️ Affiliated University:</span>
+        <div id="p-univ-card" style="background:var(--primary-light);border:1px solid rgba(59,130,246,0.3);border-radius:var(--r-md);padding:12px 14px;font-size:12px;">
+          <div style="font-weight:700;color:var(--primary);display:flex;align-items:center;gap:6px;">
+            <span>🏛️</span>
+            <span>Affiliated University: </span>
             <span id="p-univ-name">Savitribai Phule Pune University (SPPU)</span>
           </div>
           <div style="font-size:11.5px;color:var(--text-primary);font-weight:600;margin-top:2px;" id="p-univ-status">
@@ -359,7 +1103,7 @@
           </select>
         </div>
 
-        <div style="background:var(--surface-2);padding:10px 14px;border-radius:var(--r-sm);border:1px solid var(--border);margin-top:12px;">
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);padding:12px 14px;">
           <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--text-primary);margin:0;">
             <input type="checkbox" id="p-autoload-pos" checked style="margin-top:3px;">
             <div>
@@ -370,10 +1114,11 @@
             </div>
           </label>
         </div>
+
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
-        <button class="btn btn-primary" onclick="savePattern()">Create Pattern & Auto-Fetch POs</button>
+        <button class="btn btn-primary" onclick="savePattern()">Create Pattern</button>
       </div>
     `;
     Modal.open(html);
@@ -443,14 +1188,14 @@
       if (freshOutcomes && freshOutcomes.length) localStorage.setItem('obe_outcomes', JSON.stringify(freshOutcomes));
       
       renderPatterns();
+      // Automatically open in outcomes explorer!
+      openOutcomesExplorer(patternId);
     } catch(e) {
       Toast.error('Failed to create pattern: ' + (e.message || 'Unknown error'));
       btn.disabled = false;
       btn.innerHTML = 'Create Pattern';
     }
   }
-
-  window.currentPatternId = null;
 
   async function autoLoadOfficialPOs(pid) {
     const p = DB.patterns.all().find(x => x.id === pid);
@@ -463,8 +1208,8 @@
     if (!confirm(`Auto-load all ${count} official NBA / SPPU Program Outcomes and PSOs into this pattern?`)) return;
 
     const allOutcomes = [
-      ...targetPos.map(o => ({ code: o.code, description: o.description, type: 'PO', departmentId: dept, patternId: pid })),
-      ...preset.psos.map(o => ({ code: o.code, description: o.description, type: 'PSO', departmentId: dept, patternId: pid }))
+      ...targetPos.map((o, idx) => ({ id: `po_${pid}_${idx+1}`, code: o.code, description: o.description, type: 'PO', departmentId: dept, patternId: pid })),
+      ...preset.psos.map((o, idx) => ({ id: `pso_${pid}_${idx+1}`, code: o.code, description: o.description, type: 'PSO', departmentId: dept, patternId: pid }))
     ];
 
     try {
@@ -483,141 +1228,28 @@
     localStorage.setItem('obe_outcomes', JSON.stringify(updated));
     
     Toast.success(`Official ${count} SPPU / NBA outcomes loaded successfully.`);
-    openManageOutcomesModal(pid);
-    renderPatterns();
+    renderExplorerOutcomes(pid);
   }
 
-  function openManageOutcomesModal(pid) {
-    window.currentPatternId = pid;
-    const p = DB.patterns.all().find(x => x.id === pid);
-    const outcomes = DB.outcomes.all().filter(o => o.patternId === pid);
-    
-    const pos = outcomes.filter(o => o.type === 'PO').sort((a,b) => a.code.localeCompare(b.code, undefined, {numeric: true}));
-    const psos = outcomes.filter(o => o.type === 'PSO').sort((a,b) => a.code.localeCompare(b.code, undefined, {numeric: true}));
+  // Backwards compatibility redirect
+  window.openManageOutcomesModal = function(pid) {
+    openOutcomesExplorer(pid);
+  };
 
-    const isNep2024 = p && (String(p.year) >= '2024' || (p.name && p.name.includes('2024')));
-
-    const html = `
-      <div class="modal-header">
-        <div>
-          <h3 class="modal-title">Manage Outcomes (${p ? p.name : 'Pattern'})</h3>
-          <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Savitribai Phule Pune University (SPPU) / NBA Aligned</div>
-        </div>
-        <button class="btn btn-secondary btn-sm btn-icon" onclick="Modal.close()"><span data-icon="close"></span></button>
-      </div>
-      <div class="modal-body" style="max-height:65vh;overflow-y:auto;padding-right:8px;">
-        
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
-          <div>
-            <h4 style="margin:0;font-size:14px;font-weight:700;">Program Outcomes (POs)</h4>
-            <div style="font-size:11px;color:var(--text-secondary);">${isNep2024 ? '11 NBA GAPC v4.0 Graduate Attributes' : '12 AICTE/NBA Graduate Attributes'}</div>
-          </div>
-          <div style="display:flex; gap:6px;">
-            <button class="btn btn-secondary btn-sm" onclick="autoLoadOfficialPOs('${p.id}')">
-              <span data-icon="sparkles"></span><span>Auto-Load SPPU/NBA Outcomes</span>
-            </button>
-            <button class="btn btn-primary btn-sm" onclick="addOutcomeRow('PO')">
-              <span data-icon="plus"></span><span>Add PO</span>
-            </button>
-          </div>
-        </div>
-        <table class="rpt-table" style="margin-bottom:24px;">
-          <thead><tr><th style="width:90px;">Code</th><th>Description</th></tr></thead>
-          <tbody id="po-tbody">
-            ${pos.length ? pos.map(o => `
-              <tr>
-                <td><strong>${o.code}</strong></td>
-                <td style="text-align:left;font-size:12px;line-height:1.4;">${o.description}</td>
-              </tr>
-            `).join('') : `<tr><td colspan="2" style="text-align:center;padding:24px;color:var(--text-secondary);">No POs defined. Click <strong>Auto-Load SPPU/NBA Outcomes</strong> above to load official ${isNep2024 ? 'PO1–PO11' : 'PO1–PO12'} automatically.</td></tr>`}
-          </tbody>
-        </table>
-
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
-          <div>
-            <h4 style="margin:0;font-size:14px;font-weight:700;">Program Specific Outcomes (PSOs)</h4>
-            <div style="font-size:11px;color:var(--text-secondary);">Department Specialized Objectives</div>
-          </div>
-          <button class="btn btn-primary btn-sm" onclick="addOutcomeRow('PSO')"><span data-icon="plus"></span><span>Add PSO</span></button>
-        </div>
-        <table class="rpt-table">
-          <thead><tr><th style="width:90px;">Code</th><th>Description</th></tr></thead>
-          <tbody id="pso-tbody">
-            ${psos.length ? psos.map(o => `
-              <tr>
-                <td><strong>${o.code}</strong></td>
-                <td style="text-align:left;font-size:12px;line-height:1.4;">${o.description}</td>
-              </tr>
-            `).join('') : '<tr><td colspan="2" style="text-align:center;padding:24px;color:var(--text-secondary);">No PSOs defined. Click <strong>Add PSO</strong> to add department-specific outcomes.</td></tr>'}
-          </tbody>
-        </table>
-      </div>
-    `;
-    
-    // override default width for larger modal
-    Modal.open(html);
-    const mbox = document.querySelector('.modal-box');
-    if(mbox) {
-        mbox.style.width = '750px';
-        mbox.style.maxWidth = '92vw';
-    }
-    renderAllIcons();
-  }
-
-  function addOutcomeRow(type) {
-    const tbody = document.getElementById(type.toLowerCase() + '-tbody');
-    if (tbody.innerHTML.includes('No ' + type + 's defined')) tbody.innerHTML = '';
-    
-    const count = tbody.querySelectorAll('tr').length + 1;
-    const defaultCode = type + count;
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td style="padding:4px;"><input type="text" class="form-input" placeholder="${defaultCode}" id="new-${type}-code" value="${defaultCode}" style="font-size:12px;padding:4px 8px;"></td>
-      <td style="padding:4px;display:flex;gap:4px;">
-        <input type="text" class="form-input" placeholder="Outcome description..." id="new-${type}-desc" style="flex:1;font-size:12px;padding:4px 8px;">
-        <button class="btn btn-primary btn-sm" onclick="saveNewOutcome('${type}', this)">Save</button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  }
-
-  async function saveNewOutcome(type, btn) {
-    const tr = btn.closest('tr');
-    const code = tr.querySelector(`#new-${type}-code`).value.trim();
-    const desc = tr.querySelector(`#new-${type}-desc`).value.trim();
-    const pid = window.currentPatternId;
-
-    if(!code || !desc) { Toast.error('Code and description required'); return; }
-
-    btn.disabled = true;
-    btn.textContent = '...';
-
-    try {
-      await window.apiFetch('/api/outcomes', {
-        method: 'POST',
-        body: { code, description: desc, type, patternId: pid }
-      });
-      Toast.success(type + ' added.');
-      
-      const outcomes = await window.apiFetch('/api/outcomes');
-      localStorage.setItem('obe_outcomes', JSON.stringify(outcomes || []));
-      openManageOutcomesModal(pid);
-      renderPatterns();
-    } catch(e) {
-      Toast.error('Failed to add ' + type);
-      btn.disabled = false;
-      btn.textContent = 'Save';
-    }
-  }
-
+  window.openOutcomesExplorer = openOutcomesExplorer;
+  window.showPatternsCatalog = showPatternsCatalog;
+  window.refreshCurrentView = refreshCurrentView;
+  window.filterOutcomes = filterOutcomes;
+  window.setOutcomesViewMode = setOutcomesViewMode;
+  window.toggleInlineAddForm = toggleInlineAddForm;
+  window.onNewOutcomeTypeChange = onNewOutcomeTypeChange;
+  window.saveInlineOutcome = saveInlineOutcome;
+  window.deleteOutcome = deleteOutcome;
   window.openAddPatternModal = openAddPatternModal;
   window.savePattern = savePattern;
-  window.openManageOutcomesModal = openManageOutcomesModal;
   window.autoLoadOfficialPOs = autoLoadOfficialPOs;
   window.onCollegePresetChange = onCollegePresetChange;
-  window.addOutcomeRow = addOutcomeRow;
-  window.saveNewOutcome = saveNewOutcome;
+  window.onFrameworkChange = onFrameworkChange;
 })();
 </script>
 </body>
