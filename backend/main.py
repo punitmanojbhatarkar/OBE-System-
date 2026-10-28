@@ -1528,19 +1528,8 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(NoCacheMiddleware)
 
-# Serve frontend files from the ../frontend directory
-FRONTEND_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'frontend')
-if os.path.isdir(FRONTEND_DIR):
-    # Serve index/login page at root
-    @app.get("/", include_in_schema=False)
-    async def serve_root():
-        index_path = os.path.join(FRONTEND_DIR, 'login.html')
-        if os.path.exists(index_path):
-            return FileResponse(index_path, media_type='text/html')
-        return FileResponse(os.path.join(FRONTEND_DIR, 'index.html'), media_type='text/html')
+# (StaticFiles mount moved to end of file to prevent route shadowing)
 
-    # Mount the entire frontend directory for static access
-    app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
 
 
 @app.get('/api/courses/{course_id}/pomapping')
@@ -1694,16 +1683,46 @@ def bulk_import_students(body: BulkStudentsBody, db: Session = Depends(get_db)):
     db.commit()
     return {'success': True, 'imported': count}
 
+class AuditLogCreate(BaseModel):
+    user_id: Optional[str] = "admin"
+    action: str
+    details: str
+    timestamp: Optional[str] = None
+
 @app.get('/api/audit-logs')
 def get_audit_logs(db: Session = Depends(get_db)):
-    logs = db.query(models.AuditLog).order_by(models.AuditLog.timestamp.desc()).limit(100).all()
-    return [{
-        'id': l.id,
-        'user_id': l.user_id,
-        'action': l.action,
-        'details': l.details,
-        'timestamp': l.timestamp
-    } for l in logs]
+    try:
+        logs = db.query(models.AuditLog).order_by(models.AuditLog.timestamp.desc()).limit(150).all()
+        return [{
+            'id': l.id,
+            'user_id': l.user_id,
+            'action': l.action,
+            'details': l.details,
+            'timestamp': l.timestamp
+        } for l in logs]
+    except Exception as e:
+        print(f"[AUDIT] Error querying audit logs: {e}")
+        return []
+
+@app.post('/api/audit-logs')
+def create_audit_log(body: AuditLogCreate, db: Session = Depends(get_db)):
+    try:
+        from datetime import datetime
+        log_entry = models.AuditLog(
+            id=str(uuid.uuid4())[:12],
+            user_id=body.user_id or "admin",
+            action=body.action,
+            details=body.details,
+            timestamp=body.timestamp or datetime.utcnow().isoformat()
+        )
+        db.add(log_entry)
+        db.commit()
+        db.refresh(log_entry)
+        return {"success": True, "id": log_entry.id}
+    except Exception as e:
+        db.rollback()
+        return {"success": False, "error": str(e)}
+
 
 @app.post('/api/admin/rollover')
 def admin_rollover(db: Session = Depends(get_db)):
@@ -1813,3 +1832,18 @@ def get_admin_analytics(db: Session = Depends(get_db)):
             "deptAttainment": dept_attainment
         }
     }
+
+
+# ─────────────────────────────────────────────
+# SERVE FRONTEND STATIC FILES (Must be at the very bottom so API routes take precedence)
+# ─────────────────────────────────────────────
+FRONTEND_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'frontend')
+if os.path.isdir(FRONTEND_DIR):
+    @app.get("/", include_in_schema=False)
+    async def serve_root():
+        index_path = os.path.join(FRONTEND_DIR, 'login.html')
+        if os.path.exists(index_path):
+            return FileResponse(index_path, media_type='text/html')
+        return FileResponse(os.path.join(FRONTEND_DIR, 'index.html'), media_type='text/html')
+
+    app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")

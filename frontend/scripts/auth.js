@@ -76,6 +76,13 @@ const Auth = (() => {
             token   : data.access_token
           };
           sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+          if (typeof DB !== 'undefined' && DB.auditLogs) {
+            DB.auditLogs.add({
+              user_id: session.id || session.email,
+              action: 'AUTH',
+              details: `User signed in successfully: ${session.name} (${session.role})`
+            });
+          }
           return { ok: true, user: session };
         }
       } catch (netErr) {
@@ -99,6 +106,13 @@ const Auth = (() => {
             token   : 'offline-token-' + Date.now()
           };
           sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+          if (typeof DB !== 'undefined' && DB.auditLogs) {
+            DB.auditLogs.add({
+              user_id: session.id || session.email,
+              action: 'AUTH',
+              details: `User signed in (local verified): ${session.name} (${session.role})`
+            });
+          }
           console.log('[AUTH] Logged in via local institutional database.');
           return { ok: true, user: session };
         }
@@ -113,6 +127,16 @@ const Auth = (() => {
 
   /* ── Logout ── */
   function logout() {
+    try {
+      const cur = getUser();
+      if (cur && typeof DB !== 'undefined' && DB.auditLogs) {
+        DB.auditLogs.add({
+          user_id: cur.id || cur.email,
+          action: 'AUTH',
+          details: `User signed out: ${cur.name} (${cur.role})`
+        });
+      }
+    } catch(e) {}
     sessionStorage.removeItem(SESSION_KEY);
     sessionStorage.removeItem('obe_chat_session');
     sessionStorage.removeItem('selected_course_id');
