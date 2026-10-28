@@ -193,11 +193,11 @@ function mergeLocalStore(key, newItems, isMatch) {
 }
 
 /* ── Main sync function: load ALL data from backend into localStorage ── */
-async function syncFromBackend() {
-  // Session throttling: don't re-sync every single page navigation if synced within last 3 minutes
+async function syncFromBackend(force = false) {
+  // Session throttling: don't re-sync every single page navigation if synced within last 3 minutes (unless forced)
   const lastSync = sessionStorage.getItem('obe_last_synced_at');
   const now = Date.now();
-  if (lastSync && (now - parseInt(lastSync, 10)) < 180000) {
+  if (!force && lastSync && (now - parseInt(lastSync, 10)) < 180000) {
     console.log('[API] Backend sync skipped — synced within the last 3 minutes.');
     return;
   }
@@ -679,6 +679,8 @@ function patchDBWriteMethods() {
   window.getOutcomes = getOutcomes;
   window.generateNBAReport = generateNBAReport;
   window.generateCurriculumGapPlan = generateCurriculumGapPlan;
+  window.syncFromBackend = syncFromBackend;
+  window.syncNow = () => syncFromBackend(true);
 
   /* ════════════════════════════════════════════
      BOOTSTRAP — exposes window._apiReady Promise
