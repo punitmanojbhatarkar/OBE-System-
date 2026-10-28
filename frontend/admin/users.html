@@ -271,6 +271,10 @@
           <label class="form-label">Email Address *</label>
           <input class="form-input" id="u-email" type="email" placeholder="faculty@mitaoe.ac.in">
         </div>
+        <div class="form-group">
+          <label class="form-label">Password (Default: role123, e.g. hod123 or faculty123)</label>
+          <input class="form-input" id="u-password" type="text" placeholder="Leave blank for default password">
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
           <div class="form-group">
             <label class="form-label">System Role *</label>
@@ -319,6 +323,10 @@
           <label class="form-label">Email Address *</label>
           <input class="form-input" id="u-email" type="email" value="${u.email}">
         </div>
+        <div class="form-group">
+          <label class="form-label">Password (Current: ${u.password || (u.role + '123')})</label>
+          <input class="form-input" id="u-password" type="text" value="${u.password || ''}" placeholder="Enter new password to change">
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
           <div class="form-group">
             <label class="form-label">System Role</label>
@@ -355,13 +363,17 @@
 
     if (!email) { Toast.error('Email is required.'); return; }
 
+    const rawPw = document.getElementById('u-password') ? document.getElementById('u-password').value.trim() : '';
+    const defaultPw = role + '123';
+    const password = rawPw || defaultPw;
+
     if (id) {
       const existing = DB.users.byId(id);
-      DB.users.update({ ...existing, name, email, role, deptId });
+      DB.users.update({ ...existing, name, email, role, deptId, password });
       Toast.success('User updated.');
     } else {
-      DB.users.add({ name, email, role, deptId });
-      Toast.success('User created.');
+      DB.users.add({ name, email, role, deptId, password });
+      Toast.success(`User created. Login password: ${password}`);
     }
     Modal.close();
     renderUsers();
