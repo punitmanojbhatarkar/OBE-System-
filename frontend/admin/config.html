@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>System Settings & Parameters | OBE System â€“ MITAOE</title>
+  <title>System Settings & Parameters | OBE System – MITAOE</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../styles/main.css">
@@ -13,6 +13,16 @@
       display: flex; align-items: center; justify-content: space-between;
       padding: 12px 16px; border-radius: var(--r-sm);
       background: var(--surface-2); border: 1px solid var(--border); margin-bottom: 8px;
+    }
+    .vision-card {
+      border-left: 4px solid var(--primary);
+      background: linear-gradient(180deg, var(--surface) 0%, rgba(37, 99, 235, 0.02) 100%);
+    }
+    .helper-text {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      line-height: 1.4;
     }
   </style>
 </head>
@@ -50,7 +60,7 @@
     <header class="topbar">
       <div class="topbar-left">
         <h1 class="topbar-title">Institutional Parameters & Configuration</h1>
-        <div class="topbar-breadcrumb">Admin Console <span>â€º</span> System Preferences</div>
+        <div class="topbar-breadcrumb">Admin Console <span>›</span> System Settings & Vision/Mission</div>
       </div>
       <div class="topbar-right">
         <button class="btn btn-primary btn-sm" onclick="saveAllConfig()">
@@ -61,71 +71,112 @@
 
     <div class="page-content">
 
-      <!-- Academic Parameters -->
-      <div class="card" style="margin-bottom:16px;">
-        <div class="card-header">
-          <div class="card-title">Academic Year & Cycle Defaults</div>
+      <!-- Institutional Vision & Mission Statements (NBA Criterion 1) -->
+      <div class="card vision-card" style="margin-bottom:18px;">
+        <div class="card-header" style="flex-wrap:wrap; gap:12px;">
+          <div>
+            <div class="card-title" style="display:flex; align-items:center; gap:8px;">
+              <span data-icon="audit"></span>
+              <span>Institutional Vision & Mission Statements (NBA Criterion 1)</span>
+            </div>
+            <div class="card-subtitle">
+              Foundational statements mandated by NBA Criterion 1.1. These statements automatically propagate to all departments, faculty course teaching philosophy, and accreditation dossiers.
+            </div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-secondary btn-sm" type="button" onclick="loadMitaoePreset()">
+              <span data-icon="sparkles"></span><span>Load MITAOE Preset</span>
+            </button>
+          </div>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;">
-          <div class="form-group">
-            <label class="form-label">Current Academic Year</label>
-            <input type="text" class="form-input" id="cfg-ay" value="2025-26">
+
+        <div style="padding:16px 20px; display:flex; flex-direction:column; gap:16px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" style="font-weight:700;">Institute Vision Statement *</label>
+            <textarea class="form-textarea" id="cfg-inst-vision" rows="3" placeholder="Enter institutional vision statement (e.g., To be the most preferred Autonomous Technological University...)"></textarea>
+            <div class="helper-text">Articulates the overarching future identity and educational standards of the institution.</div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Default Target Attainment</label>
-            <input type="number" class="form-input" id="cfg-target" min="0" max="3" step="0.1" value="2.0">
+
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" style="font-weight:700;">Institute Mission Statement *</label>
+            <textarea class="form-textarea" id="cfg-inst-mission" rows="4" placeholder="Enter institutional mission statement (e.g., Deliver quality outcome-based education, cultivate innovation...)"></textarea>
+            <div class="helper-text">Defines the actionable educational pathways, societal impacts, and industry alignments to fulfill the Vision.</div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Direct Assessment Weight (%)</label>
-            <input type="number" class="form-input" id="cfg-direct" min="0" max="100" value="80">
+        </div>
+      </div>
+
+      <!-- Academic Parameters -->
+      <div class="card" style="margin-bottom:18px;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Academic Year & Cycle Defaults</div>
+            <div class="card-subtitle">Global calculation weights for Direct vs. Indirect attainment computation</div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Indirect Assessment Weight (%)</label>
-            <input type="number" class="form-input" id="cfg-indirect" min="0" max="100" value="20">
+        </div>
+        <div style="padding:16px 20px;">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:14px;">
+            <div class="form-group">
+              <label class="form-label">Current Academic Year</label>
+              <input type="text" class="form-input" id="cfg-ay" value="2025-26">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Default Target Attainment (0–3 Scale)</label>
+              <input type="number" class="form-input" id="cfg-target" min="0" max="3" step="0.1" value="2.0">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Direct Assessment Weight (%)</label>
+              <input type="number" class="form-input" id="cfg-direct" min="0" max="100" value="80">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Indirect Assessment Weight (%)</label>
+              <input type="number" class="form-input" id="cfg-indirect" min="0" max="100" value="20">
+            </div>
           </div>
         </div>
       </div>
 
       <!-- AI Services & Provider Status -->
-      <div class="card" style="margin-bottom:16px;">
+      <div class="card" style="margin-bottom:18px;">
         <div class="card-header">
           <div>
             <div class="card-title">AI Engine & LLM Pipeline Integration</div>
-            <div class="card-subtitle">Gemini 2.5 Flash LangChain Pipeline for Question Extraction & Auto-Grading</div>
+            <div class="card-subtitle">Agentic LangChain Pipeline for Question Extraction, Bloom's Analysis & Auto-Grading</div>
           </div>
           <span class="badge badge-success">API Connected</span>
         </div>
-        <div class="setting-row">
-          <div>
-            <div style="font-weight:700;font-size:13px;color:var(--text-primary);">Enable Generative AI Copilot</div>
-            <div style="font-size:11.5px;color:var(--text-secondary);">Empower faculty with automatic Bloom's analyzer, question extraction, and rubric auto-grading</div>
+        <div style="padding:12px 20px;">
+          <div class="setting-row">
+            <div>
+              <div style="font-weight:700;font-size:13px;color:var(--text-primary);">Enable Generative AI Copilot</div>
+              <div style="font-size:11.5px;color:var(--text-secondary);">Empower faculty with automatic Bloom's analyzer, CO formulation, and rubric auto-grading</div>
+            </div>
+            <input type="checkbox" id="cfg-ai-toggle" checked style="width:18px;height:18px;cursor:pointer;">
           </div>
-          <input type="checkbox" id="cfg-ai-toggle" checked style="width:18px;height:18px;">
-        </div>
-        <div class="setting-row">
-          <div>
-            <div style="font-weight:700;font-size:13px;color:var(--text-primary);">Allow Student AI Feedback Queries</div>
-            <div style="font-size:11.5px;color:var(--text-secondary);">Permit enrolled students to inspect rubric weaknesses and suggested improvements</div>
+          <div class="setting-row" style="margin-bottom:0;">
+            <div>
+              <div style="font-weight:700;font-size:13px;color:var(--text-primary);">Allow Student AI Feedback Queries</div>
+              <div style="font-size:11.5px;color:var(--text-secondary);">Permit enrolled students to inspect rubric weaknesses and suggested improvements</div>
+            </div>
+            <input type="checkbox" id="cfg-student-ai" checked style="width:18px;height:18px;cursor:pointer;">
           </div>
-          <input type="checkbox" id="cfg-student-ai" checked style="width:18px;height:18px;">
         </div>
       </div>
 
       <!-- Academic Rollover -->
-      <div class="card" style="margin-bottom:16px; border-color:var(--primary);">
+      <div class="card" style="margin-bottom:18px; border-color:var(--primary);">
         <div class="card-header">
           <div>
             <div class="card-title">Academic Year Rollover</div>
-            <div class="card-subtitle">Advance the system to the next academic year or semester. This updates the global academic year and prepares the database.</div>
+            <div class="card-subtitle">Advance the system to the next academic year or semester. This archives past attainment dossiers and resets student marks sheets.</div>
           </div>
         </div>
-        <div style="display:flex;gap:12px;align-items:flex-end;padding:16px;">
-          <div class="form-group" style="margin-bottom:0; flex:1; max-width:300px;">
+        <div style="display:flex;gap:12px;align-items:flex-end;padding:16px 20px;flex-wrap:wrap;">
+          <div class="form-group" style="margin-bottom:0; flex:1; min-width:240px; max-width:320px;">
             <label class="form-label">New Academic Year</label>
             <input type="text" class="form-input" id="cfg-rollover-year" placeholder="e.g. 2026-27">
           </div>
           <button class="btn btn-primary" onclick="triggerRollover()">
-            <span data-icon="refresh"></span><span>Initiate Rollover</span>
+            <span data-icon="refresh"></span><span>Initiate Academic Rollover</span>
           </button>
         </div>
       </div>
@@ -138,8 +189,11 @@
             <div class="card-subtitle">Restore standard demonstration records or purge transient caches</div>
           </div>
         </div>
-        <div style="display:flex;gap:12px;align-items:center;">
-          <button class="btn btn-secondary btn-sm" onclick="resetToDefaults()">
+        <div style="display:flex;gap:12px;align-items:center;padding:16px 20px;flex-wrap:wrap;">
+          <button class="btn btn-secondary btn-sm" onclick="Auth.exportDatabase()">
+            <span data-icon="download"></span><span>Backup Institutional Database (JSON)</span>
+          </button>
+          <button class="btn btn-danger btn-sm" onclick="resetToDefaults()">
             <span data-icon="refresh"></span><span>Restore Factory Institutional Defaults</span>
           </button>
         </div>
@@ -162,8 +216,71 @@
 
   renderAllIcons();
 
-  function saveAllConfig() {
-    Toast.success('Configuration parameters updated.');
+  const MITAOE_VISION = 'To be the most preferred Autonomous Technological University in the country, known for delivering quality engineering education to produce industry-ready, society-conscious, and research-oriented engineers.';
+  const MITAOE_MISSION = 'Empower students through experiential learning, industry immersion, multidisciplinary research, and ethical values to become globally competitive innovators and societal leaders.';
+
+  // Load existing configuration
+  const config = DB.config.get() || {};
+  document.getElementById('cfg-inst-vision').value = config.instituteVision || MITAOE_VISION;
+  document.getElementById('cfg-inst-mission').value = config.instituteMission || MITAOE_MISSION;
+  document.getElementById('cfg-ay').value = config.academicYear || '2025-26';
+  document.getElementById('cfg-target').value = (config.attainmentDefaultLevels && config.attainmentDefaultLevels.target) || 2.0;
+  document.getElementById('cfg-direct').value = config.directWeight !== undefined ? config.directWeight : 80;
+  document.getElementById('cfg-indirect').value = config.indirectWeight !== undefined ? config.indirectWeight : 20;
+
+  function loadMitaoePreset() {
+    document.getElementById('cfg-inst-vision').value = MITAOE_VISION;
+    document.getElementById('cfg-inst-mission').value = MITAOE_MISSION;
+    Toast.info('MITAOE Vision & Mission loaded. Click Save Configuration to persist.');
+  }
+
+  async function saveAllConfig() {
+    const vision = document.getElementById('cfg-inst-vision').value.trim();
+    const mission = document.getElementById('cfg-inst-mission').value.trim();
+    const ay = document.getElementById('cfg-ay').value.trim();
+    const target = parseFloat(document.getElementById('cfg-target').value) || 2.0;
+    const direct = parseInt(document.getElementById('cfg-direct').value) || 80;
+    const indirect = parseInt(document.getElementById('cfg-indirect').value) || 20;
+    const aiEnabled = document.getElementById('cfg-ai-toggle').checked;
+
+    if (!vision || !mission) {
+      Toast.error('Institute Vision and Mission statements cannot be empty.');
+      return;
+    }
+
+    const payload = {
+      instituteVision: vision,
+      instituteMission: mission,
+      academicYear: ay,
+      directWeight: direct,
+      indirectWeight: indirect,
+      aiEnabled: aiEnabled
+    };
+
+    // 1. Update local storage
+    DB.config.update(payload);
+
+    // 2. Log in audit trail
+    if (DB.auditLogs) {
+      DB.auditLogs.add({
+        action: 'CONFIG',
+        details: `Updated Institutional Vision & Mission and parameters for AY ${ay}.`
+      });
+    }
+
+    // 3. Persist to backend if available
+    try {
+      if (window.apiFetch) {
+        await window.apiFetch('/api/config', {
+          method: 'PUT',
+          body: payload
+        });
+      }
+      Toast.success('Institutional Vision, Mission, and parameters saved successfully!');
+    } catch (e) {
+      console.warn('[CONFIG] Backend sync note:', e.message);
+      Toast.success('Saved to local institutional database.');
+    }
   }
 
   function resetToDefaults() {
@@ -180,7 +297,7 @@
       return;
     }
 
-    Modal.confirm('Initiate Academic Rollover', `Are you sure you want to transition the system to the  academic year? This will update global settings and prepare the database.`, async () => {
+    Modal.confirm('Initiate Academic Rollover', `Are you sure you want to transition the system to the ${newYear} academic year? This will update global settings and prepare the database.`, async () => {
       try {
         await window.apiFetch('/api/admin/rollover', {
           method: 'POST',
@@ -200,6 +317,7 @@
     }, 'Initiate', false);
   }
 
+  window.loadMitaoePreset = loadMitaoePreset;
   window.saveAllConfig = saveAllConfig;
   window.resetToDefaults = resetToDefaults;
   window.triggerRollover = triggerRollover;
@@ -207,5 +325,3 @@
 </script>
 </body>
 </html>
-
-

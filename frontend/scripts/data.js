@@ -54,7 +54,11 @@ const DB = (() => {
     set(KEYS.survey,      []);
     set(KEYS.assignments, []);
     set(KEYS.submissions, []);
-    set(KEYS.config,      { academicYear: '2025-26', instituteVision: '', instituteMission: '' });
+    set(KEYS.config,      { 
+      academicYear: '2025-26', 
+      instituteVision: 'To be the most preferred Autonomous Technological University in the country, known for delivering quality engineering education to produce industry-ready, society-conscious, and research-oriented engineers.', 
+      instituteMission: 'Empower students through experiential learning, industry immersion, multidisciplinary research, and ethical values to become globally competitive innovators and societal leaders.' 
+    });
     set(KEYS.syllabus,    []);
     set(KEYS.assessments, []);
     set(KEYS.marksUnified, []);
@@ -335,9 +339,18 @@ const DB = (() => {
     add(s)             { const all=submissions.all(); s.id=uid(); s.submittedAt=new Date().toISOString(); all.push(s); set(KEYS.submissions,all); return s; },
     update(s)          { const all=submissions.all().map(x=>x.id===s.id?s:x); set(KEYS.submissions,all); return s; },
   };
-  /* â”€â”€ Config â”€â”€ */
+  /* ── Config ── */
   const config = {
-    get()           { return getObj(KEYS.config); },
+    get() { 
+      let cfg = getObj(KEYS.config) || {};
+      if (!cfg.instituteVision) {
+        cfg.instituteVision = 'To be the most preferred Autonomous Technological University in the country, known for delivering quality engineering education to produce industry-ready, society-conscious, and research-oriented engineers.';
+      }
+      if (!cfg.instituteMission) {
+        cfg.instituteMission = 'Empower students through experiential learning, industry immersion, multidisciplinary research, and ethical values to become globally competitive innovators and societal leaders.';
+      }
+      return cfg;
+    },
     set(cfg)        { set(KEYS.config, cfg); },
     update(patch)   { const cfg={...config.get(),...patch}; set(KEYS.config,cfg); return cfg; },
     getIAQuestions(cid, type) {

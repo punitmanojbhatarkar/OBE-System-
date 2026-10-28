@@ -58,7 +58,7 @@
     <header class="topbar">
       <div class="topbar-left">
         <h1 class="topbar-title">Academic Departments Directory</h1>
-        <div class="topbar-breadcrumb">Admin Console <span>›</span> Engineering Departments</div>
+        <div class="topbar-breadcrumb">Admin Console <span>›</span> Engineering Departments & Vision/Mission</div>
       </div>
       <div class="topbar-right">
         <button class="btn btn-primary btn-sm" onclick="openAddDeptModal()">
@@ -115,7 +115,8 @@
               <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;margin-bottom:2px;">Head of Department</div>
               <div style="font-weight:600;color:var(--text-primary);">${hod ? hod.name : 'Not Assigned'}</div>
             </div>
-            <div style="display:flex;gap:8px;">
+            ${d.vision ? `<div style="font-size:12px;color:var(--text-secondary);line-height:1.4;"><strong style="color:var(--text-primary);">Vision:</strong> ${d.vision.substring(0, 95)}${d.vision.length > 95 ? '…' : ''}</div>` : ''}
+            <div style="display:flex;gap:8px;margin-top:auto;">
               <span class="badge badge-neutral">${fCount} Faculty Members</span>
               <span class="badge badge-success">Accredited</span>
             </div>
@@ -159,6 +160,14 @@
             ${hodOptions}
           </select>
         </div>
+        <div class="form-group">
+          <label class="form-label">Department Vision Statement</label>
+          <textarea class="form-textarea" id="d-vision" rows="2" placeholder="e.g. To achieve excellence in computing education and research producing globally competent professionals."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Department Mission Statement</label>
+          <textarea class="form-textarea" id="d-mission" rows="2" placeholder="e.g. Provide state-of-the-art education, promote innovative research, and instill ethical societal values."></textarea>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
@@ -196,6 +205,14 @@
             ${hodOptions}
           </select>
         </div>
+        <div class="form-group">
+          <label class="form-label">Department Vision Statement</label>
+          <textarea class="form-textarea" id="d-vision" rows="2" placeholder="Enter department vision...">${d.vision || ''}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Department Mission Statement</label>
+          <textarea class="form-textarea" id="d-mission" rows="2" placeholder="Enter department mission...">${d.mission || ''}</textarea>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
@@ -210,14 +227,17 @@
     const code = document.getElementById('d-code').value.trim();
     const name = document.getElementById('d-name').value.trim();
     const hodId = document.getElementById('d-hod').value || null;
+    const vision = (document.getElementById('d-vision') ? document.getElementById('d-vision').value.trim() : '');
+    const mission = (document.getElementById('d-mission') ? document.getElementById('d-mission').value.trim() : '');
 
     if (!code || !name) { Toast.error('Code and Name are required.'); return; }
 
     if (id) {
-      DB.departments.update({ id, code, name, hodId });
+      const existing = DB.departments.byId(id) || {};
+      DB.departments.update({ ...existing, id, code, name, hodId, vision, mission });
       Toast.success('Department updated.');
     } else {
-      DB.departments.add({ code, name, hodId });
+      DB.departments.add({ code, name, hodId, vision, mission });
       Toast.success('Department added.');
     }
     Modal.close();
@@ -242,4 +262,3 @@
 </script>
 </body>
 </html>
-
