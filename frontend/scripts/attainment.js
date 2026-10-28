@@ -320,8 +320,12 @@ const Attainment = (() => {
     const finalCOs = calcCOFinal(courseId);
     const levels   = DB.courses.byId(courseId)?.attainmentLevels || { 1:65, 2:75, 3:85 };
 
+    const activePOs = (typeof DB !== 'undefined' && DB.getPOList) ? DB.getPOList() : PO_LIST;
+    const activePSOs = (typeof DB !== 'undefined' && DB.getPSOList) ? DB.getPSOList() : PSO_LIST;
+    const targetOutcomes = [...activePOs, ...activePSOs];
+
     const poResult = {};
-    ALL_POS.forEach(po => {
+    targetOutcomes.forEach(po => {
       let weightedSum = 0, totalWeight = 0;
       finalCOs.forEach(co => {
         const mapVal = DB.poMapping.getValue(courseId, co.coNo, po);
@@ -333,6 +337,7 @@ const Attainment = (() => {
       const attainment = totalWeight > 0 ? weightedSum / totalWeight : null;
       poResult[po] = {
         po,
+        score      : attainment !== null ? parseFloat(attainment.toFixed(2)) : 0,
         weightedAvg: attainment,
         level      : attainment !== null ? getLevelFromPct((attainment / 3) * 100, levels) : null,
         rawScore   : attainment, // 0-3 scale
@@ -373,7 +378,11 @@ const Attainment = (() => {
   function calcStudentPOAttainment(courseId, prn) {
      const studentCOs = calcStudentCOAttainment(courseId, prn);
      const poResult = {};
-     ALL_POS.forEach(po => {
+     const activePOs = (typeof DB !== 'undefined' && DB.getPOList) ? DB.getPOList() : PO_LIST;
+     const activePSOs = (typeof DB !== 'undefined' && DB.getPSOList) ? DB.getPSOList() : PSO_LIST;
+     const targetOutcomes = [...activePOs, ...activePSOs];
+
+     targetOutcomes.forEach(po => {
         let weightedSum=0, totalWeight=0;
         studentCOs.forEach(co => {
            const mapVal = DB.poMapping.getValue(courseId, co.coNo, po);
@@ -383,7 +392,10 @@ const Attainment = (() => {
            }
         });
         const attainment = totalWeight > 0 ? weightedSum/totalWeight : null;
-        poResult[po] = { rawScore: attainment };
+        poResult[po] = {
+           rawScore: attainment,
+           score: attainment !== null ? parseFloat(attainment.toFixed(2)) : 0
+        };
      });
      return poResult;
   }

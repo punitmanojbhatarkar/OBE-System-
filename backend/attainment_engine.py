@@ -219,10 +219,15 @@ def calc_po_attainment(course_id: str, db: Session):
     po_mapping_rows = db.query(models.PoMapping).filter(models.PoMapping.courseId == course_id).all()
     
     levels = {"1": 65, "2": 75, "3": 85} # Default
-    ALL_POS = ['PO1','PO2','PO3','PO4','PO5','PO6','PO7','PO8','PO9','PO10','PO11','PO12', 'PSO1','PSO2','PSO3']
+    db_outcomes = db.query(models.Outcome).all()
+    if db_outcomes:
+        seen = set()
+        active_pos = [o.code for o in db_outcomes if o.code and not (o.code in seen or seen.add(o.code))]
+    else:
+        active_pos = ['PO1','PO2','PO3','PO4','PO5','PO6','PO7','PO8','PO9','PO10','PO11','PO12', 'PSO1','PSO2','PSO3']
     
     po_result = {}
-    for po in ALL_POS:
+    for po in active_pos:
         weightedSum, totalWeight = 0, 0
         for co in final_cos:
             map_row = next((r for r in po_mapping_rows if r.coNo == co["coNo"] and r.po == po), None)
@@ -235,6 +240,7 @@ def calc_po_attainment(course_id: str, db: Session):
         
         po_result[po] = {
             "po": po,
+            "score": round(attainment, 2) if attainment is not None else 0,
             "weightedAvg": attainment,
             "level": get_level_from_pct((attainment / 3 * 100) if attainment is not None else 0, levels) if attainment is not None else None,
             "rawScore": attainment

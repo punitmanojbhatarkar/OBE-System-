@@ -197,7 +197,7 @@
             <div class="card-header">
               <div>
                 <div class="card-title"><span data-icon="matrix"></span><span>Program Outcome Attainment</span></div>
-                <div class="card-subtitle">Weighted average across mapped COs (PO1–PO12, PSO1–PSO3)</div>
+                <div class="card-subtitle">Weighted average across mapped COs and official Program Outcomes</div>
               </div>
             </div>
             <div class="table-responsive">
@@ -385,7 +385,7 @@
 
     Object.entries(data || {}).forEach(([po, info]) => {
       labels.push(po);
-      const score = info.score || 0;
+      const score = (info.score !== undefined && info.score !== null) ? Number(info.score) : ((info.weightedAvg !== undefined && info.weightedAvg !== null) ? Number(info.weightedAvg) : 0);
       vals.push(score);
       if (score > 0) { sum += score; count++; }
       tbody.innerHTML += `
@@ -432,7 +432,7 @@
     if (!courseId) return;
     const poData = Attainment.calcPOAttainment(courseId);
     const labels = Object.keys(poData || {});
-    const vals = Object.values(poData || {}).map(p => p.score || 0);
+    const vals = Object.values(poData || {}).map(p => (p.score !== undefined && p.score !== null) ? Number(p.score) : ((p.weightedAvg !== undefined && p.weightedAvg !== null) ? Number(p.weightedAvg) : 0));
     renderPOChart(labels, vals, t);
   }
 

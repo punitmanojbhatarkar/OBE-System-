@@ -444,14 +444,17 @@
   window.currentPatternId = null;
 
   async function autoLoadOfficialPOs(pid) {
-    if (!confirm('Auto-load all 12 official NBA / SPPU Program Outcomes and PSOs into this pattern?')) return;
-    
-    const preset = INSTITUTION_PRESETS.mitaoe;
     const p = DB.patterns.all().find(x => x.id === pid);
     const dept = p ? p.departmentId : null;
-    
+    const isNep2024 = p && (String(p.year) >= '2024' || (p.name && p.name.includes('2024')));
+    const preset = INSTITUTION_PRESETS.mitaoe;
+    const targetPos = isNep2024 ? preset.pos11 : preset.pos12;
+    const count = isNep2024 ? 11 : 12;
+
+    if (!confirm(`Auto-load all ${count} official NBA / SPPU Program Outcomes and PSOs into this pattern?`)) return;
+
     const allOutcomes = [
-      ...preset.pos.map(o => ({ code: o.code, description: o.description, type: 'PO', departmentId: dept, patternId: pid })),
+      ...targetPos.map(o => ({ code: o.code, description: o.description, type: 'PO', departmentId: dept, patternId: pid })),
       ...preset.psos.map(o => ({ code: o.code, description: o.description, type: 'PSO', departmentId: dept, patternId: pid }))
     ];
 
@@ -470,7 +473,7 @@
     const updated = [...currentOutcomes.filter(x => x.patternId !== pid), ...allOutcomes];
     localStorage.setItem('obe_outcomes', JSON.stringify(updated));
     
-    Toast.success('Official SPPU / NBA outcomes loaded successfully.');
+    Toast.success(`Official ${count} SPPU / NBA outcomes loaded successfully.`);
     openManageOutcomesModal(pid);
     renderPatterns();
   }
@@ -482,6 +485,8 @@
     
     const pos = outcomes.filter(o => o.type === 'PO').sort((a,b) => a.code.localeCompare(b.code, undefined, {numeric: true}));
     const psos = outcomes.filter(o => o.type === 'PSO').sort((a,b) => a.code.localeCompare(b.code, undefined, {numeric: true}));
+
+    const isNep2024 = p && (String(p.year) >= '2024' || (p.name && p.name.includes('2024')));
 
     const html = `
       <div class="modal-header">
@@ -496,7 +501,7 @@
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
           <div>
             <h4 style="margin:0;font-size:14px;font-weight:700;">Program Outcomes (POs)</h4>
-            <div style="font-size:11px;color:var(--text-secondary);">12 AICTE/NBA Graduate Attributes</div>
+            <div style="font-size:11px;color:var(--text-secondary);">${isNep2024 ? '11 NBA GAPC v4.0 Graduate Attributes' : '12 AICTE/NBA Graduate Attributes'}</div>
           </div>
           <div style="display:flex; gap:6px;">
             <button class="btn btn-secondary btn-sm" onclick="autoLoadOfficialPOs('${p.id}')">
@@ -515,7 +520,7 @@
                 <td><strong>${o.code}</strong></td>
                 <td style="text-align:left;font-size:12px;line-height:1.4;">${o.description}</td>
               </tr>
-            `).join('') : '<tr><td colspan="2" style="text-align:center;padding:24px;color:var(--text-secondary);">No POs defined. Click <strong>Auto-Load SPPU/NBA Outcomes</strong> above to load official PO1–PO12 automatically.</td></tr>'}
+            `).join('') : `<tr><td colspan="2" style="text-align:center;padding:24px;color:var(--text-secondary);">No POs defined. Click <strong>Auto-Load SPPU/NBA Outcomes</strong> above to load official ${isNep2024 ? 'PO1–PO11' : 'PO1–PO12'} automatically.</td></tr>`}
           </tbody>
         </table>
 
