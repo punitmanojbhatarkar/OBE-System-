@@ -402,7 +402,7 @@ class PatternBody(BaseModel):
     id: Optional[str] = None
     name: str
     year: str
-    departmentId: str
+    departmentId: Optional[str] = None
 
 class OutcomeBody(BaseModel):
     id: Optional[int] = None
@@ -516,23 +516,6 @@ def get_user(user_id: str, db: Session = Depends(get_db)):
     if not u: raise HTTPException(404)
     return user_to_dict(u)
 
-
-class PatternBody(BaseModel):
-    id: Optional[str] = None
-    name: str
-    year: str
-    departmentId: Optional[str] = None
-
-class OutcomeBody(BaseModel):
-    id: Optional[int] = None
-    code: str
-    description: str
-    type: str
-    departmentId: Optional[str] = None
-    patternId: Optional[str] = None
-
-class RolloverBody(BaseModel):
-    newAcademicYear: str
 
 class UserBody(BaseModel):
     id: Optional[str] = None

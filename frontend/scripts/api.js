@@ -52,7 +52,15 @@ async function apiFetch(path, opts = {}) {
           window.location.href = 'login.html';
         }
         const err = await res.json().catch(() => ({ detail: res.statusText }));
-        throw new Error(err.detail || res.statusText);
+        let errMsg = res.statusText;
+        if (typeof err.detail === 'string') {
+          errMsg = err.detail;
+        } else if (Array.isArray(err.detail)) {
+          errMsg = err.detail.map(d => (d.msg ? `${(d.loc || []).slice(1).join('.')}: ${d.msg}` : JSON.stringify(d))).join('; ');
+        } else if (err.detail && typeof err.detail === 'object') {
+          errMsg = JSON.stringify(err.detail);
+        }
+        throw new Error(errMsg || `Request failed (${res.status})`);
       }
       return await res.json();
     } catch (e) {

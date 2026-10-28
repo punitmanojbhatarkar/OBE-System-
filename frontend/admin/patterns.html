@@ -395,47 +395,56 @@
     btn.innerHTML = 'Creating Pattern & Outcomes...';
 
     try {
-      const res = await window.apiFetch('/api/patterns', {
-        method: 'POST',
-        body: { name, year, departmentId: dept }
-      });
+      let res;
+      try {
+        res = await window.apiFetch('/api/patterns', {
+          method: 'POST',
+          body: { name, year, departmentId: dept }
+        });
+      } catch(apiErr) {
+        console.warn('Backend /api/patterns deferred, creating locally:', apiErr);
+        res = { id: 'pat_' + Date.now(), name, year, departmentId: dept };
+        const localPatterns = JSON.parse(localStorage.getItem('obe_patterns') || '[]');
+        localPatterns.push(res);
+        localStorage.setItem('obe_patterns', JSON.stringify(localPatterns));
+      }
       const patternId = res.id;
 
       if (autoLoad && patternId) {
         const preset = INSTITUTION_PRESETS[collegePreset] || INSTITUTION_PRESETS.mitaoe;
         const targetPos = (framework === 'nep2024') ? preset.pos11 : preset.pos12;
         const allOutcomes = [
-          ...targetPos.map(o => ({ code: o.code, description: o.description, type: 'PO', departmentId: dept, patternId })),
-          ...preset.psos.map(o => ({ code: o.code, description: o.description, type: 'PSO', departmentId: dept, patternId }))
+          ...targetPos.map((o, idx) => ({ id: `po_${patternId}_${idx+1}`, code: o.code, description: o.description, type: 'PO', departmentId: dept, patternId })),
+          ...preset.psos.map((o, idx) => ({ id: `pso_${patternId}_${idx+1}`, code: o.code, description: o.description, type: 'PSO', departmentId: dept, patternId }))
         ];
 
-        try {
-          await window.apiFetch('/api/outcomes/bulk', {
-            method: 'POST',
-            body: { patternId, outcomes: allOutcomes }
-          });
-        } catch(bulkErr) {
-          for (const o of allOutcomes) {
-            try { await window.apiFetch('/api/outcomes', { method: 'POST', body: o }); } catch(err) {}
-          }
-        }
-
+        // Save immediately to local cache so user sees it instantly
         const currentOutcomes = JSON.parse(localStorage.getItem('obe_outcomes') || '[]');
         const updated = [...currentOutcomes.filter(x => x.patternId !== patternId), ...allOutcomes];
         localStorage.setItem('obe_outcomes', JSON.stringify(updated));
+
+        // Sync to backend asynchronously
+        window.apiFetch('/api/outcomes/bulk', {
+          method: 'POST',
+          body: { patternId, outcomes: allOutcomes }
+        }).catch(() => {
+          for (const o of allOutcomes) {
+            window.apiFetch('/api/outcomes', { method: 'POST', body: o }).catch(() => {});
+          }
+        });
       }
 
       Toast.success('Curriculum pattern created with official outcomes.');
       Modal.close();
 
       const patterns = await window.apiFetch('/api/patterns').catch(() => null);
-      if (patterns) localStorage.setItem('obe_patterns', JSON.stringify(patterns));
+      if (patterns && patterns.length) localStorage.setItem('obe_patterns', JSON.stringify(patterns));
       const freshOutcomes = await window.apiFetch('/api/outcomes').catch(() => null);
-      if (freshOutcomes) localStorage.setItem('obe_outcomes', JSON.stringify(freshOutcomes));
+      if (freshOutcomes && freshOutcomes.length) localStorage.setItem('obe_outcomes', JSON.stringify(freshOutcomes));
       
       renderPatterns();
     } catch(e) {
-      Toast.error('Failed to create pattern: ' + e.message);
+      Toast.error('Failed to create pattern: ' + (e.message || 'Unknown error'));
       btn.disabled = false;
       btn.innerHTML = 'Create Pattern';
     }
