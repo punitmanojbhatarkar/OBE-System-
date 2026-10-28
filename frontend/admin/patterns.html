@@ -133,6 +133,114 @@
     renderAllIcons(grid);
   }
 
+  const STANDARD_NBA_POS = [
+    { code: 'PO1', description: 'Engineering Knowledge: Apply the knowledge of mathematics, science, engineering fundamentals, and an engineering specialization to the solution of complex engineering problems.' },
+    { code: 'PO2', description: 'Problem Analysis: Identify, formulate, review research literature, and analyze complex engineering problems reaching substantiated conclusions using first principles of mathematics, natural sciences, and engineering sciences.' },
+    { code: 'PO3', description: 'Design/Development of Solutions: Design solutions for complex engineering problems and design system components or processes that meet the specified needs with appropriate consideration for the public health and safety, and the cultural, societal, and environmental considerations.' },
+    { code: 'PO4', description: 'Conduct Investigations of Complex Problems: Use research-based knowledge and research methods including design of experiments, analysis and interpretation of data, and synthesis of the information to provide valid conclusions.' },
+    { code: 'PO5', description: 'Modern Tool Usage: Create, select, and apply appropriate techniques, resources, and modern engineering and IT tools including prediction and modeling to complex engineering activities with an understanding of the limitations.' },
+    { code: 'PO6', description: 'The Engineer and Society: Apply reasoning informed by the contextual knowledge to assess societal, health, safety, legal and cultural issues and the consequent responsibilities relevant to the professional engineering practice.' },
+    { code: 'PO7', description: 'Environment and Sustainability: Understand the impact of the professional engineering solutions in societal and environmental contexts, and demonstrate the knowledge of, and need for sustainable development.' },
+    { code: 'PO8', description: 'Ethics: Apply ethical principles and commit to professional ethics and responsibilities and norms of the engineering practice.' },
+    { code: 'PO9', description: 'Individual and Team Work: Function effectively as an individual, and as a member or leader in diverse teams, and in multidisciplinary settings.' },
+    { code: 'PO10', description: 'Communication: Communicate effectively on complex engineering activities with the engineering community and with society at large, such as, being able to comprehend and write effective reports and design documentation, make effective presentations, and give and receive clear instructions.' },
+    { code: 'PO11', description: 'Project Management and Finance: Demonstrate knowledge and understanding of the engineering and management principles and apply these to one’s own work, as a member and leader in a team, to manage projects and in multidisciplinary environments.' },
+    { code: 'PO12', description: 'Life-Long Learning: Recognize the need for, and have the preparation and ability to engage in independent and life-long learning in the broadest context of technological change.' }
+  ];
+
+  const INSTITUTION_PRESETS = {
+    mitaoe: {
+      college: 'MIT Academy of Engineering (MITAOE), Alandi, Pune',
+      university: 'Savitribai Phule Pune University (SPPU)',
+      status: 'Autonomous Engineering Institute (NBA Tier-I Accredited)',
+      patternName: '2019 Pattern (MITAOE / SPPU)',
+      year: '2019',
+      desc: 'Officially follows the 12 Graduate Attributes & Program Outcomes (PO1–PO12) prescribed by NBA and SPPU Faculty of Engineering.',
+      pos: STANDARD_NBA_POS,
+      psos: [
+        { code: 'PSO1', description: 'Domain & Applied Intelligence: Apply mathematical modeling, machine learning, and modern software architectures to design data-driven engineering solutions.' },
+        { code: 'PSO2', description: 'Modern Stack Proficiency: Demonstrate industry-ready proficiency in contemporary frameworks, cloud deployments, and data engineering pipelines.' }
+      ]
+    },
+    sppu: {
+      college: 'Savitribai Phule Pune University (SPPU) — Affiliated Colleges',
+      university: 'Savitribai Phule Pune University (SPPU)',
+      status: 'State University Syllabus (Non-Autonomous)',
+      patternName: '2019 Course Pattern (SPPU)',
+      year: '2019',
+      desc: 'SPPU Savitribai Phule Pune University official engineering outcomes aligned with AICTE & NBA guidelines.',
+      pos: STANDARD_NBA_POS,
+      psos: [
+        { code: 'PSO1', description: 'Computing Foundations: Apply core principles of computing systems, data structures, and algorithms to develop efficient software solutions.' },
+        { code: 'PSO2', description: 'Modern Systems Design: Design, test, and deploy modern software, network architectures, and data-driven systems meeting industry standards.' }
+      ]
+    },
+    coep: {
+      college: 'COEP Technological University (COEP Tech), Pune',
+      university: 'COEP Technological University',
+      status: 'Unitary State Public University',
+      patternName: '2020 Autonomous Pattern',
+      year: '2020',
+      desc: 'Autonomous curriculum aligned with Washington Accord Tier-I NBA accreditation criteria.',
+      pos: STANDARD_NBA_POS,
+      psos: [
+        { code: 'PSO1', description: 'Technical Specialization: Demonstrate technical competency in domain-specific problem formulation and system implementation.' },
+        { code: 'PSO2', description: 'System Design & Research: Exhibit proficiency in modern engineering design, research methodologies, and collaborative projects.' }
+      ]
+    },
+    vit: {
+      college: 'Vishwakarma Institute of Technology (VIT Pune)',
+      university: 'Savitribai Phule Pune University (Autonomous)',
+      status: 'Autonomous Institute under SPPU',
+      patternName: '2021 Module Pattern',
+      year: '2021',
+      desc: 'Project-centric learning curriculum adhering to standard NBA Graduate Attributes.',
+      pos: STANDARD_NBA_POS,
+      psos: [
+        { code: 'PSO1', description: 'Software Architecture: Formulate scalable software and system designs using contemporary design patterns.' },
+        { code: 'PSO2', description: 'Applied Engineering: Build robust prototypes solving complex real-world engineering challenges.' }
+      ]
+    },
+    nba_aicte: {
+      college: 'Universal AICTE / NBA Washington Accord Framework',
+      university: 'National Board of Accreditation (NBA)',
+      status: 'National Accreditation Standard (Tier-I & Tier-II)',
+      patternName: 'NBA GAPC v4.0 Standard Pattern',
+      year: '2024',
+      desc: 'Standard 12 Program Outcomes (POs) recognized across all NBA accredited engineering programs.',
+      pos: STANDARD_NBA_POS,
+      psos: [
+        { code: 'PSO1', description: 'Domain Competency: Formulate and implement domain-specific engineering solutions.' },
+        { code: 'PSO2', description: 'Professional Readiness: Demonstrate engineering design, testing, and modern tool competency.' }
+      ]
+    },
+    custom: {
+      college: 'Custom / Other Institution',
+      university: 'Autonomous / Affiliated University',
+      status: 'Custom Curriculum Pattern',
+      patternName: 'Curriculum Pattern',
+      year: new Date().getFullYear().toString(),
+      desc: 'Custom institution curriculum pattern with editable outcomes.',
+      pos: STANDARD_NBA_POS,
+      psos: []
+    }
+  };
+
+  function onCollegePresetChange(key) {
+    const preset = INSTITUTION_PRESETS[key] || INSTITUTION_PRESETS.mitaoe;
+    const nameEl = document.getElementById('p-name');
+    const yearEl = document.getElementById('p-year');
+    const univNameEl = document.getElementById('p-univ-name');
+    const univStatusEl = document.getElementById('p-univ-status');
+    const univDescEl = document.getElementById('p-univ-desc');
+
+    if (nameEl) nameEl.value = preset.patternName;
+    if (yearEl) yearEl.value = preset.year;
+    if (univNameEl) univNameEl.textContent = preset.university;
+    if (univStatusEl) univStatusEl.textContent = preset.status;
+    if (univDescEl) univDescEl.textContent = preset.desc;
+  }
+
   function openAddPatternModal() {
     const depts = DB.departments.all();
     const deptOptions = depts.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
@@ -144,24 +252,64 @@
       </div>
       <div class="modal-body">
         <div class="form-group">
+          <label class="form-label" style="display:flex;justify-content:space-between;align-items:center;">
+            <span>Select College / Institution Preset</span>
+            <span class="badge badge-success" style="font-size:10px;">Auto-detects University & Outcomes</span>
+          </label>
+          <select class="form-select" id="p-college" onchange="onCollegePresetChange(this.value)">
+            <option value="mitaoe" selected>MIT Academy of Engineering (MITAOE), Alandi, Pune</option>
+            <option value="sppu">Savitribai Phule Pune University (SPPU) — Affiliated Colleges</option>
+            <option value="coep">COEP Technological University (COEP Tech)</option>
+            <option value="vit">Vishwakarma Institute of Technology (VIT Pune)</option>
+            <option value="nba_aicte">Universal AICTE / NBA Standard (Tier-I / Tier-II)</option>
+            <option value="custom">Custom / Other Institution</option>
+          </select>
+        </div>
+
+        <div id="p-univ-badge" style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.25);border-radius:var(--r-sm);padding:12px;margin-bottom:16px;">
+          <div style="font-weight:700;color:var(--primary);font-size:13px;display:flex;align-items:center;gap:6px;">
+            <span>🏛️ Affiliated University:</span>
+            <span id="p-univ-name">Savitribai Phule Pune University (SPPU)</span>
+          </div>
+          <div style="font-size:11.5px;color:var(--text-primary);font-weight:600;margin-top:2px;" id="p-univ-status">
+            Autonomous Engineering Institute (NBA Tier-I Accredited)
+          </div>
+          <div style="color:var(--text-secondary);font-size:11px;margin-top:4px;" id="p-univ-desc">
+            Officially follows the 12 Graduate Attributes & Program Outcomes (PO1–PO12) prescribed by NBA and SPPU Faculty of Engineering.
+          </div>
+        </div>
+
+        <div class="form-group">
           <label class="form-label">Pattern Name *</label>
-          <input class="form-input" id="p-name" placeholder="e.g. 2019 Pattern">
+          <input class="form-input" id="p-name" value="2019 Pattern (MITAOE / SPPU)">
         </div>
         <div class="form-group">
           <label class="form-label">Effective Year *</label>
-          <input class="form-input" id="p-year" placeholder="e.g. 2019">
+          <input class="form-input" id="p-year" value="2019">
         </div>
         <div class="form-group">
           <label class="form-label">Department</label>
           <select class="form-select" id="p-dept">
-            <option value="">-- Applicable to All --</option>
+            <option value="">-- Applicable to All Departments --</option>
             ${deptOptions}
           </select>
+        </div>
+
+        <div style="background:var(--surface-2);padding:10px 14px;border-radius:var(--r-sm);border:1px solid var(--border);margin-top:12px;">
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--text-primary);margin:0;">
+            <input type="checkbox" id="p-autoload-pos" checked style="margin-top:3px;">
+            <div>
+              <div>Auto-load 12 Official NBA/SPPU Program Outcomes (PO1 to PO12) + PSOs</div>
+              <div style="font-size:11px;font-weight:400;color:var(--text-secondary);margin-top:2px;">
+                Automatically populates full official outcome descriptions (Engineering Knowledge, Problem Analysis, Design, Ethics, Teamwork, Modern Tools, etc.)
+              </div>
+            </div>
+          </label>
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
-        <button class="btn btn-primary" onclick="savePattern()">Create Pattern</button>
+        <button class="btn btn-primary" onclick="savePattern()">Create Pattern & Auto-Fetch POs</button>
       </div>
     `;
     Modal.open(html);
@@ -172,32 +320,94 @@
     const name = document.getElementById('p-name').value.trim();
     const year = document.getElementById('p-year').value.trim();
     const dept = document.getElementById('p-dept').value || null;
+    const autoLoad = document.getElementById('p-autoload-pos') ? document.getElementById('p-autoload-pos').checked : true;
+    const collegePreset = document.getElementById('p-college') ? document.getElementById('p-college').value : 'mitaoe';
 
     if (!name || !year) { Toast.error('Name and Year are required.'); return; }
 
     const btn = event.currentTarget;
     btn.disabled = true;
-    btn.innerHTML = 'Saving...';
+    btn.innerHTML = 'Creating Pattern & Outcomes...';
 
     try {
-      await window.apiFetch('/api/patterns', {
+      const res = await window.apiFetch('/api/patterns', {
         method: 'POST',
         body: { name, year, departmentId: dept }
       });
-      Toast.success('Curriculum pattern added.');
+      const patternId = res.id;
+
+      if (autoLoad && patternId) {
+        const preset = INSTITUTION_PRESETS[collegePreset] || INSTITUTION_PRESETS.mitaoe;
+        const allOutcomes = [
+          ...preset.pos.map(o => ({ code: o.code, description: o.description, type: 'PO', departmentId: dept, patternId })),
+          ...preset.psos.map(o => ({ code: o.code, description: o.description, type: 'PSO', departmentId: dept, patternId }))
+        ];
+
+        try {
+          await window.apiFetch('/api/outcomes/bulk', {
+            method: 'POST',
+            body: { patternId, outcomes: allOutcomes }
+          });
+        } catch(bulkErr) {
+          for (const o of allOutcomes) {
+            try { await window.apiFetch('/api/outcomes', { method: 'POST', body: o }); } catch(err) {}
+          }
+        }
+
+        const currentOutcomes = JSON.parse(localStorage.getItem('obe_outcomes') || '[]');
+        const updated = [...currentOutcomes.filter(x => x.patternId !== patternId), ...allOutcomes];
+        localStorage.setItem('obe_outcomes', JSON.stringify(updated));
+      }
+
+      Toast.success('Curriculum pattern created with official SPPU / NBA outcomes.');
       Modal.close();
-      // Reload patterns data manually to avoid full page reload
-      const patterns = await window.apiFetch('/api/patterns');
-      localStorage.setItem('obe_patterns', JSON.stringify(patterns || []));
+
+      const patterns = await window.apiFetch('/api/patterns').catch(() => null);
+      if (patterns) localStorage.setItem('obe_patterns', JSON.stringify(patterns));
+      const freshOutcomes = await window.apiFetch('/api/outcomes').catch(() => null);
+      if (freshOutcomes) localStorage.setItem('obe_outcomes', JSON.stringify(freshOutcomes));
+      
       renderPatterns();
     } catch(e) {
-      Toast.error('Failed to create pattern.');
+      Toast.error('Failed to create pattern: ' + e.message);
       btn.disabled = false;
       btn.innerHTML = 'Create Pattern';
     }
   }
 
   window.currentPatternId = null;
+
+  async function autoLoadOfficialPOs(pid) {
+    if (!confirm('Auto-load all 12 official NBA / SPPU Program Outcomes and PSOs into this pattern?')) return;
+    
+    const preset = INSTITUTION_PRESETS.mitaoe;
+    const p = DB.patterns.all().find(x => x.id === pid);
+    const dept = p ? p.departmentId : null;
+    
+    const allOutcomes = [
+      ...preset.pos.map(o => ({ code: o.code, description: o.description, type: 'PO', departmentId: dept, patternId: pid })),
+      ...preset.psos.map(o => ({ code: o.code, description: o.description, type: 'PSO', departmentId: dept, patternId: pid }))
+    ];
+
+    try {
+      await window.apiFetch('/api/outcomes/bulk', {
+        method: 'POST',
+        body: { patternId: pid, outcomes: allOutcomes }
+      });
+    } catch(e) {
+      for (const o of allOutcomes) {
+        try { await window.apiFetch('/api/outcomes', { method: 'POST', body: o }); } catch(err) {}
+      }
+    }
+
+    const currentOutcomes = JSON.parse(localStorage.getItem('obe_outcomes') || '[]');
+    const updated = [...currentOutcomes.filter(x => x.patternId !== pid), ...allOutcomes];
+    localStorage.setItem('obe_outcomes', JSON.stringify(updated));
+    
+    Toast.success('Official SPPU / NBA outcomes loaded successfully.');
+    openManageOutcomesModal(pid);
+    renderPatterns();
+  }
 
   function openManageOutcomesModal(pid) {
     window.currentPatternId = pid;
@@ -209,52 +419,67 @@
 
     const html = `
       <div class="modal-header">
-        <h3 class="modal-title">Manage Outcomes (${p.name})</h3>
+        <div>
+          <h3 class="modal-title">Manage Outcomes (${p ? p.name : 'Pattern'})</h3>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Savitribai Phule Pune University (SPPU) / NBA Aligned</div>
+        </div>
         <button class="btn btn-secondary btn-sm btn-icon" onclick="Modal.close()"><span data-icon="close"></span></button>
       </div>
-      <div class="modal-body" style="max-height:60vh;overflow-y:auto;padding-right:8px;">
+      <div class="modal-body" style="max-height:65vh;overflow-y:auto;padding-right:8px;">
         
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <h4 style="margin:0;font-size:14px;">Program Outcomes (POs)</h4>
-          <button class="btn btn-secondary btn-sm" onclick="addOutcomeRow('PO')"><span data-icon="plus"></span> Add PO</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+          <div>
+            <h4 style="margin:0;font-size:14px;font-weight:700;">Program Outcomes (POs)</h4>
+            <div style="font-size:11px;color:var(--text-secondary);">12 AICTE/NBA Graduate Attributes</div>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-secondary btn-sm" onclick="autoLoadOfficialPOs('${p.id}')">
+              <span data-icon="sparkles"></span><span>Auto-Load SPPU/NBA Outcomes</span>
+            </button>
+            <button class="btn btn-primary btn-sm" onclick="addOutcomeRow('PO')">
+              <span data-icon="plus"></span><span>Add PO</span>
+            </button>
+          </div>
         </div>
         <table class="rpt-table" style="margin-bottom:24px;">
-          <thead><tr><th style="width:100px;">Code</th><th>Description</th></tr></thead>
+          <thead><tr><th style="width:90px;">Code</th><th>Description</th></tr></thead>
           <tbody id="po-tbody">
             ${pos.length ? pos.map(o => `
               <tr>
                 <td><strong>${o.code}</strong></td>
-                <td style="text-align:left;">${o.description}</td>
+                <td style="text-align:left;font-size:12px;line-height:1.4;">${o.description}</td>
               </tr>
-            `).join('') : '<tr><td colspan="2" style="text-align:center;padding:24px;">No POs defined.</td></tr>'}
+            `).join('') : '<tr><td colspan="2" style="text-align:center;padding:24px;color:var(--text-secondary);">No POs defined. Click <strong>Auto-Load SPPU/NBA Outcomes</strong> above to load official PO1–PO12 automatically.</td></tr>'}
           </tbody>
         </table>
 
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <h4 style="margin:0;font-size:14px;">Program Specific Outcomes (PSOs)</h4>
-          <button class="btn btn-secondary btn-sm" onclick="addOutcomeRow('PSO')"><span data-icon="plus"></span> Add PSO</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+          <div>
+            <h4 style="margin:0;font-size:14px;font-weight:700;">Program Specific Outcomes (PSOs)</h4>
+            <div style="font-size:11px;color:var(--text-secondary);">Department Specialized Objectives</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="addOutcomeRow('PSO')"><span data-icon="plus"></span><span>Add PSO</span></button>
         </div>
         <table class="rpt-table">
-          <thead><tr><th style="width:100px;">Code</th><th>Description</th></tr></thead>
+          <thead><tr><th style="width:90px;">Code</th><th>Description</th></tr></thead>
           <tbody id="pso-tbody">
             ${psos.length ? psos.map(o => `
               <tr>
                 <td><strong>${o.code}</strong></td>
-                <td style="text-align:left;">${o.description}</td>
+                <td style="text-align:left;font-size:12px;line-height:1.4;">${o.description}</td>
               </tr>
-            `).join('') : '<tr><td colspan="2" style="text-align:center;padding:24px;">No PSOs defined.</td></tr>'}
+            `).join('') : '<tr><td colspan="2" style="text-align:center;padding:24px;color:var(--text-secondary);">No PSOs defined. Click <strong>Add PSO</strong> to add department-specific outcomes.</td></tr>'}
           </tbody>
         </table>
       </div>
     `;
     
     // override default width for larger modal
-    const originalOpen = Modal.open;
     Modal.open(html);
     const mbox = document.querySelector('.modal-box');
     if(mbox) {
-        mbox.style.width = '700px';
-        mbox.style.maxWidth = '90vw';
+        mbox.style.width = '750px';
+        mbox.style.maxWidth = '92vw';
     }
     renderAllIcons();
   }
@@ -268,7 +493,7 @@
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td style="padding:4px;"><input type="text" class="form-input" placeholder="${defaultCode}" id="new-${type}-code" style="font-size:12px;padding:4px 8px;"></td>
+      <td style="padding:4px;"><input type="text" class="form-input" placeholder="${defaultCode}" id="new-${type}-code" value="${defaultCode}" style="font-size:12px;padding:4px 8px;"></td>
       <td style="padding:4px;display:flex;gap:4px;">
         <input type="text" class="form-input" placeholder="Outcome description..." id="new-${type}-desc" style="flex:1;font-size:12px;padding:4px 8px;">
         <button class="btn btn-primary btn-sm" onclick="saveNewOutcome('${type}', this)">Save</button>
@@ -295,11 +520,10 @@
       });
       Toast.success(type + ' added.');
       
-      // reload
       const outcomes = await window.apiFetch('/api/outcomes');
       localStorage.setItem('obe_outcomes', JSON.stringify(outcomes || []));
-      openManageOutcomesModal(pid); // refresh modal
-
+      openManageOutcomesModal(pid);
+      renderPatterns();
     } catch(e) {
       Toast.error('Failed to add ' + type);
       btn.disabled = false;
@@ -310,6 +534,8 @@
   window.openAddPatternModal = openAddPatternModal;
   window.savePattern = savePattern;
   window.openManageOutcomesModal = openManageOutcomesModal;
+  window.autoLoadOfficialPOs = autoLoadOfficialPOs;
+  window.onCollegePresetChange = onCollegePresetChange;
   window.addOutcomeRow = addOutcomeRow;
   window.saveNewOutcome = saveNewOutcome;
 })();

@@ -405,11 +405,16 @@ class PatternBody(BaseModel):
     departmentId: str
 
 class OutcomeBody(BaseModel):
+    id: Optional[int] = None
     code: str
     description: str
     type: str
-    departmentId: str
+    departmentId: Optional[str] = None
+    patternId: Optional[str] = None
+
+class BulkOutcomesBody(BaseModel):
     patternId: str
+    outcomes: List[OutcomeBody]
 
 class RolloverBody(BaseModel):
     newAcademicYear: str
@@ -433,6 +438,16 @@ def add_outcome(body: OutcomeBody, db: Session = Depends(get_db)):
     o = models.ProgramOutcome(code=body.code, description=body.description, type=body.type, departmentId=body.departmentId, patternId=body.patternId)
     db.add(o); db.commit(); db.refresh(o)
     return o
+
+@app.post("/api/outcomes/bulk")
+def add_outcomes_bulk(body: BulkOutcomesBody, db: Session = Depends(get_db)):
+    created = []
+    for o in body.outcomes:
+        obj = models.ProgramOutcome(code=o.code, description=o.description, type=o.type, departmentId=o.departmentId, patternId=body.patternId)
+        db.add(obj)
+        created.append(obj)
+    db.commit()
+    return [{"id": o.id, "code": o.code, "description": o.description, "type": o.type, "patternId": o.patternId, "departmentId": o.departmentId} for o in created]
 
 @app.post("/api/admin/rollover")
 def academic_rollover(body: RolloverBody, db: Session = Depends(get_db)):
