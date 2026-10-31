@@ -25,10 +25,16 @@ window.addEventListener('beforeunload', (e) => {
 /* ── Low-level fetch helper with strict AbortController timeout ── */
 async function apiFetch(path, opts = {}) {
   const isWrite = opts.method && ['POST', 'PUT', 'DELETE'].includes(opts.method.toUpperCase());
+  const isAiPath = path.includes('/api/extract') || path.includes('/api/generate') || 
+                   path.includes('/api/grade') || path.includes('/api/chat') || 
+                   path.includes('/api/nba-report') || path.includes('/api/attainment-agent') ||
+                   path.includes('/api/auto-map') || path.includes('/api/analyze-blooms') ||
+                   path.includes('/api/philosophy') || path.includes('/api/remedial');
   
   const exec = async () => {
     const controller = new AbortController();
-    const timeoutMs = opts.timeout || (isWrite ? 12000 : 5000);
+    const defaultTimeout = isAiPath ? 90000 : (isWrite ? 25000 : 12000);
+    const timeoutMs = opts.timeout || defaultTimeout;
     const timer = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
@@ -75,7 +81,7 @@ async function apiFetch(path, opts = {}) {
     }
   };
 
-  if (isWrite) {
+  if (isWrite && !isAiPath) {
     activeApiRequests++;
     const resultPromise = apiQueue.then(() => exec());
     apiQueue = resultPromise.catch(() => {}).finally(() => { activeApiRequests--; });

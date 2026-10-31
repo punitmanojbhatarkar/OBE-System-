@@ -47,8 +47,9 @@ def get_llm(temperature: float = 0.1):
     except Exception as e:
         print(f"Failed to load API key from DB: {e}")
         
+    model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
     return ChatGoogleGenerativeAI(
-        model="gemini-3.6-flash",
+        model=model_name,
         temperature=temperature,
         google_api_key=api_key or "DUMMY_KEY_TO_PREVENT_CRASH",
         max_retries=1
@@ -589,6 +590,7 @@ def fallback_extract_syllabus(text: str) -> dict:
                 "no": num,
                 "title": clean_title or f"Module {num}",
                 "hours": hours,
+                "coNo": min(num, 6),
                 "coMapping": f"CO{min(num, 6)}",
                 "description": clean_body[:600] if clean_body else clean_title
             })
@@ -603,6 +605,7 @@ def fallback_extract_syllabus(text: str) -> dict:
                     "no": i + 1,
                     "title": chunk[0][:60] if chunk else f"Module {i+1}",
                     "hours": 8,
+                    "coNo": i + 1,
                     "coMapping": f"CO{i+1}",
                     "description": " ".join(chunk)[:300]
                 })
@@ -650,7 +653,7 @@ EXTRACTION RULES:
 1. Extract EVERY module listed -- do not skip any.
 2. Preserve the full description of each module -- do not truncate or summarize.
 3. Teaching hours: extract exact number if given. Default to 8 if absent.
-4. CO Mapping: assign Module N ? CO N by default. Adjust if Bloom's verbs indicate otherwise.
+4. CO Mapping: assign Module N -> CO N by default. Adjust if Bloom's verbs indicate otherwise.
 5. Distinguish Textbooks (primary) from Reference Books (supplementary).
 6. Do NOT invent content not present in the text."""
         prompt = PromptTemplate.from_template(template)
@@ -658,6 +661,11 @@ EXTRACTION RULES:
         res = chain.invoke({"text": text[:15000]})
         parsed = res.dict()
         if parsed and (parsed.get("modules") or parsed.get("books")):
+            for idx, m in enumerate(parsed.get("modules", [])):
+                if not m.get("coNo"):
+                    m["coNo"] = min(idx + 1, 6)
+                if not m.get("coMapping"):
+                    m["coMapping"] = f"CO{m['coNo']}"
             return parsed
     except Exception as e:
         print(f"[AI] extract_syllabus LLM invocation failed, using heuristic parser: {e}")

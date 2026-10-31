@@ -214,11 +214,131 @@
 
   function getCoOptions(selectedCoNo) {
     let html = '<option value="">-- Select CO --</option>';
-    courseCos.forEach(co => {
-      const selected = (selectedCoNo === co.no) ? 'selected' : '';
-      html += `<option value="${co.no}" ${selected}>CO${co.no}</option>`;
+    const cosToRender = (courseCos && courseCos.length > 0) ? courseCos : [
+      { no: 1 }, { no: 2 }, { no: 3 }, { no: 4 }, { no: 5 }, { no: 6 }
+    ];
+    cosToRender.forEach(co => {
+      const selected = (Number(selectedCoNo) === Number(co.no)) ? 'selected' : '';
+      const label = co.text ? `CO${co.no}: ${co.text.slice(0, 35)}...` : `CO${co.no}`;
+      html += `<option value="${co.no}" ${selected}>${label}</option>`;
     });
     return html;
+  }
+
+  function clientExtractSyllabus(rawText) {
+    const modules = [];
+    const books = [];
+    if (!rawText || !rawText.trim()) return { modules, books };
+
+    const cleaned = rawText.replace(/Format No\.:[^\n\r]+/gi, '');
+    const unitRegex = /(?:UNIT|MODULE|CHAPTER|SECTION)\s*[-:]?\s*([0-9IVX]+)[:\.\s-]+([^\n\r]+)([\s\S]*?)(?=(?:UNIT|MODULE|CHAPTER|SECTION)\s*[-:]?\s*[0-9IVX]+|TEXT\s*BOOKS?|REFERENCE\s*BOOKS?|REFERENCES?|E-RESOURCES|$)/gi;
+    const romanMap = { 'I': 1, 'II': 2, 'III': 3, 'IV': 4, 'V': 5, 'VI': 6, 'VII': 7, 'VIII': 8, 'IX': 9, 'X': 10 };
+    let match;
+    let idx = 0;
+
+    while ((match = unitRegex.exec(cleaned)) !== null) {
+      idx++;
+      const numStr = match[1].trim();
+      let num = parseInt(numStr, 10);
+      if (isNaN(num)) num = romanMap[numStr.toUpperCase()] || idx;
+
+      let rawTitle = match[2].trim();
+      let body = match[3].trim();
+
+      let hours = 8;
+      const combined = rawTitle + ' ' + body;
+      const hrsMatch = combined.match(/(\d+)\s*(?:HOURS?|HRS?|L|LECTURES?)/i);
+      if (hrsMatch) hours = parseInt(hrsMatch[1], 10);
+
+      let cleanTitle = rawTitle.replace(/\(?\[?\d+\s*(?:HOURS?|HRS?|L|LECTURES?)\)?\]?/gi, '').trim().replace(/^[:\.\s-]+|[:\.\s-]+$/g, '');
+      if (!cleanTitle) cleanTitle = 'Module ' + num;
+
+      let description = body;
+      const contentsMatch = body.match(/Contents:\s*([\s\S]*?)(?=(?:Self Study|Further Readings|Applications\/Case Study|$))/i);
+      if (contentsMatch && contentsMatch[1].trim()) {
+        description = contentsMatch[1].trim();
+      } else {
+        description = description.replace(/(?:Self Study|Further Readings|Applications\/Case Study):[^\n\r]+/gi, '').trim();
+      }
+      description = description.replace(/\s+/g, ' ').trim();
+      if (!description) description = cleanTitle;
+
+      let coNo = Math.min(num, 6);
+      const coMatch = combined.match(/CO\s*[-:]?\s*([1-6])/i);
+      if (coMatch) coNo = parseInt(coMatch[1], 10);
+
+      modules.push({
+        no: num,
+        title: cleanTitle,
+        hours: hours,
+        coNo: coNo,
+        coMapping: 'CO' + coNo,
+        description: description.slice(0, 1000)
+      });
+    }
+
+    if (modules.length === 0) {
+      const paragraphs = cleaned.split(/\n\s*\n/).map(p => p.trim()).filter(p => p.length > 30);
+      const candidates = paragraphs.filter(p => !/syllabus|curriculum|objective|outcome|credits|hours|scheme|prerequisite/i.test(p.slice(0, 50)));
+      const count = Math.min(6, candidates.length);
+      for (let i = 0; i < count; i++) {
+        const textBlock = candidates[i];
+        const lines = textBlock.split('\n').map(l => l.trim()).filter(Boolean);
+        const title = lines[0]?.slice(0, 80) || `Module ${i + 1}`;
+        const desc = lines.slice(1).join(' ') || title;
+        modules.push({
+          no: i + 1,
+          title: title,
+          hours: 8,
+          coNo: i + 1,
+          coMapping: `CO${i + 1}`,
+          description: desc.slice(0, 800)
+        });
+      }
+    }
+
+    const tbMatch = cleaned.match(/TEXT\s*BOOKS?([\s\S]*?)(?=REFERENCE\s*BOOKS?|REFERENCES?|E-RESOURCES|$)/i);
+    if (tbMatch) {
+      extractBooksSection(tbMatch[1], 'Textbook', books);
+    }
+
+    const refMatch = cleaned.match(/REFERENCE\s*BOOKS?([\s\S]*?)(?=E-RESOURCES|TEXT\s*BOOKS?|$)/i);
+    if (refMatch) {
+      extractBooksSection(refMatch[1], 'Reference Book', books);
+    }
+
+    return { modules, books };
+  }
+
+  function extractBooksSection(sectionText, type, books) {
+    const lines = sectionText.split('\n');
+    let currentBook = '';
+    for (const l of lines) {
+      const line = l.trim();
+      if (!line || line.toLowerCase().startsWith('format no')) continue;
+      if (/^\d+[\.\)]\s*/.test(line)) {
+        if (currentBook) parseAndAddBook(currentBook, type, books);
+        currentBook = line.replace(/^\d+[\.\)]\s*/, '');
+      } else if (currentBook) {
+        currentBook += ' ' + line;
+      }
+    }
+    if (currentBook) parseAndAddBook(currentBook, type, books);
+  }
+
+  function parseAndAddBook(raw, type, books) {
+    let author = 'Academic Publisher';
+    let title = raw;
+    const parts = raw.split(/\.\s+|\s*-\s*|\s*\(\d{4}\)\s*/);
+    if (parts.length >= 2 && parts[0].length > 3) {
+      author = parts[0].trim();
+      title = parts.slice(1).join(' ').trim();
+    }
+    books.push({
+      type: type,
+      title: title.slice(0, 160) || raw.slice(0, 160),
+      author: author.slice(0, 100)
+    });
   }
 
   function renderModules() {
@@ -328,36 +448,106 @@
 
     const btn = document.getElementById('btn-autofill');
     const originalText = btn.innerHTML;
-    btn.innerHTML = 'Extracting…';
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" style="display:inline-block;width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin 0.75s linear infinite;margin-right:6px;vertical-align:middle;"></span><span>Extracting…</span>';
     btn.disabled = true;
 
     try {
       const arrayBuffer = await file.arrayBuffer();
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-      const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      
       let fullText = '';
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        fullText += textContent.items.map(item => item.str).join(' ') + '\n';
+        let lastY = null;
+        let pageText = '';
+        for (const item of textContent.items) {
+          if (!item.str) continue;
+          if (lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
+            pageText += '\n';
+          } else if (pageText.length > 0 && !pageText.endsWith('\n') && !pageText.endsWith(' ')) {
+            pageText += ' ';
+          }
+          pageText += item.str;
+          lastY = item.transform[5];
+        }
+        fullText += pageText + '\n\n';
       }
 
       if (!fullText.trim()) throw new Error('Could not extract text from this PDF (scanned or protected).');
 
-      const res = await apiFetch('/api/extract-syllabus', { method: 'POST', body: { text: fullText } });
-      if (!res || !res.data) throw new Error('No data returned from AI engine.');
+      let extractedData = null;
+      let usedLocalFallback = false;
 
-      const extractedData = res.data;
+      // 1. Try backend extraction with 90s timeout
+      try {
+        const payloadText = fullText.slice(0, 25000);
+        const res = await apiFetch('/api/extract-syllabus', { 
+          method: 'POST', 
+          body: { text: payloadText },
+          timeout: 90000 
+        });
+        if (res && res.data && ((res.data.modules && res.data.modules.length > 0) || (res.data.books && res.data.books.length > 0))) {
+          extractedData = res.data;
+        }
+      } catch (cloudErr) {
+        console.warn('[PDF Extract] Cloud API timed out or failed, switching to local smart parser:', cloudErr);
+      }
+
+      // 2. Seamless local fallback if cloud is cold/asleep/unreachable
+      if (!extractedData || (!extractedData.modules?.length && !extractedData.books?.length)) {
+        usedLocalFallback = true;
+        extractedData = clientExtractSyllabus(fullText);
+      }
+
+      if (!extractedData || (!extractedData.modules?.length && !extractedData.books?.length)) {
+        throw new Error('No modules or textbooks could be identified in this PDF. Please check the document format.');
+      }
+
+      // Normalize modules
       if (extractedData.modules && extractedData.modules.length > 0) {
-        syllabusData.modules = syllabusData.modules.concat(extractedData.modules);
+        extractedData.modules.forEach((mod, idx) => {
+          if (!mod.coNo) {
+            const matchedCo = String(mod.coMapping || '').match(/\d+/);
+            mod.coNo = matchedCo ? parseInt(matchedCo[0], 10) : Math.min(idx + 1, 6);
+          }
+          if (!mod.hours) mod.hours = 8;
+          if (!mod.title) mod.title = `Module ${idx + 1}`;
+          if (!mod.description) mod.description = mod.title;
+        });
+
+        const existing = syllabusData.modules.filter(m => m.title && m.title.trim());
+        if (existing.length === 0) {
+          syllabusData.modules = extractedData.modules;
+        } else {
+          syllabusData.modules = syllabusData.modules.concat(extractedData.modules);
+        }
       }
+
+      // Normalize books
       if (extractedData.books && extractedData.books.length > 0) {
-        syllabusData.books = syllabusData.books.concat(extractedData.books);
+        const existingBooks = syllabusData.books.filter(b => b.title && b.title.trim());
+        if (existingBooks.length === 0) {
+          syllabusData.books = extractedData.books;
+        } else {
+          syllabusData.books = syllabusData.books.concat(extractedData.books);
+        }
       }
+
+      // Save updated syllabus
+      DB.syllabus.save(currentCourse.id, syllabusData);
 
       renderModules();
       renderBooks();
-      Toast.success(`Extracted ${extractedData.modules?.length || 0} modules and ${extractedData.books?.length || 0} books.`);
+
+      const modCount = extractedData.modules?.length || 0;
+      const bookCount = extractedData.books?.length || 0;
+      if (usedLocalFallback) {
+        Toast.info(`Extracted ${modCount} modules and ${bookCount} books (via smart parser).`);
+      } else {
+        Toast.success(`Extracted ${modCount} modules and ${bookCount} books.`);
+      }
     } catch (error) {
       console.error(error);
       Toast.error('Auto-fill failed: ' + error.message);
