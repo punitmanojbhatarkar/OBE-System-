@@ -271,13 +271,44 @@
   let PO_FULL = {};
 
   function initPOs() {
-    const outcomes = DB.outcomes.all();
-    PO_COLS = outcomes.map(o => o.code);
-    outcomes.forEach(o => {
-      PO_FULL[o.code] = o.description;
-    });
+    const poList = (typeof DB !== 'undefined' && DB.outcomes && DB.outcomes.getPOList) 
+      ? DB.outcomes.getPOList() 
+      : Array.from({length: 12}, (_, i) => `PO${i+1}`);
+    const psoList = (typeof DB !== 'undefined' && DB.outcomes && DB.outcomes.getPSOList) 
+      ? DB.outcomes.getPSOList() 
+      : ['PSO1', 'PSO2', 'PSO3'];
+    PO_COLS = [...poList, ...psoList];
+
+    const defaultDescriptions = {
+      PO1: "Engineering Knowledge: Apply knowledge of mathematics, science, engineering fundamentals.",
+      PO2: "Problem Analysis: Identify, formulate, and analyze complex engineering problems.",
+      PO3: "Design/Development of Solutions: Design solutions for complex engineering problems.",
+      PO4: "Conduct Investigations of Complex Problems: Use research-based methods and data interpretation.",
+      PO5: "Modern Tool Usage: Create, select, and apply modern engineering and IT tools.",
+      PO6: "The Engineer and Society: Apply reasoning to assess societal, health, safety, legal issues.",
+      PO7: "Environment and Sustainability: Understand the impact of engineering solutions.",
+      PO8: "Ethics: Apply ethical principles and commit to professional ethics.",
+      PO9: "Individual and Team Work: Function effectively as an individual and team member.",
+      PO10: "Communication: Communicate effectively on complex engineering activities.",
+      PO11: "Project Management and Finance: Demonstrate knowledge of engineering and management principles.",
+      PO12: "Life-Long Learning: Preparation and ability to engage in independent and life-long learning.",
+      PSO1: "Domain-Specific Knowledge in Data Science and Analytics.",
+      PSO2: "Industry-Readiness through practical projects and tool proficiency.",
+      PSO3: "Research Aptitude and ability to apply scientific reasoning."
+    };
+
+    PO_FULL = { ...defaultDescriptions };
+    if (typeof DB !== 'undefined' && DB.outcomes && DB.outcomes.all) {
+      const outcomes = DB.outcomes.all();
+      if (Array.isArray(outcomes) && outcomes.length > 0) {
+        outcomes.forEach(o => {
+          if (o.code && o.description) PO_FULL[o.code] = o.description;
+        });
+      }
+    }
   }
 
+  initPOs();
 
   let currentCourseId = null;
   let activeCOs = [];
@@ -368,7 +399,7 @@
     PO_COLS.forEach((po, i) => {
       const isPSO = po.startsWith('PSO');
       const cls = isPSO && i === 12 ? 'pso-divider' : '';
-      r2 += `<th class="${cls}" title="${PO_FULL[po]}">${po}</th>`;
+      r2 += `<th class="${cls}" title="${PO_FULL[po] || po}">${po}</th>`;
     });
     r2 += '</tr>';
     head.innerHTML = r1 + r2;
