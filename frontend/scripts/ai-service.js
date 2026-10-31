@@ -7,16 +7,27 @@
 const AI = (() => {
 
   async function callBackend(endpoint, payload) {
-    const apiBase = typeof window !== 'undefined' && window.API_BASE !== undefined ? window.API_BASE : 'http://127.0.0.1:8080';
-    const res = await fetch(`${apiBase}/api/${endpoint}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    if (!res.ok) throw new Error(`Backend Error: ${res.statusText}`);
-    const data = await res.json();
-    if (data.success === false) throw new Error(`Backend Error: ${data.error}`);
-    return data.data;
+    const isLocal = typeof window !== 'undefined' && (window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    const apiBase = typeof window !== 'undefined' && window.API_BASE !== undefined ? window.API_BASE : (isLocal ? 'http://127.0.0.1:8080' : 'https://obe-system-backend-t0ri.onrender.com');
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12000);
+    try {
+      const res = await fetch(`${apiBase}/api/${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+      clearTimeout(timer);
+      if (!res.ok) throw new Error(`Backend Error: ${res.statusText}`);
+      const data = await res.json();
+      if (data.success === false) throw new Error(`Backend Error: ${data.error}`);
+      return data.data;
+    } catch (err) {
+      clearTimeout(timer);
+      throw err;
+    }
   }
 
   async function generateAssignment({ coText, rbtLevel, topic, numQuestions=2, maxMarks=10 }) {

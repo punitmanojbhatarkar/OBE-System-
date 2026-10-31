@@ -382,6 +382,16 @@
     renderAllIcons();
   }
 
+  function resolveCoNo(co, idx) {
+    if (co && co.no !== undefined && co.no !== null && !isNaN(Number(co.no))) return Number(co.no);
+    if (co && co.coNo !== undefined && co.coNo !== null && !isNaN(Number(co.coNo))) return Number(co.coNo);
+    if (co && co.code) {
+      const match = String(co.code).match(/\d+/);
+      if (match) return Number(match[0]);
+    }
+    return idx !== undefined ? (idx + 1) : 1;
+  }
+
   function buildMatrix() {
     const head = document.getElementById('matrix-head');
     let r1 = '<tr><th class="co-header" rowspan="2">Course Outcome</th>';
@@ -394,7 +404,6 @@
     }
     r1 += '</tr>';
 
-    
     let r2 = '<tr>';
     PO_COLS.forEach((po, i) => {
       const isPSO = po.startsWith('PSO');
@@ -407,17 +416,18 @@
     const body = document.getElementById('matrix-body');
     body.innerHTML = '';
 
-    activeCOs.forEach(co => {
+    activeCOs.forEach((co, idx) => {
+      const coNo = resolveCoNo(co, idx);
       const tr = document.createElement('tr');
       tr.innerHTML = `<td class="co-label"><strong style="color:var(--primary);margin-right:6px;">${co.code}</strong> ${co.text}</td>`;
 
       PO_COLS.forEach((po, i) => {
-        const val = DB.poMapping.getValue(currentCourseId, co.no, po);
+        const val = DB.poMapping.getValue(currentCourseId, coNo, po);
         const td = document.createElement('td');
         if (i === 12) td.classList.add('pso-divider');
         const btn = document.createElement('button');
         btn.className = 'cell-btn';
-        btn.dataset.coNo = co.no;
+        btn.dataset.coNo = coNo;
         btn.dataset.po = po;
         btn.dataset.val = val;
         btn.textContent = val === 0 ? '—' : val;
@@ -439,7 +449,7 @@
     tr.innerHTML = `<td class="co-label" style="background:var(--surface-2);font-weight:700;color:var(--primary);text-transform:uppercase;">Overall Average</td>`;
 
     PO_COLS.forEach((po, i) => {
-      const vals = activeCOs.map(co => DB.poMapping.getValue(currentCourseId, co.no, po)).filter(v => v > 0);
+      const vals = activeCOs.map((co, idx) => DB.poMapping.getValue(currentCourseId, resolveCoNo(co, idx), po)).filter(v => v > 0);
       const avg = vals.length > 0 ? (vals.reduce((a,b) => a+b, 0) / vals.length) : 0;
       const td = document.createElement('td');
       if (i === 12) td.classList.add('pso-divider');
@@ -507,7 +517,7 @@
   function updateAvgCell(po) {
     const avgCell = document.getElementById(`avg-${po}`);
     if (!avgCell) return;
-    const vals = activeCOs.map(co => DB.poMapping.getValue(currentCourseId, co.no, po)).filter(v => v > 0);
+    const vals = activeCOs.map((co, idx) => DB.poMapping.getValue(currentCourseId, resolveCoNo(co, idx), po)).filter(v => v > 0);
     const avg = vals.length > 0 ? (vals.reduce((a,b) => a+b, 0) / vals.length) : 0;
     const dispVal = avg > 0 ? avg.toFixed(2) : '—';
     const colorCls = avg >= 2.5 ? 'val-3' : avg >= 1.5 ? 'val-2' : avg > 0 ? 'val-1' : 'val-0';
@@ -517,7 +527,7 @@
   function updateSummaryCard(po) {
     const card = document.getElementById(`sum-${po}`);
     if (!card) return;
-    const vals = activeCOs.map(co => DB.poMapping.getValue(currentCourseId, co.no, po)).filter(v => v > 0);
+    const vals = activeCOs.map((co, idx) => DB.poMapping.getValue(currentCourseId, resolveCoNo(co, idx), po)).filter(v => v > 0);
     const avg = vals.length > 0 ? (vals.reduce((a,b) => a+b, 0) / vals.length) : 0;
     const valEl = card.querySelector('.po-val');
     valEl.textContent = avg > 0 ? avg.toFixed(2) : '—';
@@ -544,7 +554,7 @@
     const grid = document.getElementById('po-summary');
     grid.innerHTML = '';
     PO_COLS.forEach(po => {
-      const vals = activeCOs.map(co => DB.poMapping.getValue(currentCourseId, co.no, po)).filter(v => v > 0);
+      const vals = activeCOs.map((co, idx) => DB.poMapping.getValue(currentCourseId, resolveCoNo(co, idx), po)).filter(v => v > 0);
       const avg = vals.length > 0 ? (vals.reduce((a,b) => a+b, 0) / vals.length) : 0;
       const color = avg >= 2.5 ? 'var(--success)' : avg >= 1.5 ? 'var(--warning)' : avg > 0 ? 'var(--primary)' : 'var(--text-muted)';
       const card = document.createElement('div');
@@ -566,9 +576,10 @@
   function resetMatrix() {
     if (!currentCourseId) return;
     Modal.confirm('Reset Matrix', 'Clear all mapping weights for this course?', () => {
-      activeCOs.forEach(co => {
+      activeCOs.forEach((co, idx) => {
+        const coNo = resolveCoNo(co, idx);
         PO_COLS.forEach(po => {
-          DB.poMapping.setValue(currentCourseId, co.no, po, 0);
+          DB.poMapping.setValue(currentCourseId, coNo, po, 0);
         });
       });
       buildMatrix();
@@ -667,10 +678,12 @@
       if (!mappings || Object.keys(mappings).length === 0) {
         mappings = clientFallbackAutoMap(activeCOs, PO_COLS);
       }
-      activeCOs.forEach(co => {
+      activeCOs.forEach((co, idx) => {
+        const coNo = resolveCoNo(co, idx);
+        const row = mappings[coNo] || mappings[String(coNo)] || mappings['CO'+coNo] || mappings[co.code] || {};
         PO_COLS.forEach(po => {
-          const val = (mappings[co.no] || mappings['CO'+co.no] || mappings[String(co.no)] || {})[po] || 0;
-          DB.poMapping.setValue(currentCourseId, co.no, po, val);
+          const val = row[po] !== undefined ? row[po] : 0;
+          DB.poMapping.setValue(currentCourseId, coNo, po, val);
         });
       });
       buildMatrix();
@@ -680,10 +693,12 @@
       console.error(e);
       // Absolute fallback guarantee:
       const fallbackMappings = clientFallbackAutoMap(activeCOs, PO_COLS);
-      activeCOs.forEach(co => {
+      activeCOs.forEach((co, idx) => {
+        const coNo = resolveCoNo(co, idx);
+        const row = fallbackMappings[coNo] || fallbackMappings[String(coNo)] || fallbackMappings['CO'+coNo] || fallbackMappings[co.code] || {};
         PO_COLS.forEach(po => {
-          const val = (fallbackMappings[co.no] || fallbackMappings['CO'+co.no] || fallbackMappings[String(co.no)] || {})[po] || 0;
-          DB.poMapping.setValue(currentCourseId, co.no, po, val);
+          const val = row[po] !== undefined ? row[po] : 0;
+          DB.poMapping.setValue(currentCourseId, coNo, po, val);
         });
       });
       buildMatrix();
