@@ -1095,7 +1095,7 @@ def save_indicator_mapping(body: IndicatorMappingBody, db: Session = Depends(get
 @app.get("/api/health")
 def health():
     gemini_key = os.getenv("GEMINI_API_KEY")
-    return {"database": "sqlite (real)", "ai_engine": "gemini-2.5-flash",
+    return {"database": "sqlite (real)", "ai_engine": "gemini-3.6-flash",
             "ai_status": "configured" if gemini_key else "missing_key", "version": "2.0.0"}
 
 # ─────────────────────────────────────────────

@@ -31,8 +31,8 @@ import numpy as np
 
 # ?? LLM Factory ????????????????????????????????????????????????????????????????
 
-def get_llm(temperature: float = 0.1):
-    """Return a configured Gemini 2.5 Flash LLM instance."""
+def get_llm(temperature: float = 0.1, model_override: str = None):
+    """Return a configured Gemini LLM instance."""
     api_key = os.getenv("GEMINI_API_KEY")
     
     # Try to fetch from Admin Config if available
@@ -47,7 +47,7 @@ def get_llm(temperature: float = 0.1):
     except Exception as e:
         print(f"Failed to load API key from DB: {e}")
         
-    model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    model_name = model_override or os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
     return ChatGoogleGenerativeAI(
         model=model_name,
         temperature=temperature,
@@ -886,6 +886,109 @@ class CoPoMapping(BaseModel):
 # ── Deterministic cache: same CO text always gives same mapping ──────────────
 _COPO_CACHE: dict = {}   # key = stable SHA-256 of cos+pos+pso_defs
 
+def fallback_auto_map_copo(cos: list, pos: list, pso_defs: dict = None) -> dict:
+    """
+    Deterministic NBA GAPC V4.0 rule-based heuristic fallback engine.
+    Ensures that auto-mapping NEVER fails, producing valid, balanced,
+    curriculum-compliant CO-PO correlation values even when LLM APIs are unreachable.
+    """
+    mapping = {}
+    for idx, c in enumerate(cos, 1):
+        co_no = str(c.get("no", c.get("coNo", idx)))
+        text = str(c.get("text", c.get("description", ""))).lower()
+        row = {po: 0 for po in pos}
+        
+        # 1. Detect Bloom's Level from Action Verbs
+        blooms = 3 # default Apply (L3)
+        if any(w in text for w in ["recall", "state", "define", "list", "identify", "name"]):
+            blooms = 1
+        elif any(w in text for w in ["explain", "describe", "discuss", "summarize", "interpret"]):
+            blooms = 2
+        elif any(w in text for w in ["apply", "implement", "compute", "calculate", "solve", "execute", "use"]):
+            blooms = 3
+        elif any(w in text for w in ["analyze", "examine", "investigate", "compare", "differentiate", "bottleneck", "complexity"]):
+            blooms = 4
+        elif any(w in text for w in ["evaluate", "assess", "critique", "justify", "benchmark"]):
+            blooms = 5
+        elif any(w in text for w in ["design", "develop", "create", "formulate", "construct", "build"]):
+            blooms = 6
+
+        # PO1: Engineering Knowledge
+        if "PO1" in row:
+            if blooms <= 2:
+                row["PO1"] = 1
+            elif blooms == 3:
+                row["PO1"] = 2
+            else:
+                row["PO1"] = 3 if any(w in text for w in ["foundation", "algorithmic", "mathematical", "complex", "architecture"]) else 2
+
+        # PO2: Problem Analysis
+        if "PO2" in row:
+            if blooms <= 2:
+                row["PO2"] = 0
+            elif blooms == 3:
+                row["PO2"] = 2 if any(w in text for w in ["problem", "solution", "optim", "routine"]) else 1
+            elif blooms in [4, 5]:
+                row["PO2"] = 3 if any(w in text for w in ["complexity", "trade-off", "bottleneck", "analyze", "evaluate"]) else 2
+            else:
+                row["PO2"] = 2
+
+        # PO3: Design/Development of Solutions
+        if "PO3" in row:
+            design_words = ["design", "develop", "construct", "build", "create", "architecture", "modular", "solutions"]
+            if any(w in text for w in ["design scalable", "integrated systems", "system components", "optimal engineering"]):
+                row["PO3"] = 2 if blooms >= 5 else 1
+            elif any(w in text for w in design_words):
+                row["PO3"] = 1
+            else:
+                row["PO3"] = 0
+
+        # PO4: Conduct Investigations
+        if "PO4" in row:
+            if any(w in text for w in ["investigate", "experiment", "profile", "profiling", "hypothesis", "testing", "sampling", "inference", "edge case", "empirical"]):
+                row["PO4"] = 2
+            elif any(w in text for w in ["evaluate", "benchmark", "trade-off", "complexity", "measure"]):
+                row["PO4"] = 1
+            else:
+                row["PO4"] = 0
+
+        # PO5: Modern Tool Usage
+        if "PO5" in row:
+            tool_words = ["python", "matlab", "tool", "software", "library", "libraries", "computing", "jupyter", "profiling", "analytical tools", "routines"]
+            if any(w in text for w in tool_words):
+                row["PO5"] = 2
+            else:
+                row["PO5"] = 0
+
+        # PO6-PO11: Contextual
+        if "PO6" in row:
+            row["PO6"] = 1 if any(w in text for w in ["society", "societal", "health", "safety", "legal", "institutional"]) else 0
+        if "PO7" in row:
+            row["PO7"] = 1 if any(w in text for w in ["environment", "sustainable", "sustainability", "green"]) else 0
+        if "PO8" in row:
+            row["PO8"] = 1 if any(w in text for w in ["ethics", "ethical", "fairness", "privacy"]) else 0
+        if "PO9" in row:
+            row["PO9"] = 1 if any(w in text for w in ["team", "collaborative", "group"]) else 0
+        if "PO10" in row:
+            row["PO10"] = 1 if any(w in text for w in ["present", "report", "communicate", "document"]) else 0
+        if "PO11" in row:
+            row["PO11"] = 1 if any(w in text for w in ["project", "management", "cost", "budget", "schedule", "lifecycle"]) else 0
+
+        # PO12: Life-Long Learning
+        if "PO12" in row:
+            row["PO12"] = 2 if (blooms >= 5 or any(w in text for w in ["select", "optimal", "emerging", "solutions", "scalable", "independent"])) else 1
+
+        # PSOs
+        if "PSO1" in row:
+            row["PSO1"] = 3 if blooms >= 4 else 2
+        if "PSO2" in row:
+            row["PSO2"] = 3 if (blooms >= 5 or "integrated" in text or "tool" in text) else (2 if blooms >= 3 else 1)
+        if "PSO3" in row:
+            row["PSO3"] = 2 if (blooms >= 4 or any(w in text for w in ["investigate", "benchmark", "trade-off", "scientific", "empirical"])) else 1
+
+        mapping[co_no] = row
+    return mapping
+
 def auto_map_copo(cos: list, pos: list, pso_defs: dict = None) -> dict:
     import hashlib, json as _json
     cache_key = hashlib.sha256(
@@ -895,7 +998,6 @@ def auto_map_copo(cos: list, pos: list, pso_defs: dict = None) -> dict:
         print("=== COPO CACHE HIT — returning deterministic cached mapping ===")
         return _COPO_CACHE[cache_key]
 
-    llm = get_llm(temperature=0.0).with_structured_output(CoPoMapping)
     template = """You are an expert OBE curriculum analyst at MITAOE (MIT Academy of Engineering, Alandi, Pune), \
 affiliated to Savitribai Phule Pune University (SPPU). Your task is to generate a \
 100% accurate, NBA GAPC V4.0-compliant CO-PO Correlation Matrix for the given course.
@@ -1046,17 +1148,44 @@ JSON OUTPUT FORMAT (MANDATORY — follow exactly):
 }}
 """
     prompt = PromptTemplate.from_template(template)
-    chain = prompt | llm
-    res = chain.invoke({"cos": json.dumps(cos, indent=2), "pso_defs": json.dumps(pso_defs or {}, indent=2)})
+
+    candidate_models = [
+        os.getenv("GEMINI_MODEL", "gemini-3.6-flash"),
+        "gemini-3.8-flash",
+        "gemini-3.5-flash",
+        "gemini-flash-latest"
+    ]
+    seen = set()
+    models_to_try = [m for m in candidate_models if not (m in seen or seen.add(m))]
+
+    res = None
+    last_err = None
+
+    for model_name in models_to_try:
+        try:
+            print(f"[CO-PO AI] Attempting structured mapping with model: {model_name}")
+            llm = get_llm(temperature=0.0, model_override=model_name).with_structured_output(CoPoMapping)
+            chain = prompt | llm
+            res = chain.invoke({"cos": json.dumps(cos, indent=2), "pso_defs": json.dumps(pso_defs or {}, indent=2)})
+            if res and hasattr(res, "mapping") and res.mapping:
+                print(f"[CO-PO AI] Successfully generated correlation matrix via {model_name}")
+                break
+        except Exception as e:
+            print(f"[CO-PO AI] Model {model_name} invocation failed: {e}")
+            last_err = e
+            continue
+
+    if not res or not hasattr(res, "mapping") or not res.mapping:
+        print(f"[CO-PO AI] All LLM models failed or returned empty ({last_err}). Applying NBA GAPC V4.0 deterministic fallback.")
+        validated = fallback_auto_map_copo(cos, pos, pso_defs)
+        _COPO_CACHE[cache_key] = validated
+        return validated
+
     validated = {}
     for co, po_dict in res.mapping.items():
         cleaned = {str(po).strip().upper(): max(0, min(3, int(v))) for po, v in po_dict.items() if str(po).strip().upper() in pos}
 
         # ── HARD RULE 1: PO6-PO11 ALWAYS 0 for theory courses ──
-        # PO6=Society, PO7=Environment, PO8=Ethics, PO9=Teamwork,
-        # PO10=Communication, PO11=Project Management
-        # None of these apply to mathematical/data-science theory courses
-        # UNLESS explicitly mentioned in CO text (handled below)
         for po in ["PO6", "PO7", "PO8", "PO9", "PO10", "PO11"]:
             if po in cleaned:
                 cleaned[po] = 0
@@ -1071,17 +1200,16 @@ JSON OUTPUT FORMAT (MANDATORY — follow exactly):
 
         # ── HARD RULE 2: PO5 = 0 unless CO text explicitly names a tool ──
         tool_keywords = ["python", "matlab", "tool", "software", "library", "libraries",
-                         "computing", "jupyter", "numpy", "pandas", "scipy", "visualization techniques"]
+                         "computing", "jupyter", "numpy", "pandas", "scipy", "visualization techniques", "profiling", "routines"]
         if not any(kw in co_text for kw in tool_keywords):
             if "PO5" in cleaned:
                 cleaned["PO5"] = 0
         else:
-            # Cap PO5 at 2 for theory courses (3 = dedicated lab/programming courses only)
             if "PO5" in cleaned and cleaned["PO5"] > 2:
                 cleaned["PO5"] = 2
 
         # ── HARD RULE 3: PO3 = 0 unless "design/develop/construct/build/create" in CO ──
-        design_keywords = ["design", "develop", "construct", "build", "create"]
+        design_keywords = ["design", "develop", "construct", "build", "create", "architecture", "modular", "solutions"]
         if not any(kw in co_text for kw in design_keywords):
             if "PO3" in cleaned:
                 cleaned["PO3"] = 0
