@@ -14,13 +14,8 @@ window.API_BASE = API_BASE;
 let apiQueue = Promise.resolve();
 let activeApiRequests = 0;
 
-// Prevent navigation if we are still saving to the backend
-window.addEventListener('beforeunload', (e) => {
-  if (activeApiRequests > 0) {
-    e.preventDefault();
-    e.returnValue = 'Changes are still saving to the database. Are you sure you want to leave?';
-  }
-});
+// Non-blocking navigation: all data writes are immediately persisted to local storage synchronously,
+// so users can freely navigate between pages without invasive browser "Leave site?" interruption dialogs.
 
 /* ── Low-level fetch helper with strict AbortController timeout ── */
 async function apiFetch(path, opts = {}) {
@@ -418,13 +413,16 @@ function patchDBWriteMethods() {
   };
 
   // ── PO Mapping ──
+  let _poDebounceTimer = null;
   const _poSetValue = DB.poMapping.setValue.bind(DB.poMapping);
   DB.poMapping.setValue = function(cid, coNo, po, val, justification='') {
     _poSetValue(cid, coNo, po, val, justification);
-    // Also persist individual cell change to backend
-    const currentMatrix = DB.poMapping.byCourse(cid);
-    apiFetch('/api/pomapping/save', { method: 'POST', body: { courseId: cid, matrix: currentMatrix } })
-      .catch(e => console.warn('[API] po mapping setValue failed', e));
+    clearTimeout(_poDebounceTimer);
+    _poDebounceTimer = setTimeout(() => {
+      const currentMatrix = DB.poMapping.byCourse(cid);
+      apiFetch('/api/pomapping/save', { method: 'POST', body: { courseId: cid, matrix: currentMatrix } })
+        .catch(e => console.warn('[API] po mapping setValue failed', e));
+    }, 400);
   };
 
   const _poSaveMatrix = DB.poMapping.saveMatrix.bind(DB.poMapping);

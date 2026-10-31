@@ -585,13 +585,22 @@
     DB.indicatorMapping.save(currentCourseId, mappingState);
     
     const poList = getPOList();
+    const updatedMatrix = [];
     poList.forEach(po => {
       cos.forEach(co => {
         const coKey = String(co.no);
         const level = calculatedLevels[po] ? (calculatedLevels[po][coKey] || calculatedLevels[po][co.no] || '') : '';
-        DB.poMapping.setValue(currentCourseId, co.no, po, level !== '' ? level : '');
+        const numVal = (level !== '' && !isNaN(level)) ? Number(level) : 0;
+        updatedMatrix.push({
+          courseId: currentCourseId,
+          coNo: Number(co.no),
+          po: po,
+          val: numVal,
+          justification: 'Criterion 6 PI alignment'
+        });
       });
     });
+    DB.poMapping.saveMatrix(currentCourseId, updatedMatrix);
     Toast.success('6A Matrix saved and synchronized.');
   }
 
