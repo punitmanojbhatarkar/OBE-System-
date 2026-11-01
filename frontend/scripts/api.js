@@ -217,7 +217,7 @@ async function syncFromBackend(force = false) {
     // ── Fast Bulk Bootstrap: 1 HTTP request fetches the complete system dataset ──
     try {
       overlay.msg('Syncing with OBE cloud backend…');
-      const bootstrap = await apiFetch('/api/bootstrap', { timeout: 6500 });
+      const bootstrap = await apiFetch('/api/bootstrap', { timeout: 25000 });
       if (bootstrap && bootstrap.departments && Array.isArray(bootstrap.departments)) {
         if (bootstrap.config) {
           const storedCfg = { ...bootstrap.config };
