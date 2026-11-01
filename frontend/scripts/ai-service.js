@@ -11,7 +11,7 @@ const AI = (() => {
     const apiBase = typeof window !== 'undefined' && window.API_BASE !== undefined ? window.API_BASE : (isLocal ? 'http://127.0.0.1:8080' : 'https://obe-system-backend-t0ri.onrender.com');
 
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 12000);
+    const timer = setTimeout(() => controller.abort(), 35000);
     try {
       const res = await fetch(`${apiBase}/api/${endpoint}`, {
         method: 'POST',
