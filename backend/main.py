@@ -978,10 +978,10 @@ class AssignmentBody(BaseModel):
     topic: Optional[str] = None
     level: Optional[str] = None
     dueDate: Optional[str] = None
-    rbtLevel: Optional[str] = None
+    rbtLevel: Optional[typing.Union[str, int]] = None
     coNo: Optional[int] = None
     coNos: Optional[list] = []
-    maxMarks: Optional[int] = None
+    maxMarks: Optional[typing.Union[int, float]] = None
     questions: Optional[list] = []
     rubrics: Optional[list] = []
     aiGenerated: Optional[bool] = False
@@ -1000,10 +1000,10 @@ def add_assignment(body: AssignmentBody, db: Session = Depends(get_db)):
         existing.topic = body.topic
         existing.level = body.level
         existing.dueDate = body.dueDate
-        existing.rbtLevel = body.rbtLevel
+        existing.rbtLevel = str(body.rbtLevel) if body.rbtLevel is not None else None
         existing.coNo = body.coNo
         existing.coNos = json.dumps(body.coNos or [])
-        existing.maxMarks = body.maxMarks
+        existing.maxMarks = int(body.maxMarks) if body.maxMarks is not None else None
         existing.questions = json.dumps(body.questions or [])
         existing.rubrics = json.dumps(body.rubrics or [])
         existing.aiGenerated = body.aiGenerated
@@ -1015,9 +1015,9 @@ def add_assignment(body: AssignmentBody, db: Session = Depends(get_db)):
             type=body.type or "assignment", no=body.no or 1,
             title=body.title, description=body.description,
             topic=body.topic, level=body.level, dueDate=body.dueDate,
-            rbtLevel=body.rbtLevel, coNo=body.coNo,
+            rbtLevel=str(body.rbtLevel) if body.rbtLevel is not None else None, coNo=body.coNo,
             coNos=json.dumps(body.coNos or []),
-            maxMarks=body.maxMarks,
+            maxMarks=int(body.maxMarks) if body.maxMarks is not None else None,
             questions=json.dumps(body.questions or []),
             rubrics=json.dumps(body.rubrics or []),
             aiGenerated=body.aiGenerated,
