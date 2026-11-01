@@ -158,6 +158,10 @@
   loadCourses();
   renderAllIcons();
 
+  window.addEventListener('obe_data_synced', () => {
+    loadCourses();
+  });
+
   function loadCourses() {
     const sel = document.getElementById('courseSelect');
     const courses = DB.courses.byFaculty(user.id);
@@ -171,7 +175,13 @@
   }
 
   function renderAssignments() {
-    if (!currentCourseId) { document.getElementById('assignGrid').innerHTML = ''; return; }
+    const grid = document.getElementById('assignGrid');
+    const empty = document.getElementById('emptyState');
+    if (!currentCourseId) {
+      if (grid) grid.innerHTML = '';
+      if (empty) empty.style.display = 'block';
+      return;
+    }
     sessionStorage.setItem('selected_course_id', currentCourseId);
 
     currentAssignments = DB.assessments.byCourse(currentCourseId);

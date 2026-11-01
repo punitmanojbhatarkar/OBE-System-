@@ -459,16 +459,21 @@
 
   // Initialize course dropdown
   const courseSel = document.getElementById('course-select');
-  const facultyCourses = DB.courses.byFaculty(user.id);
-  courseSel.innerHTML = facultyCourses.map(c => `<option value="${c.id}">${c.code} – ${c.name}</option>`).join('');
+  function initCourseDropdown() {
+    const facultyCourses = DB.courses.byFaculty(user.id);
+    courseSel.innerHTML = facultyCourses.map(c => `<option value="${c.id}">${c.code} – ${c.name}</option>`).join('');
 
-  const storedCourseId = sessionStorage.getItem('selected_course_id');
-  const defaultCid = (storedCourseId && facultyCourses.find(c => c.id === storedCourseId)) ? storedCourseId : (facultyCourses[0]?.id || null);
+    const storedCourseId = sessionStorage.getItem('selected_course_id');
+    const defaultCid = (storedCourseId && facultyCourses.find(c => c.id === storedCourseId)) ? storedCourseId : (facultyCourses[0]?.id || null);
 
-  if (defaultCid) {
-    courseSel.value = defaultCid;
-    loadCourse(defaultCid);
+    if (defaultCid) {
+      courseSel.value = defaultCid;
+      loadCourse(defaultCid);
+    }
   }
+
+  initCourseDropdown();
+  window.addEventListener('obe_data_synced', initCourseDropdown);
 
   courseSel.addEventListener('change', e => {
     if (e.target.value) {
