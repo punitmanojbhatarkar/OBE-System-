@@ -417,26 +417,30 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label">Assessment Type *</label>
+        <label class="form-label">Examination Category *</label>
         <select class="form-select" id="modal-assess-type" onchange="updateAssessModalDefaults()">
-          <option value="ia">Internal Assessment (IA)</option>
+          <option value="ia">Internal Assessment (IA / Test)</option>
           <option value="mse">Mid-Semester Examination (MSE)</option>
           <option value="ese">End-Semester Examination (ESE)</option>
-          <option value="assignment">Assignment / CIE Project</option>
+          <option value="assignment">Continuous Assessment (CA) / Assignment</option>
         </select>
       </div>
       <div class="form-group">
         <label class="form-label">Assessment Title / Name *</label>
-        <input class="form-input" id="modal-assess-title" placeholder="e.g. IA 3, Lab Test, Quiz">
+        <input class="form-input" id="modal-assess-title" placeholder="e.g. IA 1, Quiz 1, CA Assignment">
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
         <div class="form-group">
           <label class="form-label">Sequence #</label>
-          <input class="form-input" id="modal-assess-no" type="number" min="1" max="10" value="3">
+          <input class="form-input" id="modal-assess-no" type="number" min="1" max="10" value="1">
         </div>
         <div class="form-group">
-          <label class="form-label">Total Max Marks *</label>
-          <input class="form-input" id="modal-assess-max" type="number" min="5" max="100" value="20">
+          <label class="form-label">Paper Raw Marks *</label>
+          <input class="form-input" id="modal-assess-max" type="number" min="5" max="200" value="100">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Scaled Weightage *</label>
+          <input class="form-input" id="modal-assess-weightage" type="number" min="1" max="100" value="20">
         </div>
       </div>
     </div>
@@ -568,14 +572,16 @@
     let html = '';
     courseAssessments.forEach(a => {
       const isActive = currentMainTab === 'marks' && a.id === activeAssessId;
-      const typeLabel = { 'ia': 'IA', 'mse': 'Mid-Sem (MSE)', 'ese': 'End-Sem (ESE)', 'assignment': 'Assignment' }[a.type] || (a.type ? a.type.toUpperCase() : 'Exam');
-      const maxM = a.maxMarks || 20;
+      const typeLabel = { 'ia': 'IA', 'mse': 'Mid-Sem (MSE)', 'ese': 'End-Sem (ESE)', 'assignment': 'Assignment', 'ca': 'CA' }[a.type] || (a.type ? a.type.toUpperCase() : 'Exam');
+      const maxM = a.maxMarks || 100;
+      const wt = a.weightage;
+      const badgeText = (wt && wt !== maxM) ? `${maxM}M (Scaled: ${wt}M)` : `${maxM}M`;
       const displayTitle = a.title || `${typeLabel} ${a.no > 1 && a.type !== 'mse' && a.type !== 'ese' ? a.no : ''}`;
 
       html += `
         <div class="assess-pill ${isActive ? 'active' : ''}" onclick="selectAssessment('${a.id}')">
           <span>${displayTitle}</span>
-          <span class="pill-badge">${maxM}M</span>
+          <span class="pill-badge">${badgeText}</span>
           <button class="pill-del-btn" title="Delete ${displayTitle}" onclick="event.stopPropagation(); deleteAssessFromMarks('${a.id}', '${displayTitle.replace(/'/g, "\\'")}')">&times;</button>
         </div>
       `;
@@ -597,6 +603,16 @@
   /* ── Select Assessment Component ── */
   function selectAssessment(aid) {
     activeAssessId = aid;
+    const a = courseAssessments.find(x => x.id === aid);
+    if (a && a.questions && a.questions.length > 0) {
+      currentEntryMode = 'q';
+      const bCo = document.getElementById('btn-mode-co');
+      const bQ = document.getElementById('btn-mode-q');
+      if (bCo) bCo.classList.remove('active');
+      if (bQ) bQ.classList.add('active');
+      const qDrawer = document.getElementById('q-config-drawer');
+      if (qDrawer) qDrawer.style.display = 'block';
+    }
     if (currentMainTab !== 'marks') {
       currentMainTab = 'marks';
       document.getElementById('section-marks').style.display = 'block';
@@ -733,8 +749,14 @@
       return;
     }
 
-    const maxMarksTotal = asgn.maxMarks || 20;
-    if (infoBadge) infoBadge.textContent = `Max: ${maxMarksTotal} Marks (${asgn.title || 'Exam'})`;
+    const maxMarksTotal = asgn.maxMarks || 100;
+    const targetWeightage = asgn.weightage || (asgn.type === 'ia' ? 20 : (asgn.type === 'mse' ? 30 : (asgn.type === 'ese' ? 60 : 25)));
+    const hasScaling = (targetWeightage && targetWeightage !== maxMarksTotal);
+    const scaleFactor = hasScaling ? (targetWeightage / maxMarksTotal) : 1;
+
+    if (infoBadge) {
+      infoBadge.innerHTML = `Paper: <strong>${maxMarksTotal}M</strong> ${hasScaling ? `&bull; Scaled Weightage: <strong style="color:var(--primary);">${targetWeightage}M</strong>` : ''} (${asgn.title || 'Exam'})`;
+    }
 
     const allMarks = DB.marks.get(CID);
     const searchQuery = (document.getElementById('search-student')?.value || '').toLowerCase().trim();
@@ -783,14 +805,17 @@
         asgn.questions = questions;
         DB.assessments.update(asgn);
       }
-      columns = questions.map(q => ({
-        key: `q_${q.qNo}`,
-        label: `Q${q.qNo}`,
-        subLabel: `CO${q.coNo} (${q.maxMarks}M)`,
-        maxMarks: q.maxMarks,
-        coNo: q.coNo,
-        qNo: q.qNo
-      }));
+      columns = questions.map(q => {
+        const qm = q.marks || q.maxMarks || 10;
+        return {
+          key: `q_${q.qNo}`,
+          label: `Q${q.qNo}`,
+          subLabel: `CO${q.coNo} (${qm}M)`,
+          maxMarks: qm,
+          coNo: q.coNo,
+          qNo: q.qNo
+        };
+      });
     }
 
     // Build Table Header
@@ -809,7 +834,10 @@
       `;
     });
     headHtml += `
-        <th class="center" style="width:110px;">Total (${maxMarksTotal}M)</th>
+        <th class="center" style="width:130px;">
+          <div>Total (${maxMarksTotal}M)</div>
+          ${hasScaling ? `<div style="font-size:10px;color:var(--primary);font-weight:700;">(Scaled: ${targetWeightage}M wt)</div>` : ''}
+        </th>
         <th class="center" style="width:80px;">% Score</th>
         <th class="center" style="width:110px;">Attainment</th>
       </tr>
@@ -864,13 +892,20 @@
         if (isAttained) attainedCount++;
       }
 
+      const scaledScore = (hasScaling && rowHasMarks) ? (rowEarnedTotal * scaleFactor).toFixed(1) : null;
+      const totalCellDisplay = rowHasMarks ? (
+        hasScaling
+          ? `<span style="font-weight:800;">${rowEarnedTotal}</span> <span style="font-size:11px;color:var(--text-secondary);font-weight:600;">(${scaledScore}/${targetWeightage})</span>`
+          : `<span style="font-weight:800;">${rowEarnedTotal}</span>`
+      ) : '—';
+
       bodyHtml += `
         <tr id="row-${student.prn}">
           <td>${sIdx + 1}</td>
           <td><span class="font-mono" style="font-weight:700;">${student.prn}</span></td>
           <td style="font-weight:600;">${student.name}</td>
           ${rowInputs}
-          <td class="center row-total font-mono" style="font-weight:800;font-size:13.5px;">${rowHasMarks ? rowEarnedTotal : '—'}</td>
+          <td class="center row-total font-mono" style="font-weight:800;font-size:13px;">${totalCellDisplay}</td>
           <td class="center row-pct" style="font-weight:700;">${rowHasMarks ? pct + '%' : '—'}</td>
           <td class="center row-badge">${rowHasMarks ? (isAttained ? '<span class="badge badge-success">Attained</span>' : '<span class="badge badge-danger">At-Risk</span>') : '<span class="badge badge-neutral">Pending</span>'}</td>
         </tr>
@@ -883,6 +918,7 @@
     const totalCount = enrolledStudents.length;
     const attPct = assessedCount > 0 ? Math.round((attainedCount / assessedCount) * 100) : 0;
     const avgScore = assessedCount > 0 ? (totalScoreSum / assessedCount).toFixed(1) : '0.0';
+    const scaledAvg = (hasScaling && assessedCount > 0) ? (parseFloat(avgScore) * scaleFactor).toFixed(1) : null;
     const atRiskCount = assessedCount - attainedCount;
 
     const summaryEl = document.getElementById('stat-summary-content');
@@ -891,7 +927,7 @@
         <span style="font-weight:700;color:var(--text-primary);">${totalCount} Enrolled</span> • 
         <span style="color:var(--success);font-weight:700;">${attainedCount} Attained (≥60% · ${attPct}%)</span> • 
         <span style="color:var(--danger);font-weight:700;">${atRiskCount} At-Risk</span> • 
-        <span>Class Avg: <strong style="color:var(--primary);">${avgScore} / ${maxMarksTotal}</strong></span>
+        <span>Class Avg: <strong style="color:var(--primary);">${avgScore} / ${maxMarksTotal}</strong> ${hasScaling ? `<span style="font-size:11.5px;color:var(--text-secondary);">(${scaledAvg} / ${targetWeightage} wt)</span>` : ''}</span>
       `;
     }
   }
@@ -913,7 +949,10 @@
     if (!tr) return;
 
     const asgn = getActiveAssess();
-    const maxTotal = asgn?.maxMarks || 20;
+    const maxTotal = asgn?.maxMarks || 100;
+    const targetWeightage = asgn?.weightage || (asgn?.type === 'ia' ? 20 : (asgn?.type === 'mse' ? 30 : (asgn?.type === 'ese' ? 60 : 25)));
+    const hasScaling = (targetWeightage && targetWeightage !== maxTotal);
+    const scaleFactor = hasScaling ? (targetWeightage / maxTotal) : 1;
 
     let sum = 0, hasAny = false;
     tr.querySelectorAll('.marks-input').forEach(inp => {
@@ -927,7 +966,16 @@
     const pctEl = tr.querySelector('.row-pct');
     const badgeEl = tr.querySelector('.row-badge');
 
-    if (totEl) totEl.textContent = hasAny ? sum : '—';
+    if (totEl) {
+      if (!hasAny) {
+        totEl.textContent = '—';
+      } else if (hasScaling) {
+        const scaledVal = (sum * scaleFactor).toFixed(1);
+        totEl.innerHTML = `<span style="font-weight:800;">${sum}</span> <span style="font-size:11px;color:var(--text-secondary);font-weight:600;">(${scaledVal}/${targetWeightage})</span>`;
+      } else {
+        totEl.textContent = sum;
+      }
+    }
     const pct = hasAny && maxTotal > 0 ? Math.round((sum / maxTotal) * 100) : 0;
     if (pctEl) pctEl.textContent = hasAny ? `${pct}%` : '—';
     if (badgeEl) {
@@ -1281,6 +1329,7 @@
     const titleInp = document.getElementById('modal-assess-title');
     const noInp = document.getElementById('modal-assess-no');
     const maxInp = document.getElementById('modal-assess-max');
+    const weightageInp = document.getElementById('modal-assess-weightage');
 
     const existingOfType = courseAssessments.filter(a => a.type === type);
     const nextNo = existingOfType.length + 1;
@@ -1288,16 +1337,20 @@
 
     if (type === 'ia') {
       titleInp.value = `IA ${nextNo}`;
-      maxInp.value = 20;
+      if (maxInp) maxInp.value = 100;
+      if (weightageInp) weightageInp.value = 20;
     } else if (type === 'mse') {
       titleInp.value = nextNo > 1 ? `MSE ${nextNo}` : 'Mid-Sem (MSE)';
-      maxInp.value = 30;
+      if (maxInp) maxInp.value = 100;
+      if (weightageInp) weightageInp.value = 30;
     } else if (type === 'ese') {
       titleInp.value = nextNo > 1 ? `ESE ${nextNo}` : 'End-Sem (ESE)';
-      maxInp.value = 60;
+      if (maxInp) maxInp.value = 100;
+      if (weightageInp) weightageInp.value = 60;
     } else {
       titleInp.value = `Assignment ${nextNo}`;
-      maxInp.value = 25;
+      if (maxInp) maxInp.value = 100;
+      if (weightageInp) weightageInp.value = 25;
     }
   };
 
@@ -1305,7 +1358,8 @@
     if (!CID) { Toast.warning('Select a course first.'); return; }
     const course = DB.courses.byId(CID);
     const type = document.getElementById('modal-assess-type').value;
-    const maxMarks = parseFloat(document.getElementById('modal-assess-max').value) || 20;
+    const maxMarks = parseFloat(document.getElementById('modal-assess-max').value) || 100;
+    const weightage = parseFloat(document.getElementById('modal-assess-weightage')?.value) || (type === 'ia' ? 20 : 25);
 
     const btn = document.getElementById('btn-marks-ai-formulate');
     const origHtml = btn.innerHTML;
@@ -1321,6 +1375,7 @@
         level: 'L3',
         numQuestions: type === 'assignment' ? 3 : 4,
         maxMarks: maxMarks,
+        weightage: weightage,
         targetCOs: [1, 2]
       });
 
@@ -1350,7 +1405,8 @@
     const type = document.getElementById('modal-assess-type').value;
     const title = (document.getElementById('modal-assess-title').value || '').trim();
     const no = parseInt(document.getElementById('modal-assess-no').value) || 1;
-    const maxMarks = parseFloat(document.getElementById('modal-assess-max').value) || 20;
+    const maxMarks = parseFloat(document.getElementById('modal-assess-max').value) || 100;
+    const weightage = parseFloat(document.getElementById('modal-assess-weightage')?.value) || (type === 'ia' ? 20 : (type === 'mse' ? 30 : (type === 'ese' ? 60 : 25)));
 
     if (!title) { Toast.warning('Please enter an assessment title.'); return; }
 
@@ -1368,6 +1424,7 @@
       no: no,
       title: title,
       maxMarks: maxMarks,
+      weightage: weightage,
       aiGenerated: isAI,
       questions: questions,
       createdAt: new Date().toISOString()

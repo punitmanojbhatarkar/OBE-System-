@@ -46,6 +46,12 @@ for table in ["courses", "program_outcomes"]:
 
 try:
     with engine.begin() as conn:
+        conn.execute(text('ALTER TABLE assignments ADD COLUMN "weightage" REAL'))
+except Exception:
+    pass
+
+try:
+    with engine.begin() as conn:
         conn.execute(text('ALTER TABLE po_mapping ADD COLUMN justification TEXT'))
 except Exception:
     pass
@@ -944,6 +950,10 @@ def save_survey(body: SurveySaveAll, db: Session = Depends(get_db)):
 # ASSIGNMENTS
 # ─────────────────────────────────────────────
 def assignment_to_dict(a):
+    raw_max = a.maxMarks or 20
+    wt = getattr(a, "weightage", None)
+    if wt is None:
+        wt = 20 if a.type == "ia" else (30 if a.type == "mse" else (60 if a.type == "ese" else raw_max))
     return {
         "id": a.id, "courseId": a.courseId,
         "type": a.type or "assignment",
@@ -956,7 +966,8 @@ def assignment_to_dict(a):
         "rbtLevel": a.rbtLevel,
         "coNo": a.coNo,
         "coNos": json.loads(a.coNos or "[]"),
-        "maxMarks": a.maxMarks,
+        "maxMarks": raw_max,
+        "weightage": float(wt),
         "questions": json.loads(a.questions or "[]"),
         "rubrics": json.loads(a.rubrics or "[]"),
         "aiGenerated": bool(a.aiGenerated),
@@ -982,6 +993,7 @@ class AssignmentBody(BaseModel):
     coNo: Optional[int] = None
     coNos: Optional[list] = []
     maxMarks: Optional[typing.Union[int, float]] = None
+    weightage: Optional[typing.Union[int, float]] = None
     questions: Optional[list] = []
     rubrics: Optional[list] = []
     aiGenerated: Optional[bool] = False
@@ -990,6 +1002,8 @@ class AssignmentBody(BaseModel):
 def add_assignment(body: AssignmentBody, db: Session = Depends(get_db)):
     import datetime
     aid = body.id or uid()
+    raw_max = int(body.maxMarks) if body.maxMarks is not None else 20
+    wt = float(body.weightage) if body.weightage is not None else float(raw_max)
     # Upsert: update if exists, insert if new
     existing = db.query(models.Assignment).filter(models.Assignment.id == aid).first()
     if existing:
@@ -1003,7 +1017,8 @@ def add_assignment(body: AssignmentBody, db: Session = Depends(get_db)):
         existing.rbtLevel = str(body.rbtLevel) if body.rbtLevel is not None else None
         existing.coNo = body.coNo
         existing.coNos = json.dumps(body.coNos or [])
-        existing.maxMarks = int(body.maxMarks) if body.maxMarks is not None else None
+        existing.maxMarks = raw_max
+        existing.weightage = wt
         existing.questions = json.dumps(body.questions or [])
         existing.rubrics = json.dumps(body.rubrics or [])
         existing.aiGenerated = body.aiGenerated
@@ -1017,7 +1032,8 @@ def add_assignment(body: AssignmentBody, db: Session = Depends(get_db)):
             topic=body.topic, level=body.level, dueDate=body.dueDate,
             rbtLevel=str(body.rbtLevel) if body.rbtLevel is not None else None, coNo=body.coNo,
             coNos=json.dumps(body.coNos or []),
-            maxMarks=int(body.maxMarks) if body.maxMarks is not None else None,
+            maxMarks=raw_max,
+            weightage=wt,
             questions=json.dumps(body.questions or []),
             rubrics=json.dumps(body.rubrics or []),
             aiGenerated=body.aiGenerated,
@@ -1181,12 +1197,15 @@ class AssignmentRequest(BaseModel):
 
 class ProfessionalAssessmentRequest(BaseModel):
     courseName: Optional[str] = ""
-    assessmentType: Optional[str] = "assignment"
+    assessmentType: Optional[str] = None
+    type: Optional[str] = None
     topic: Optional[str] = ""
     level: Optional[str] = "L3"
     num: Optional[int] = 3
     marks: Optional[int] = 20
+    weightage: Optional[typing.Union[int, float]] = None
     targetCOs: Optional[List[int]] = []
+    questionBlueprint: Optional[List[dict]] = None
 
 @app.post("/api/generate-assignment")
 def api_generate_assignment(req: AssignmentRequest):
@@ -1194,15 +1213,21 @@ def api_generate_assignment(req: AssignmentRequest):
 
 @app.post("/api/generate-professional-assessment")
 def api_generate_professional_assessment(req: ProfessionalAssessmentRequest):
+    a_type = req.assessmentType or req.type or "assignment"
     data = generate_professional_assessment(
         course_name=req.courseName or "",
-        assess_type=req.assessmentType or "assignment",
+        assess_type=a_type,
         topic=req.topic or "",
         level=req.level or "L3",
         num_questions=req.num or 3,
         marks=req.marks or 20,
-        target_cos=req.targetCOs or []
+        target_cos=req.targetCOs or [],
+        question_blueprint=req.questionBlueprint
     )
+    if req.weightage is not None:
+        data["weightage"] = float(req.weightage)
+    if req.marks is not None:
+        data["maxMarks"] = float(req.marks)
     return {"success": True, "data": data}
 
 class GradeRequest(BaseModel):

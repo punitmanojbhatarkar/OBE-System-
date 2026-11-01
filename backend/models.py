@@ -184,6 +184,7 @@ class Assignment(Base):
     coNo = Column(Integer, nullable=True)               # legacy single CO
     coNos = Column(Text, nullable=True)                 # JSON list of CO numbers
     maxMarks = Column(Integer, nullable=True)
+    weightage = Column(Float, nullable=True)
     questions = Column(Text, nullable=True)             # JSON string
     rubrics = Column(Text, nullable=True)               # JSON string
     aiGenerated = Column(Boolean, default=False)

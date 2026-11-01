@@ -60,7 +60,7 @@ const Attainment = (() => {
      Handles both Question Blueprint Mapping AND Direct CO-Wise Marks Entry
   ── */
   function getMarksByTypeAndCO(courseId, type) {
-    const assessments = DB.assessments.byCourse(courseId).filter(a => a.type === type);
+    const assessments = DB.assessments.byCourse(courseId).filter(a => a.type === type || (type === 'assignment' && a.type === 'ca') || (type === 'ca' && a.type === 'assignment'));
     const allMarks = DB.marks.get(courseId);
     const students = DB.students.byCourse(courseId);
     const cos = getCleanCOs(courseId);
@@ -69,12 +69,22 @@ const Attainment = (() => {
     students.forEach(s => { result[s.prn] = {}; });
 
     assessments.forEach(asgn => {
-      const maxTotal = asgn.maxMarks || (type === 'mse' ? 30 : (type === 'ese' ? 60 : 20));
+      const maxTotal = parseFloat(asgn.maxMarks) || (type === 'mse' ? 30 : (type === 'ese' ? 60 : 20));
+      const targetWeightage = parseFloat(asgn.weightage) || (type === 'mse' ? 30 : (type === 'ese' ? 60 : (type === 'ia' ? 20 : (type === 'ca' ? 25 : maxTotal))));
+      const scaleFactor = (targetWeightage && maxTotal && maxTotal > 0) ? (targetWeightage / maxTotal) : 1.0;
       const hasQuestions = asgn.questions && asgn.questions.length > 0;
 
       // Determine applicable target COs for this assessment
       let targetCOs = cos;
-      if (type === 'ia') {
+      if (hasQuestions) {
+        const qCoNos = new Set(asgn.questions.map(q => parseInt(q.coNo)).filter(Boolean));
+        if (qCoNos.size > 0) {
+          targetCOs = cos.filter(c => qCoNos.has(c.no));
+        }
+      } else if (asgn.coNos && asgn.coNos.length > 0) {
+        const cSet = new Set(asgn.coNos.map(n => parseInt(n)));
+        targetCOs = cos.filter(c => cSet.has(c.no));
+      } else if (type === 'ia') {
         if (asgn.no === 1) targetCOs = cos.filter(c => c.no <= 2);
         else if (asgn.no === 2) targetCOs = cos.filter(c => c.no >= 3 && c.no <= 4);
         else targetCOs = cos.filter(c => c.no >= 5);
@@ -83,30 +93,32 @@ const Attainment = (() => {
         targetCOs = cos.filter(c => c.no <= 3);
         if (!targetCOs.length) targetCOs = cos.slice(0, 3);
       }
-      const coDirectMax = Math.round(maxTotal / (targetCOs.length || 1));
+      const coDirectMax = (maxTotal / (targetCOs.length || 1)) * scaleFactor;
 
       students.forEach(s => {
         targetCOs.forEach(co => {
           const coNo = co.no;
           if (!result[s.prn][coNo]) result[s.prn][coNo] = { earned: 0, max: 0 };
 
-          // 1. Direct CO Marks Check (where qNo === coNo)
-          const directMark = allMarks.find(m => m.prn === s.prn && m.assessId === asgn.id && m.qNo === coNo);
-          if (directMark && directMark.marks !== null && directMark.marks !== undefined) {
-            result[s.prn][coNo].earned += parseFloat(directMark.marks) || 0;
-            result[s.prn][coNo].max += coDirectMax;
-          } 
-          // 2. Question Blueprint Marks Check
-          else if (hasQuestions) {
-            const mappedQuestions = asgn.questions.filter(q => q.coNo === coNo);
+          // 1. Question Blueprint Marks Check (preferred for question-wise mapped exams)
+          if (hasQuestions) {
+            const mappedQuestions = asgn.questions.filter(q => parseInt(q.coNo) === coNo);
             mappedQuestions.forEach(q => {
               const qMark = allMarks.find(m => m.prn === s.prn && m.assessId === asgn.id && m.qNo === q.qNo);
               const qMax = parseFloat(q.maxMarks || q.marks || 10);
               if (qMark && qMark.marks !== null && qMark.marks !== undefined) {
-                result[s.prn][coNo].earned += parseFloat(qMark.marks) || 0;
-                result[s.prn][coNo].max += qMax;
+                result[s.prn][coNo].earned += (parseFloat(qMark.marks) || 0) * scaleFactor;
+                result[s.prn][coNo].max += qMax * scaleFactor;
               }
             });
+          }
+          // 2. Direct CO Marks Check (where qNo === coNo)
+          else {
+            const directMark = allMarks.find(m => m.prn === s.prn && m.assessId === asgn.id && m.qNo === coNo);
+            if (directMark && directMark.marks !== null && directMark.marks !== undefined) {
+              result[s.prn][coNo].earned += (parseFloat(directMark.marks) || 0) * scaleFactor;
+              result[s.prn][coNo].max += coDirectMax;
+            }
           }
         });
       });

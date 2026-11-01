@@ -45,7 +45,7 @@ const Auth = (() => {
     const cleanEmail = (email || '').trim();
     try {
       const isLocal = typeof window !== 'undefined' && (window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-      const apiBase = typeof window !== 'undefined' && window.API_BASE !== undefined ? window.API_BASE : (isLocal ? 'http://127.0.0.1:8080' : 'https://obe-system-backend-t0ri.onrender.com');
+      const apiBase = typeof window !== 'undefined' && window.API_BASE !== undefined ? window.API_BASE : ((window.location.protocol.startsWith('http') && window.location.host) ? window.location.origin : (isLocal ? 'http://127.0.0.1:8000' : 'https://obe-system-backend-t0ri.onrender.com'));
 
       // Attempt backend with a 3.5s timeout to prevent freezing on cold-start
       let backendSuccess = false;

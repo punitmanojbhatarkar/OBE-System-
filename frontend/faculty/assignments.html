@@ -233,7 +233,10 @@
             <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
               <div>
                 <div style="font-weight:700;font-size:15px;color:var(--text-primary);">${a.title}</div>
-                <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Due: ${hasDue ? Fmt.date(a.dueDate) : '—'} &bull; Max Marks: <strong>${a.maxMarks || 10}</strong></div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">
+                  Due: ${hasDue ? Fmt.date(a.dueDate) : '—'} &bull; Max Marks: <strong>${a.maxMarks || 10}M</strong>
+                  ${a.weightage && a.weightage !== a.maxMarks ? `&bull; <span style="color:var(--primary);font-weight:700;">Scaled: ${a.weightage}M Weightage</span>` : ''}
+                </div>
               </div>
               <div style="display:flex;gap:4px;flex-direction:column;align-items:flex-end;">
                 ${typeBadge(a.type)}
@@ -357,31 +360,45 @@
     openCreateModal(a);
   }
 
+  function updateManualModalDefaults(type) {
+    const wtInp = document.getElementById('aWeightage');
+    if (!wtInp) return;
+    if (type === 'ia') wtInp.value = 20;
+    else if (type === 'mse') wtInp.value = 30;
+    else if (type === 'ese') wtInp.value = 60;
+    else wtInp.value = 25;
+  }
+
   function openCreateModal(existing) {
     const isEdit = !!existing;
+    const defaultWt = existing?.weightage || (existing?.type === 'ia' ? 20 : (existing?.type === 'mse' ? 30 : (existing?.type === 'ese' ? 60 : 25)));
     const modalHtml = `
       <div class="modal-header">
         <h3 class="modal-title">${isEdit ? 'Edit Assessment' : 'Create Assessment'}</h3>
         <button class="btn btn-secondary btn-sm btn-icon" onclick="Modal.close()"><span data-icon="close"></span></button>
       </div>
       <div class="modal-body" style="max-height:650px;overflow-y:auto;">
-        <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+        <div class="form-row" style="display:grid;grid-template-columns:1.2fr 0.6fr 1fr 1fr;gap:12px;">
           <div class="form-group">
-            <label class="form-label">Assessment Type</label>
-            <select class="form-select" id="aType">
-              <option value="assignment" ${existing?.type==='assignment'?'selected':''}>Assignment</option>
+            <label class="form-label">Examination Category</label>
+            <select class="form-select" id="aType" onchange="updateManualModalDefaults(this.value)">
+              <option value="assignment" ${existing?.type==='assignment'||existing?.type==='ca'?'selected':''}>Continuous Assessment (CA)</option>
               <option value="ia" ${existing?.type==='ia'?'selected':''}>Internal Assessment (IA)</option>
               <option value="mse" ${existing?.type==='mse'?'selected':''}>Mid-Sem Exam (MSE)</option>
               <option value="ese" ${existing?.type==='ese'?'selected':''}>End-Sem Exam (ESE)</option>
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">Sequence No.</label>
+            <label class="form-label">Seq #</label>
             <input type="number" class="form-input" id="aNo" value="${existing?.no||1}" min="1">
           </div>
           <div class="form-group">
-            <label class="form-label">Maximum Marks</label>
-            <input type="number" class="form-input" id="aMaxMarks" value="${existing?.maxMarks||10}" min="1">
+            <label class="form-label">Paper Raw Marks</label>
+            <input type="number" class="form-input" id="aMaxMarks" value="${existing?.maxMarks||100}" min="1">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Scaled Weightage</label>
+            <input type="number" class="form-input" id="aWeightage" value="${defaultWt}" min="1">
           </div>
         </div>
         <div class="form-group">
@@ -562,7 +579,8 @@
       description: document.getElementById('aDesc')?.value||'',
       coNos,
       rbtLevel: parseInt(document.getElementById('aRbt').value)||3,
-      maxMarks: parseFloat(document.getElementById('aMaxMarks').value)||10,
+      maxMarks: parseFloat(document.getElementById('aMaxMarks').value)||100,
+      weightage: parseFloat(document.getElementById('aWeightage')?.value) || (document.getElementById('aType').value === 'ia' ? 20 : (document.getElementById('aType').value === 'mse' ? 30 : (document.getElementById('aType').value === 'ese' ? 60 : 25))),
       dueDate: document.getElementById('aDue').value||'',
       questions,
       rubrics: rubrics,
@@ -633,17 +651,17 @@
         <!-- Configuration Controls -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
           <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label">Examination Category / Preset</label>
-            <select class="form-select" id="aiGenType" onchange="updateAIPreset(this.value)">
-              <option value="assignment">Continuous Evaluation Assignment (15M - Problem Set & Rubric)</option>
-              <option value="ia" selected>Internal Assessment (IA-1 / IA-2) (20M - Unit Specific)</option>
-              <option value="mse">Mid Semester Examination (MSE) (30M - Units 1-3)</option>
-              <option value="ese">End Semester Examination (ESE) (60M - Full Syllabus)</option>
+            <label class="form-label">Examination Category</label>
+            <select class="form-select" id="aiGenType" onchange="updateAICategory(this.value)">
+              <option value="ca">Continuous Assessment (CA) / Assignment</option>
+              <option value="ia" selected>Internal Assessment (IA / Test)</option>
+              <option value="mse">Mid Semester Examination (MSE)</option>
+              <option value="ese">End Semester Examination (ESE)</option>
             </select>
           </div>
           <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label">Bloom's Cognitive Level Focus</label>
-            <select class="form-select" id="aiGenRbt">
+            <label class="form-label">Default Bloom's Level</label>
+            <select class="form-select" id="aiGenRbt" onchange="renderAIQuestionBlueprint(true)">
               <option value="L3" selected>L3: Apply (Implementation & Problem Solving)</option>
               <option value="L4">L4: Analyze (Critical Comparison & Deconstruction)</option>
               <option value="L5">L5: Evaluate (Critique & Architectural Trade-offs)</option>
@@ -658,27 +676,60 @@
           <input type="text" class="form-input" id="aiGenTopic" value="${defaultTopic}" placeholder="e.g. Transformers, Self-Attention Mechanisms, PEFT & LoRA">
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+        <!-- Marks & Weightage Configuration -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:12px;">
           <div class="form-group" style="margin-bottom:0;">
             <label class="form-label">Number of Questions</label>
-            <select class="form-select" id="aiGenNum">
-              <option value="2">2 Questions (Brief Assessment)</option>
-              <option value="3">3 Questions (Standard Assignment)</option>
-              <option value="4" selected>4 Questions (Internal Assessment)</option>
-              <option value="5">5 Questions (Comprehensive Mid-Sem)</option>
-              <option value="6">6 Questions (End-Sem University Paper)</option>
+            <select class="form-select" id="aiGenNum" onchange="renderAIQuestionBlueprint(false)">
+              <option value="2">2 Questions</option>
+              <option value="3">3 Questions</option>
+              <option value="4" selected>4 Questions</option>
+              <option value="5">5 Questions</option>
+              <option value="6">6 Questions</option>
+              <option value="8">8 Questions</option>
             </select>
           </div>
           <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label">Total Maximum Marks</label>
-            <input type="number" class="form-input" id="aiGenMarks" value="20" min="5" max="100">
+            <label class="form-label">Paper Raw Marks (e.g. 100M)</label>
+            <input type="number" class="form-input" id="aiGenMarks" value="100" min="5" max="200" oninput="redistributeAIMarks()">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Attainment Weightage</label>
+            <input type="number" class="form-input" id="aiGenWeightage" value="20" min="1" max="100">
           </div>
         </div>
 
-        <div class="form-group" style="margin-bottom:16px;">
-          <label class="form-label" style="margin-bottom:6px;">Target Course Outcomes (COs)</label>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            ${coCheckboxes}
+        <div style="font-size:11.5px;color:var(--text-secondary);background:var(--surface-2);border-left:3px solid var(--primary);padding:8px 12px;border-radius:4px;margin-bottom:14px;line-height:1.4;">
+          💡 <strong>Flexible Scoring & Scaling:</strong> You can take any exam or assignment out of 100 marks (or any desired raw score). The system automatically converts and scales it to the required weightage (e.g., 20 marks for IA) during CO & PO attainment calculations.
+        </div>
+
+        <!-- Question Blueprint & Question-Wise CO Mapping Matrix -->
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px;margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <div>
+              <div style="font-weight:700;font-size:13px;color:var(--text-primary);display:flex;align-items:center;gap:6px;">
+                <span data-icon="target" style="color:var(--primary);"></span> Question-Wise CO & Marks Mapping Matrix
+              </div>
+              <div style="font-size:11.5px;color:var(--text-secondary);margin-top:2px;">Configure specifically which question maps to which Course Outcome (CO) and its marks.</div>
+            </div>
+            <div style="font-size:12px;font-weight:700;background:var(--surface);border:1px solid var(--border);padding:4px 10px;border-radius:4px;">
+              Allocated: <span id="aiAllocatedMarks" style="color:var(--success);font-weight:800;">100</span> / <span id="aiTargetMarks">100</span> Marks
+            </div>
+          </div>
+          <div class="table-responsive" style="max-height:220px;overflow-y:auto;background:var(--surface);border-radius:var(--r-sm);border:1px solid var(--border);">
+            <table class="table" style="font-size:12px;margin-bottom:0;">
+              <thead>
+                <tr style="background:var(--surface-2);">
+                  <th style="width:45px;text-align:center;">Q#</th>
+                  <th>Target Course Outcome (CO)</th>
+                  <th style="width:130px;">Bloom's Level</th>
+                  <th style="width:90px;text-align:center;">Marks</th>
+                </tr>
+              </thead>
+              <tbody id="aiBlueprintTableBody">
+                <!-- Dynamically rendered rows -->
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -718,30 +769,111 @@
     `;
 
     Modal.open(modalHtml, { wide: true });
+    renderAIQuestionBlueprint(false);
     renderAllIcons();
   }
 
-  function updateAIPreset(type) {
-    const marksInp = document.getElementById('aiGenMarks');
-    const numSel = document.getElementById('aiGenNum');
-    const coChecks = document.querySelectorAll('input[name="aiTargetCO"]');
+  function renderAIQuestionBlueprint(preserveExisting = false) {
+    const tbody = document.getElementById('aiBlueprintTableBody');
+    if (!tbody) return;
+    const num = parseInt(document.getElementById('aiGenNum')?.value) || 4;
+    const totalMarks = parseFloat(document.getElementById('aiGenMarks')?.value) || 100;
+    const cos = DB.cos.byCourse(currentCourseId) || [];
+    const baseM = Math.floor(totalMarks / num);
+    const remM = totalMarks % num;
 
-    if (type === 'assignment') {
-      if (marksInp) marksInp.value = 15;
-      if (numSel) numSel.value = '3';
-      coChecks.forEach((c, idx) => c.checked = (idx < 2));
-    } else if (type === 'ia') {
-      if (marksInp) marksInp.value = 20;
-      if (numSel) numSel.value = '4';
-      coChecks.forEach((c, idx) => c.checked = (idx < 2));
+    const existingRows = [];
+    if (preserveExisting) {
+      document.querySelectorAll('.ai-qb-row').forEach(row => {
+        existingRows.push({
+          coNo: parseInt(row.querySelector('[data-qb="co"]')?.value),
+          marks: parseFloat(row.querySelector('[data-qb="marks"]')?.value),
+          rbt: row.querySelector('[data-qb="rbt"]')?.value
+        });
+      });
+    }
+
+    let rowsHtml = '';
+    for (let i = 0; i < num; i++) {
+      const qNo = i + 1;
+      const prev = existingRows[i];
+      const defaultCO = (i % Math.max(cos.length, 1)) + 1;
+      const coVal = prev && prev.coNo ? prev.coNo : defaultCO;
+      const marksVal = prev && !isNaN(prev.marks) ? prev.marks : (baseM + (i === num - 1 ? remM : 0));
+      const rbtVal = prev && prev.rbt ? prev.rbt : (document.getElementById('aiGenRbt')?.value === 'Balanced' ? (['L2', 'L3', 'L4', 'L5'][i % 4]) : (document.getElementById('aiGenRbt')?.value || 'L3'));
+
+      const coOptions = [1, 2, 3, 4, 5, 6].map(cNum => {
+        const coObj = cos.find(c => c.coNo === cNum);
+        const titleHint = coObj ? (coObj.text.length > 38 ? coObj.text.slice(0, 38) + '…' : coObj.text) : `Course Outcome ${cNum}`;
+        return `<option value="${cNum}" ${coVal === cNum ? 'selected' : ''}>CO${cNum}: ${titleHint}</option>`;
+      }).join('');
+
+      rowsHtml += `
+        <tr class="ai-qb-row" data-qno="${qNo}">
+          <td style="text-align:center;font-weight:700;vertical-align:middle;">Q.${qNo}</td>
+          <td>
+            <select class="form-select" data-qb="co" style="padding:4px 8px;font-size:12px;width:100%;">
+              ${coOptions}
+            </select>
+          </td>
+          <td>
+            <select class="form-select" data-qb="rbt" style="padding:4px 8px;font-size:12px;width:100%;">
+              <option value="L1" ${rbtVal==='L1'?'selected':''}>L1 - Recall</option>
+              <option value="L2" ${rbtVal==='L2'?'selected':''}>L2 - Understand</option>
+              <option value="L3" ${rbtVal==='L3'?'selected':''}>L3 - Apply</option>
+              <option value="L4" ${rbtVal==='L4'?'selected':''}>L4 - Analyze</option>
+              <option value="L5" ${rbtVal==='L5'?'selected':''}>L5 - Evaluate</option>
+              <option value="L6" ${rbtVal==='L6'?'selected':''}>L6 - Create</option>
+            </select>
+          </td>
+          <td style="text-align:center;">
+            <input type="number" class="form-input" data-qb="marks" value="${marksVal}" min="1" max="200" style="padding:4px 6px;font-size:12px;text-align:center;width:65px;" oninput="updateAIBlueprintTally()">
+          </td>
+        </tr>
+      `;
+    }
+    tbody.innerHTML = rowsHtml;
+    updateAIBlueprintTally();
+  }
+
+  function updateAIBlueprintTally() {
+    const target = parseFloat(document.getElementById('aiGenMarks')?.value) || 0;
+    let sum = 0;
+    document.querySelectorAll('.ai-qb-row [data-qb="marks"]').forEach(inp => {
+      sum += parseFloat(inp.value) || 0;
+    });
+    const allocEl = document.getElementById('aiAllocatedMarks');
+    const targetEl = document.getElementById('aiTargetMarks');
+    if (allocEl) allocEl.textContent = sum;
+    if (targetEl) targetEl.textContent = target;
+    if (allocEl) {
+      allocEl.style.color = (Math.abs(sum - target) < 0.01) ? 'var(--success)' : 'var(--danger)';
+    }
+  }
+
+  function redistributeAIMarks() {
+    const totalMarks = parseFloat(document.getElementById('aiGenMarks')?.value) || 100;
+    const rows = document.querySelectorAll('.ai-qb-row');
+    if (!rows.length) return;
+    const baseM = Math.floor(totalMarks / rows.length);
+    const remM = totalMarks % rows.length;
+    rows.forEach((r, idx) => {
+      const inp = r.querySelector('[data-qb="marks"]');
+      if (inp) inp.value = baseM + (idx === rows.length - 1 ? remM : 0);
+    });
+    updateAIBlueprintTally();
+  }
+
+  function updateAICategory(type) {
+    const weightageInp = document.getElementById('aiGenWeightage');
+    if (type === 'ia') {
+      if (weightageInp) weightageInp.value = 20;
     } else if (type === 'mse') {
-      if (marksInp) marksInp.value = 30;
-      if (numSel) numSel.value = '4';
-      coChecks.forEach((c, idx) => c.checked = (idx < 3));
+      if (weightageInp) weightageInp.value = 30;
     } else if (type === 'ese') {
-      if (marksInp) marksInp.value = 60;
-      if (numSel) numSel.value = '6';
-      coChecks.forEach(c => c.checked = true);
+      if (weightageInp) weightageInp.value = 60;
+    } else {
+      if (weightageInp) weightageInp.value = 25;
     }
   }
 
@@ -750,20 +882,28 @@
     const type = document.getElementById('aiGenType').value;
     const level = document.getElementById('aiGenRbt').value;
     const topic = document.getElementById('aiGenTopic').value.trim();
-    const num = parseInt(document.getElementById('aiGenNum').value) || 3;
-    const marks = parseInt(document.getElementById('aiGenMarks').value) || 20;
+    const num = parseInt(document.getElementById('aiGenNum').value) || 4;
+    const marks = parseFloat(document.getElementById('aiGenMarks').value) || 100;
+    const weightage = parseFloat(document.getElementById('aiGenWeightage').value) || (type === 'ia' ? 20 : 25);
 
-    const selectedCOs = [];
-    document.querySelectorAll('input[name="aiTargetCO"]:checked').forEach(c => {
-      selectedCOs.push(parseInt(c.value));
+    const questionBlueprint = [];
+    document.querySelectorAll('.ai-qb-row').forEach(row => {
+      questionBlueprint.push({
+        qNo: parseInt(row.getAttribute('data-qno')),
+        coNo: parseInt(row.querySelector('[data-qb="co"]').value) || 1,
+        marks: parseFloat(row.querySelector('[data-qb="marks"]').value) || 0,
+        rbt: row.querySelector('[data-qb="rbt"]').value || 'L3'
+      });
     });
+
+    const targetCOs = Array.from(new Set(questionBlueprint.map(q => q.coNo)));
 
     const btn = document.getElementById('btnRunAIGen');
     btn.disabled = true;
-    btn.innerHTML = `<span data-icon="sparkles" class="spin"></span> <span>Formulating College Standard Paper with AI...</span>`;
+    btn.innerHTML = `<span data-icon="sparkles" class="spin"></span> <span>Formulating Professional Paper with AI...</span>`;
 
     try {
-      Toast.info('Formulating rigorous question paper with NBA Bloom verbs...');
+      Toast.info('Formulating rigorous question paper with question-wise CO mapping...');
       const res = await AI.generateProfessionalAssessment({
         courseName: course?.name || '',
         assessmentType: type,
@@ -771,7 +911,9 @@
         level: level,
         numQuestions: num,
         maxMarks: marks,
-        targetCOs: selectedCOs.length ? selectedCOs : [1, 2]
+        weightage: weightage,
+        targetCOs: targetCOs.length ? targetCOs : [1, 2],
+        questionBlueprint: questionBlueprint
       });
 
       window._latestAIAssessment = res;
@@ -781,23 +923,36 @@
         level,
         topic,
         marks,
-        selectedCOs
+        weightage,
+        questionBlueprint,
+        targetCOs
       };
 
       // Render the University Exam Paper preview
       const previewArea = document.getElementById('aiPaperPreviewArea');
       const previewCard = document.getElementById('aiPaperPreviewCard');
       const footer = document.getElementById('aiGenModalFooter');
+      const allCos = DB.cos.byCourse(currentCourseId) || [];
 
-      let qRowsHtml = (res.questions || []).map((q, idx) => `
-        <tr style="border-bottom:1px solid #e2e8f0;">
-          <td style="padding:10px 8px;font-weight:700;vertical-align:top;width:40px;text-align:center;">Q.${q.qNo || (idx+1)}</td>
-          <td style="padding:10px 12px;vertical-align:top;line-height:1.5;">${q.text}</td>
-          <td style="padding:10px 8px;vertical-align:top;text-align:center;font-weight:600;width:55px;">CO${q.coNo || 1}</td>
-          <td style="padding:10px 8px;vertical-align:top;text-align:center;font-weight:600;width:55px;"><span class="badge badge-info">${q.rbt || 'L3'}</span></td>
-          <td style="padding:10px 8px;vertical-align:top;text-align:center;font-weight:700;width:50px;">[${q.marks}]</td>
-        </tr>
-      `).join('');
+      let qRowsHtml = (res.questions || []).map((q, idx) => {
+        const qNum = q.qNo || (idx + 1);
+        const assignedCO = q.coNo || (questionBlueprint[idx] ? questionBlueprint[idx].coNo : 1);
+        const coSelect = `
+          <select class="form-select" data-preview-co style="padding:2px 6px;font-size:11.5px;font-weight:700;display:inline-block;width:auto;">
+            ${[1, 2, 3, 4, 5, 6].map(cn => `<option value="${cn}" ${assignedCO === cn ? 'selected' : ''}>CO${cn}</option>`).join('')}
+          </select>
+        `;
+
+        return `
+          <tr style="border-bottom:1px solid #e2e8f0;" class="ai-preview-qrow" data-qno="${qNum}">
+            <td style="padding:10px 8px;font-weight:700;vertical-align:top;width:40px;text-align:center;">Q.${qNum}</td>
+            <td style="padding:10px 12px;vertical-align:top;line-height:1.5;">${q.text}</td>
+            <td style="padding:10px 8px;vertical-align:top;text-align:center;width:75px;">${coSelect}</td>
+            <td style="padding:10px 8px;vertical-align:top;text-align:center;font-weight:600;width:55px;"><span class="badge badge-info">${q.rbt || 'L3'}</span></td>
+            <td style="padding:10px 8px;vertical-align:top;text-align:center;font-weight:700;width:55px;">[${q.marks}M]</td>
+          </tr>
+        `;
+      }).join('');
 
       let rubricsHtml = '';
       if (res.rubrics && res.rubrics.length) {
@@ -840,9 +995,9 @@
           <div style="font-size:13px;font-weight:800;color:#2563eb;margin-top:6px;text-transform:uppercase;">${res.title || (type.toUpperCase() + ' Examination')}</div>
         </div>
 
-        <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:#334155;margin-bottom:12px;border-bottom:1px dashed #cbd5e1;padding-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;font-size:12px;font-weight:600;color:#334155;margin-bottom:12px;border-bottom:1px dashed #cbd5e1;padding-bottom:8px;">
           <div>Course: <span style="font-weight:700;color:#0f172a;">${course ? course.code + ' – ' + course.name : ''}</span></div>
-          <div>Max Marks: <span style="font-weight:700;color:#0f172a;">${marks}</span> &bull; Target COs: <span style="font-weight:700;color:#2563eb;">${selectedCOs.map(c=>'CO'+c).join(', ')}</span></div>
+          <div>Paper Raw Marks: <span style="font-weight:800;color:#0f172a;">${marks}M</span> &bull; Scaled Weightage: <span style="font-weight:800;color:#059669;">${weightage}M</span></div>
         </div>
 
         <div style="background:#f8fafc;border-left:3px solid #3b82f6;padding:8px 12px;margin-bottom:14px;font-size:11.5px;color:#475569;">
@@ -855,7 +1010,7 @@
             <tr style="background:#f1f5f9;color:#334155;border-bottom:2px solid #cbd5e1;">
               <th style="padding:8px;text-align:center;">Q.#</th>
               <th style="padding:8px 12px;text-align:left;">Question Formulation</th>
-              <th style="padding:8px;text-align:center;">CO</th>
+              <th style="padding:8px;text-align:center;">Target CO</th>
               <th style="padding:8px;text-align:center;">RBT</th>
               <th style="padding:8px;text-align:center;">Marks</th>
             </tr>
@@ -886,26 +1041,39 @@
   function adoptAIGeneratedAssessment() {
     if (!window._latestAIAssessment) { Toast.warning('Generate a paper first.'); return; }
     const res = window._latestAIAssessment;
-    const cfg = window._latestAIAssessmentConfig;
+    const cfg = window._latestAIAssessmentConfig || {};
     const course = DB.courses.byId(currentCourseId);
 
-    const newAsgn = {
-      id: `asgn-${currentCourseId}-${cfg.type}-${Date.now()}`,
-      courseId: currentCourseId,
-      type: cfg.type,
-      title: res.title || `${course?.code || 'Course'} ${cfg.type.toUpperCase()}`,
-      description: (res.instructions || []).join('\n'),
-      coNos: cfg.selectedCOs || [1, 2],
-      rbtLevel: parseInt(String(cfg.level).replace('L','')) || 3,
-      maxMarks: cfg.marks || 20,
-      dueDate: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
-      questions: (res.questions || []).map((q, idx) => ({
+    // Read live CO selections and values from preview table
+    const previewRows = document.querySelectorAll('.ai-preview-qrow');
+    const finalQuestions = (res.questions || []).map((q, idx) => {
+      const row = previewRows[idx];
+      const liveCO = row ? parseInt(row.querySelector('[data-preview-co]')?.value) : null;
+      return {
         qNo: q.qNo || (idx + 1),
         text: q.text,
         marks: q.marks,
-        coNo: q.coNo || 1,
+        coNo: liveCO || q.coNo || 1,
         rbt: q.rbt || 'L3'
-      })),
+      };
+    });
+
+    const uniqueCOs = Array.from(new Set(finalQuestions.map(q => q.coNo))).sort((a,b)=>a-b);
+    const weightage = cfg.weightage || (cfg.type === 'ia' ? 20 : (cfg.type === 'mse' ? 30 : (cfg.type === 'ese' ? 60 : 25)));
+    const maxMarks = cfg.marks || finalQuestions.reduce((s, q) => s + (q.marks || 0), 0) || 100;
+
+    const newAsgn = {
+      id: `asgn-${currentCourseId}-${cfg.type || 'ia'}-${Date.now()}`,
+      courseId: currentCourseId,
+      type: cfg.type || 'ia',
+      title: res.title || `${course?.code || 'Course'} ${(cfg.type || 'ia').toUpperCase()}`,
+      description: (res.instructions || []).join('\n'),
+      coNos: uniqueCOs.length ? uniqueCOs : [1, 2],
+      rbtLevel: parseInt(String(cfg.level || '3').replace('L','')) || 3,
+      maxMarks: maxMarks,
+      weightage: weightage,
+      dueDate: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
+      questions: finalQuestions,
       rubrics: res.rubrics || [],
       aiGenerated: true,
       createdAt: new Date().toISOString()
@@ -914,7 +1082,7 @@
     DB.assessments.add(newAsgn);
     Modal.close();
     renderAssignments();
-    Toast.success(`Assessment "${newAsgn.title}" created with AI! Ready for student submissions and marks entry.`);
+    Toast.success(`Assessment "${newAsgn.title}" created with AI (${maxMarks}M raw scaled to ${weightage}M weightage)!`);
   }
 
   function openInQuestionPaperGen() {
@@ -981,7 +1149,10 @@
   window.processMoodleExport = processMoodleExport;
   window.formulateQuestionsInModal = formulateQuestionsInModal;
   window.openAIGeneratorModal = openAIGeneratorModal;
-  window.updateAIPreset = updateAIPreset;
+  window.updateAICategory = updateAICategory;
+  window.renderAIQuestionBlueprint = renderAIQuestionBlueprint;
+  window.updateAIBlueprintTally = updateAIBlueprintTally;
+  window.redistributeAIMarks = redistributeAIMarks;
   window.executeAIGeneration = executeAIGeneration;
   window.adoptAIGeneratedAssessment = adoptAIGeneratedAssessment;
   window.openInQuestionPaperGen = openInQuestionPaperGen;

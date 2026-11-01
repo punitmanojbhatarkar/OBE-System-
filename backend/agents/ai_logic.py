@@ -1258,7 +1258,8 @@ def generate_professional_assessment(
     level: str = "L3",
     num_questions: int = 3,
     marks: int = 20,
-    target_cos: list = None
+    target_cos: list = None,
+    question_blueprint: list = None
 ) -> dict:
     """Generate high-quality, college-standard exam paper or assignment with NBA/Bloom's taxonomy."""
     if not target_cos:
@@ -1334,10 +1335,10 @@ ACADEMIC RIGOR GUIDELINES (NBA / SPPU Autonomous Standard):
 
     except Exception as e:
         print(f"[AI] generate_professional_assessment LLM failed, using autonomous college blueprint generator: {e}")
-        return _heuristic_professional_assessment(course_name, assess_type, clean_topic, level, num_q, total_m, target_cos, suggested_title)
+        return _heuristic_professional_assessment(course_name, assess_type, clean_topic, level, num_q, total_m, target_cos, suggested_title, question_blueprint=question_blueprint)
 
 
-def _heuristic_professional_assessment(course_name: str, assess_type: str, topic: str, level: str, num_q: int, total_m: int, target_cos: list, title: str) -> dict:
+def _heuristic_professional_assessment(course_name: str, assess_type: str, topic: str, level: str, num_q: int, total_m: int, target_cos: list, title: str, question_blueprint: list = None) -> dict:
     """Domain-curated engineering question generator matching NBA/Bloom's standards."""
     c_lower = (course_name or "").lower()
     t_lower = (topic or "").lower()
@@ -1377,34 +1378,54 @@ def _heuristic_professional_assessment(course_name: str, assess_type: str, topic
     else:
         pool = gen_questions
 
-    # Distribute marks
-    base_m = total_m // num_q
-    rem_m = total_m % num_q
-
     questions = []
     rubrics = []
-    for i in range(num_q):
-        sample = pool[i % len(pool)]
-        co_idx = target_cos[i % len(target_cos)] if target_cos else (i + 1)
-        q_marks = base_m + (rem_m if i == num_q - 1 else 0)
-        q_rbt = level if i == 0 else sample[1]
-        
-        q_obj = {
-            "qNo": i + 1,
-            "text": sample[0],
-            "marks": q_marks,
-            "coNo": co_idx,
-            "rbt": q_rbt
-        }
-        questions.append(q_obj)
 
-        rubrics.append({
-            "criterion": f"Q{i+1}: Mastery of {topic[:25]} (CO{co_idx}, {q_rbt})",
-            "exceptional": f"90-100%: Comprehensive, mathematically and technically rigorous answer with complete derivation/design, precise notation, and critical analysis.",
-            "best": f"70-89%: Mostly accurate response covering core concepts with minor omissions in edge cases or secondary derivations.",
-            "average": f"50-69%: Partial understanding demonstrated; conceptual grasp present but lacks quantitative depth, correct equations, or thorough explanation.",
-            "low": f"<50%: Superficial or incomplete attempt with fundamental conceptual inaccuracies and absent technical justification."
-        })
+    if question_blueprint and len(question_blueprint) > 0:
+        for idx, q_spec in enumerate(question_blueprint):
+            sample = pool[idx % len(pool)]
+            q_no = int(q_spec.get("qNo", idx + 1))
+            co_no = int(q_spec.get("coNo", (target_cos[idx % len(target_cos)] if target_cos else 1)))
+            q_marks = float(q_spec.get("marks", round(total_m / len(question_blueprint))))
+            q_rbt = str(q_spec.get("rbt", level or "L3"))
+            
+            questions.append({
+                "qNo": q_no,
+                "text": sample[0],
+                "marks": int(q_marks) if q_marks.is_integer() else q_marks,
+                "coNo": co_no,
+                "rbt": q_rbt
+            })
+            rubrics.append({
+                "criterion": f"Q{q_no}: Mastery of {topic[:25]} (CO{co_no}, {q_rbt})",
+                "exceptional": f"90-100%: Comprehensive, mathematically and technically rigorous answer with complete derivation/design, precise notation, and critical analysis.",
+                "best": f"70-89%: Mostly accurate response covering core concepts with minor omissions in edge cases or secondary derivations.",
+                "average": f"50-69%: Partial understanding demonstrated; conceptual grasp present but lacks quantitative depth, correct equations, or thorough explanation.",
+                "low": f"<50%: Superficial or incomplete attempt with fundamental conceptual inaccuracies and absent technical justification."
+            })
+    else:
+        base_m = total_m // num_q
+        rem_m = total_m % num_q
+        for i in range(num_q):
+            sample = pool[i % len(pool)]
+            co_idx = target_cos[i % len(target_cos)] if target_cos else (i + 1)
+            q_marks = base_m + (rem_m if i == num_q - 1 else 0)
+            q_rbt = level if i == 0 else sample[1]
+            
+            questions.append({
+                "qNo": i + 1,
+                "text": sample[0],
+                "marks": q_marks,
+                "coNo": co_idx,
+                "rbt": q_rbt
+            })
+            rubrics.append({
+                "criterion": f"Q{i+1}: Mastery of {topic[:25]} (CO{co_idx}, {q_rbt})",
+                "exceptional": f"90-100%: Comprehensive, mathematically and technically rigorous answer with complete derivation/design, precise notation, and critical analysis.",
+                "best": f"70-89%: Mostly accurate response covering core concepts with minor omissions in edge cases or secondary derivations.",
+                "average": f"50-69%: Partial understanding demonstrated; conceptual grasp present but lacks quantitative depth, correct equations, or thorough explanation.",
+                "low": f"<50%: Superficial or incomplete attempt with fundamental conceptual inaccuracies and absent technical justification."
+            })
 
     instructions = [
         "1. All questions are compulsory. Figures to the right indicate full marks allocated.",

@@ -41,17 +41,18 @@ const AI = (() => {
     };
   }
 
-  function buildClientSideAssessment({ courseName, assessmentType='assignment', topic='', level='L3', numQuestions=3, maxMarks=20, targetCOs=[] }) {
+  function buildClientSideAssessment({ courseName, assessmentType='assignment', topic='', level='L3', numQuestions=3, maxMarks=20, weightage=null, targetCOs=[], questionBlueprint=null }) {
     const cLower = (courseName || '').toLowerCase();
     const tLower = (topic || '').toLowerCase();
-    const numQ = Math.max(1, Math.min(parseInt(numQuestions) || 3, 10));
+    const numQ = questionBlueprint && questionBlueprint.length ? questionBlueprint.length : Math.max(1, Math.min(parseInt(numQuestions) || 3, 10));
     const totalM = Math.max(5, parseInt(maxMarks) || 20);
     const cos = targetCOs && targetCOs.length ? targetCOs : [1, 2];
 
     const cleanTopic = topic.trim() || (courseName ? `Core syllabus modules of ${courseName}` : 'Advanced Engineering Computing');
 
     const typeTitles = {
-      'assignment': `Continuous Evaluation Assignment on ${cleanTopic.slice(0, 32)}`,
+      'ca': `Continuous Assessment (CA) on ${cleanTopic.slice(0, 32)}`,
+      'assignment': `Continuous Assessment (CA) on ${cleanTopic.slice(0, 32)}`,
       'ia': `Internal Assessment Test (IA) – ${cleanTopic.slice(0, 32)}`,
       'mse': `Mid Semester Examination (MSE) – ${courseName || 'Course'}`,
       'ese': `End Semester Examination (ESE) – ${courseName || 'Course'}`
@@ -91,33 +92,58 @@ const AI = (() => {
       pool = edaQuestions;
     }
 
-    const baseM = Math.floor(totalM / numQ);
-    const remM = totalM % numQ;
-
     const questions = [];
     const rubrics = [];
 
-    for (let i = 0; i < numQ; i++) {
-      const sample = pool[i % pool.length];
-      const coIdx = cos[i % cos.length] || (i + 1);
-      const qMarks = baseM + (i === numQ - 1 ? remM : 0);
-      const qRbt = (i === 0 && level !== 'Balanced') ? level : sample[1];
+    if (questionBlueprint && questionBlueprint.length > 0) {
+      questionBlueprint.forEach((qSpec, i) => {
+        const sample = pool[i % pool.length];
+        const qNo = parseInt(qSpec.qNo) || (i + 1);
+        const coNo = parseInt(qSpec.coNo) || (cos[i % cos.length] || 1);
+        const qMarks = parseFloat(qSpec.marks) || Math.round(totalM / questionBlueprint.length);
+        const qRbt = qSpec.rbt || level || 'L3';
 
-      questions.push({
-        qNo: i + 1,
-        text: sample[0],
-        marks: qMarks,
-        coNo: coIdx,
-        rbt: qRbt
-      });
+        questions.push({
+          qNo,
+          text: sample[0],
+          marks: qMarks,
+          coNo,
+          rbt: qRbt
+        });
 
-      rubrics.push({
-        criterion: `Q${i+1}: Technical Competence in ${cleanTopic.slice(0, 24)} (CO${coIdx}, ${qRbt})`,
-        exceptional: '90–100%: Comprehensive, mathematically and technically rigorous answer with complete derivation/design, precise notation, and critical analysis.',
-        best: '70–89%: Mostly accurate response covering core concepts with minor omissions in edge cases or secondary derivations.',
-        average: '50–69%: Partial understanding demonstrated; conceptual grasp present but lacks quantitative depth, correct equations, or thorough explanation.',
-        low: '<50%: Superficial or incomplete attempt with fundamental conceptual inaccuracies and absent technical justification.'
+        rubrics.push({
+          criterion: `Q${qNo}: Technical Competence in ${cleanTopic.slice(0, 24)} (CO${coNo}, ${qRbt})`,
+          exceptional: '90–100%: Comprehensive, mathematically and technically rigorous answer with complete derivation/design, precise notation, and critical analysis.',
+          best: '70–89%: Mostly accurate response covering core concepts with minor omissions in edge cases or secondary derivations.',
+          average: '50–69%: Partial understanding demonstrated; conceptual grasp present but lacks quantitative depth, correct equations, or thorough explanation.',
+          low: '<50%: Superficial or incomplete attempt with fundamental conceptual inaccuracies and absent technical justification.'
+        });
       });
+    } else {
+      const baseM = Math.floor(totalM / numQ);
+      const remM = totalM % numQ;
+      for (let i = 0; i < numQ; i++) {
+        const sample = pool[i % pool.length];
+        const coIdx = cos[i % cos.length] || (i + 1);
+        const qMarks = baseM + (i === numQ - 1 ? remM : 0);
+        const qRbt = (i === 0 && level !== 'Balanced') ? level : sample[1];
+
+        questions.push({
+          qNo: i + 1,
+          text: sample[0],
+          marks: qMarks,
+          coNo: coIdx,
+          rbt: qRbt
+        });
+
+        rubrics.push({
+          criterion: `Q${i+1}: Technical Competence in ${cleanTopic.slice(0, 24)} (CO${coIdx}, ${qRbt})`,
+          exceptional: '90–100%: Comprehensive, mathematically and technically rigorous answer with complete derivation/design, precise notation, and critical analysis.',
+          best: '70–89%: Mostly accurate response covering core concepts with minor omissions in edge cases or secondary derivations.',
+          average: '50–69%: Partial understanding demonstrated; conceptual grasp present but lacks quantitative depth, correct equations, or thorough explanation.',
+          low: '<50%: Superficial or incomplete attempt with fundamental conceptual inaccuracies and absent technical justification.'
+        });
+      }
     }
 
     const instructions = [
@@ -127,9 +153,13 @@ const AI = (() => {
       '4. Non-programmable scientific calculators are permitted.'
     ];
 
+    const computedWeightage = weightage !== null && weightage !== undefined ? parseFloat(weightage) : (assessmentType === 'ia' ? 20 : (assessmentType === 'mse' ? 30 : (assessmentType === 'ese' ? 60 : (assessmentType === 'ca' ? 25 : totalM))));
+
     return {
       title,
       assessmentType,
+      maxMarks: totalM,
+      weightage: computedWeightage,
       instructions,
       questions,
       rubrics,
@@ -139,7 +169,7 @@ const AI = (() => {
     };
   }
 
-  async function generateProfessionalAssessment({ courseName, assessmentType='assignment', topic='', level='L3', numQuestions=3, maxMarks=20, targetCOs=[] }) {
+  async function generateProfessionalAssessment({ courseName, assessmentType='assignment', topic='', level='L3', numQuestions=3, maxMarks=20, weightage=null, targetCOs=[], questionBlueprint=null }) {
     try {
       const data = await callBackend('generate-professional-assessment', {
         courseName: courseName || '',
@@ -148,11 +178,15 @@ const AI = (() => {
         level: level || 'L3',
         num: parseInt(numQuestions) || 3,
         marks: parseInt(maxMarks) || 20,
-        targetCOs: targetCOs || []
+        weightage: weightage !== null ? parseFloat(weightage) : null,
+        targetCOs: targetCOs || [],
+        questionBlueprint: questionBlueprint || []
       }, 7000);
       return {
         title: data.title,
         assessmentType: data.assessmentType,
+        maxMarks: data.maxMarks || parseInt(maxMarks) || 20,
+        weightage: data.weightage !== undefined ? data.weightage : (weightage !== null ? parseFloat(weightage) : 20),
         instructions: data.instructions || [],
         questions: data.questions || [],
         rubrics: data.rubrics || [],
@@ -162,7 +196,7 @@ const AI = (() => {
       };
     } catch (err) {
       console.warn('[AI Service] Fast fallback to client-side autonomous domain generator:', err);
-      return buildClientSideAssessment({ courseName, assessmentType, topic, level, numQuestions, maxMarks, targetCOs });
+      return buildClientSideAssessment({ courseName, assessmentType, topic, level, numQuestions, maxMarks, weightage, targetCOs, questionBlueprint });
     }
   }
 
