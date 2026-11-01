@@ -276,7 +276,11 @@ async function syncFromBackend(force = false) {
         });
         {
           const existingRaw = JSON.parse(localStorage.getItem('obe_assessments') || '[]');
-          const cleaned = existingRaw.filter(a => !String(a.id || '').startsWith('iaq-'));
+          const cleaned = existingRaw.filter(a => {
+            const id = String(a.id || '');
+            const isLegacyMock = id.startsWith('iaq-') || id.endsWith('-ia1') || id.endsWith('-ia2') || id.endsWith('-mse') || id.endsWith('-ese') || id.endsWith('-asgn1');
+            return !isLegacyMock;
+          });
           const merged = [...allAssessments];
           cleaned.forEach(localItem => {
             if (!allAssessments.some(b => b.id === localItem.id)) { merged.push(localItem); }

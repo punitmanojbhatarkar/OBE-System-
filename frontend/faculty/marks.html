@@ -57,6 +57,16 @@
     .assess-pill.add-pill:hover {
       background: rgba(37, 99, 235, 0.05); border-color: var(--primary);
     }
+    .assess-pill .pill-del-btn {
+      background: none; border: none; font-size: 15px; line-height: 1;
+      padding: 1px 5px; margin-left: 6px; border-radius: 4px;
+      color: inherit; opacity: 0.55; cursor: pointer; display: inline-flex;
+      align-items: center; justify-content: center;
+      transition: all 0.15s ease;
+    }
+    .assess-pill .pill-del-btn:hover {
+      opacity: 1; background: rgba(239, 68, 68, 0.25); color: #EF4444;
+    }
 
     /* ── Action & Mode Control Bar ── */
     .control-panel-card {
@@ -534,13 +544,15 @@
     let html = '';
     courseAssessments.forEach(a => {
       const isActive = currentMainTab === 'marks' && a.id === activeAssessId;
-      const typeLabel = { 'ia': 'IA', 'mse': 'Mid-Sem (MSE)', 'ese': 'End-Sem (ESE)', 'assignment': 'Assignment' }[a.type] || a.type.toUpperCase();
+      const typeLabel = { 'ia': 'IA', 'mse': 'Mid-Sem (MSE)', 'ese': 'End-Sem (ESE)', 'assignment': 'Assignment' }[a.type] || (a.type ? a.type.toUpperCase() : 'Exam');
       const maxM = a.maxMarks || 20;
+      const displayTitle = a.title || `${typeLabel} ${a.no > 1 && a.type !== 'mse' && a.type !== 'ese' ? a.no : ''}`;
 
       html += `
         <div class="assess-pill ${isActive ? 'active' : ''}" onclick="selectAssessment('${a.id}')">
-          <span>${typeLabel} ${a.no > 1 && a.type !== 'mse' && a.type !== 'ese' ? a.no : ''}</span>
+          <span>${displayTitle}</span>
           <span class="pill-badge">${maxM}M</span>
+          <button class="pill-del-btn" title="Delete ${displayTitle}" onclick="event.stopPropagation(); deleteAssessFromMarks('${a.id}', '${displayTitle.replace(/'/g, "\\'")}')">&times;</button>
         </div>
       `;
     });
@@ -675,7 +687,25 @@
 
     if (!asgn) {
       head.innerHTML = '';
-      body.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted);">No assessment selected.</td></tr>`;
+      body.innerHTML = `
+        <tr>
+          <td colspan="8" style="text-align:center;padding:56px 20px;">
+            <div style="font-size:36px;margin-bottom:12px;">📝</div>
+            <div style="font-weight:700;font-size:16px;color:var(--text-primary);margin-bottom:6px;">No Assessment Configured</div>
+            <p style="font-size:13px;color:var(--text-secondary);max-width:460px;margin:0 auto 18px auto;line-height:1.5;">
+              There are no examinations or assignments configured for this course yet. Click <strong>"+ Add Exam"</strong> above to create an exam (IA, MSE, ESE, Assignment, Quiz, etc.) and record marks.
+            </p>
+            <button class="btn btn-primary btn-sm" onclick="openAddAssessModal()" style="font-weight:700;">
+              <span data-icon="plus"></span><span>+ Add Exam Now</span>
+            </button>
+          </td>
+        </tr>
+      `;
+      const summaryEl = document.getElementById('stat-summary-content');
+      if (summaryEl) {
+        summaryEl.innerHTML = `<span style="font-weight:700;color:var(--text-primary);">${enrolledStudents.length} Students Enrolled</span> • <span style="color:var(--text-muted);">No assessment active</span>`;
+      }
+      renderAllIcons(body);
       return;
     }
 
@@ -1212,6 +1242,9 @@
 
   /* ── Add Custom Assessment Modal ── */
   window.openAddAssessModal = function() {
+    const typeSel = document.getElementById('modal-assess-type');
+    if (typeSel) typeSel.value = 'ia';
+    updateAssessModalDefaults();
     document.getElementById('add-assess-modal').classList.add('open');
   };
 
@@ -1222,12 +1255,26 @@
   window.updateAssessModalDefaults = function() {
     const type = document.getElementById('modal-assess-type').value;
     const titleInp = document.getElementById('modal-assess-title');
+    const noInp = document.getElementById('modal-assess-no');
     const maxInp = document.getElementById('modal-assess-max');
 
-    if (type === 'ia') { titleInp.value = 'IA 3'; maxInp.value = 20; }
-    else if (type === 'mse') { titleInp.value = 'Mid-Semester Exam'; maxInp.value = 30; }
-    else if (type === 'ese') { titleInp.value = 'End-Semester Exam'; maxInp.value = 60; }
-    else { titleInp.value = 'Lab / Assignment 2'; maxInp.value = 25; }
+    const existingOfType = courseAssessments.filter(a => a.type === type);
+    const nextNo = existingOfType.length + 1;
+    if (noInp) noInp.value = nextNo;
+
+    if (type === 'ia') {
+      titleInp.value = `IA ${nextNo}`;
+      maxInp.value = 20;
+    } else if (type === 'mse') {
+      titleInp.value = nextNo > 1 ? `MSE ${nextNo}` : 'Mid-Sem (MSE)';
+      maxInp.value = 30;
+    } else if (type === 'ese') {
+      titleInp.value = nextNo > 1 ? `ESE ${nextNo}` : 'End-Sem (ESE)';
+      maxInp.value = 60;
+    } else {
+      titleInp.value = `Assignment ${nextNo}`;
+      maxInp.value = 25;
+    }
   };
 
   window.saveNewAssessment = function() {
@@ -1259,6 +1306,27 @@
     renderAssessmentPills();
     renderMarksSheet();
     Toast.success(`Added assessment "${title}"!`);
+  };
+
+  /* ── Delete Assessment directly from Marks Page ── */
+  window.deleteAssessFromMarks = function(aid, title) {
+    if (!confirm(`Are you sure you want to remove the exam "${title}"? Any entered marks will be deleted.`)) return;
+
+    DB.assessments.delete(aid);
+    apiFetch(`/api/assignments/${aid}`, { method: 'DELETE' }).catch(() => {});
+
+    if (CID) {
+      const remainingMarks = DB.marks.get(CID).filter(m => m.assessId !== aid);
+      DB.marks.save(CID, remainingMarks);
+    }
+
+    courseAssessments = DB.assessments.byCourse(CID);
+    if (activeAssessId === aid) {
+      activeAssessId = courseAssessments.length ? courseAssessments[0].id : null;
+    }
+    renderAssessmentPills();
+    renderMarksSheet();
+    Toast.success(`Assessment "${title}" removed.`);
   };
 
   window.selectAssessment = selectAssessment;

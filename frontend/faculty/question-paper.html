@@ -342,7 +342,34 @@
 
   async function saveAsAssessment() {
     if (!currentCourse) return;
-    Toast.success('Saved as assessment blueprint in Assignments.');
+    const examType = document.getElementById('cfg-exam-type')?.value || 'ia';
+    const totalMarks = parseInt(document.getElementById('cfg-marks')?.value) || 20;
+    const questions = [];
+    (paper.sections || []).forEach(sec => {
+      (sec.questions || []).forEach(q => {
+        (q.parts || []).forEach(p => {
+          questions.push({
+            qNo: questions.length + 1,
+            desc: p.text || `Q.${q.qNo}(${p.label})`,
+            bloomsLevel: 'L' + (p.bl || 3),
+            coNo: p.co || 1,
+            maxMarks: p.marks || 5
+          });
+        });
+      });
+    });
+    const newAsgn = {
+      id: DB.uid ? DB.uid() : (Date.now().toString()),
+      courseId: currentCourse.id,
+      type: examType,
+      title: `${currentCourse.code} ${examType.toUpperCase()} Question Paper`,
+      maxMarks: totalMarks,
+      aiGenerated: true,
+      questions: questions,
+      createdAt: new Date().toISOString()
+    };
+    DB.assessments.add(newAsgn);
+    Toast.success('Saved as assessment blueprint in Assignments and Marks Entry.');
   }
 
   window.switchQPTab = switchQPTab;

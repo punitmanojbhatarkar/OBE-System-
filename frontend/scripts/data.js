@@ -251,99 +251,39 @@ const DB = (() => {
     saveAll(cid,list)     { const others=get(KEYS.survey).filter(s=>s.courseId!==cid); set(KEYS.survey,[...others,...list]); },
   };
 
-  /* â”€â”€ Assessments (Unified) â”€â”€ */
+  /* ── Assessments (User-Defined Assessments Architecture) ── */
   const assessments = {
-    all()              { return get(KEYS.assessments); },
+    all()              { return get(KEYS.assessments) || []; },
     byCourse(cid) {
       if (!cid) return [];
-      let found = assessments.all().filter(a=>a.courseId===cid);
-      if (!found || found.length === 0) {
-        const standard = [
-          {
-            id: `asgn-${cid}-ia1`,
-            courseId: cid,
-            type: 'ia',
-            no: 1,
-            title: 'IA 1',
-            maxMarks: 20,
-            questions: [
-              { qNo: 1, desc: 'Question 1', bloomsLevel: 'L3', coNo: 1, maxMarks: 10 },
-              { qNo: 2, desc: 'Question 2', bloomsLevel: 'L3', coNo: 2, maxMarks: 10 }
-            ],
-            createdAt: new Date().toISOString()
-          },
-          {
-            id: `asgn-${cid}-ia2`,
-            courseId: cid,
-            type: 'ia',
-            no: 2,
-            title: 'IA 2',
-            maxMarks: 20,
-            questions: [
-              { qNo: 1, desc: 'Question 1', bloomsLevel: 'L4', coNo: 3, maxMarks: 10 },
-              { qNo: 2, desc: 'Question 2', bloomsLevel: 'L4', coNo: 4, maxMarks: 10 }
-            ],
-            createdAt: new Date().toISOString()
-          },
-          {
-            id: `asgn-${cid}-mse`,
-            courseId: cid,
-            type: 'mse',
-            no: 1,
-            title: 'MSE',
-            maxMarks: 30,
-            questions: [
-              { qNo: 1, desc: 'Question 1', bloomsLevel: 'L3', coNo: 1, maxMarks: 10 },
-              { qNo: 2, desc: 'Question 2', bloomsLevel: 'L3', coNo: 2, maxMarks: 10 },
-              { qNo: 3, desc: 'Question 3', bloomsLevel: 'L4', coNo: 3, maxMarks: 10 }
-            ],
-            createdAt: new Date().toISOString()
-          },
-          {
-            id: `asgn-${cid}-ese`,
-            courseId: cid,
-            type: 'ese',
-            no: 1,
-            title: 'ESE',
-            maxMarks: 60,
-            questions: [
-              { qNo: 1, desc: 'Q1 (CO1)', bloomsLevel: 'L3', coNo: 1, maxMarks: 10 },
-              { qNo: 2, desc: 'Q2 (CO2)', bloomsLevel: 'L3', coNo: 2, maxMarks: 10 },
-              { qNo: 3, desc: 'Q3 (CO3)', bloomsLevel: 'L4', coNo: 3, maxMarks: 10 },
-              { qNo: 4, desc: 'Q4 (CO4)', bloomsLevel: 'L4', coNo: 4, maxMarks: 10 },
-              { qNo: 5, desc: 'Q5 (CO5)', bloomsLevel: 'L5', coNo: 5, maxMarks: 10 },
-              { qNo: 6, desc: 'Q6 (CO6)', bloomsLevel: 'L6', coNo: 6, maxMarks: 10 }
-            ],
-            createdAt: new Date().toISOString()
-          },
-          {
-            id: `asgn-${cid}-asgn1`,
-            courseId: cid,
-            type: 'assignment',
-            no: 1,
-            title: 'Assignment 1',
-            maxMarks: 25,
-            questions: [
-              { qNo: 1, desc: 'Practical / Problem Solving Assignment', bloomsLevel: 'L3', coNo: 1, maxMarks: 25 }
-            ],
-            createdAt: new Date().toISOString()
-          }
-        ];
-        const all = assessments.all();
-        all.push(...standard);
-        set(KEYS.assessments, all);
-        found = standard;
-      }
-      return found.sort((a,b) => {
-        const order = { 'IA 1': 1, 'IA 2': 2, 'MSE': 3, 'ESE': 4, 'Assignment 1': 5 };
-        return (order[a.title] || 99) - (order[b.title] || 99);
+      // Clean out any legacy mock assessments (e.g. asgn-*-ia1, asgn-*-ia2, etc.)
+      const all = assessments.all();
+      return all.filter(a => {
+        if (a.courseId !== cid) return false;
+        const id = String(a.id || '');
+        const isLegacyMock = id.endsWith('-ia1') || id.endsWith('-ia2') || id.endsWith('-mse') || id.endsWith('-ese') || id.endsWith('-asgn1');
+        return !isLegacyMock;
       });
     },
     byId(id)           { return assessments.all().find(a=>a.id===id); },
-    add(a)             { const all=assessments.all(); a.id=uid(); a.createdAt=new Date().toISOString(); all.push(a); set(KEYS.assessments,all); return a; },
+    add(a)             { const all=assessments.all(); a.id=a.id||uid(); a.createdAt=a.createdAt||new Date().toISOString(); all.push(a); set(KEYS.assessments,all); return a; },
     update(a)          { const all=assessments.all().map(x=>x.id===a.id?a:x); set(KEYS.assessments,all); return a; },
     delete(id)         { set(KEYS.assessments, assessments.all().filter(a=>a.id!==id)); },
   };
+
+  // Immediate purge of any legacy dummy mock assessments across all courses
+  try {
+    const rawAsgns = get(KEYS.assessments);
+    if (Array.isArray(rawAsgns) && rawAsgns.length > 0) {
+      const sanitized = rawAsgns.filter(a => {
+        const id = String(a.id || '');
+        return !(id.endsWith('-ia1') || id.endsWith('-ia2') || id.endsWith('-mse') || id.endsWith('-ese') || id.endsWith('-asgn1'));
+      });
+      if (sanitized.length !== rawAsgns.length) {
+        set(KEYS.assessments, sanitized);
+      }
+    }
+  } catch(e) {}
 
   /* â”€â”€ Submissions â”€â”€ */
   const submissions = {
