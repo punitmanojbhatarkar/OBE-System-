@@ -26,7 +26,7 @@ import models
 from agents.ai_logic import (
     chat_with_advisor, chat_with_advisor_agent, clear_memory,
     extract_syllabus, generate_teaching_philosophy, generate_cos_from_syllabus,
-    analyze_blooms, auto_map_copo, generate_assignment,
+    analyze_blooms, auto_map_copo, generate_assignment, generate_professional_assessment,
     calculate_co_attainment_python, interpret_attainment, generate_nba_report, analyze_6a_matrix,
     generate_curriculum_gap_plan, grade_submission, extract_assignment_questions
 )
@@ -1179,9 +1179,31 @@ def api_analyze_6a(req: Analyze6ARequest):
 class AssignmentRequest(BaseModel):
     topic: str; level: str; num: int; marks: int
 
+class ProfessionalAssessmentRequest(BaseModel):
+    courseName: Optional[str] = ""
+    assessmentType: Optional[str] = "assignment"
+    topic: Optional[str] = ""
+    level: Optional[str] = "L3"
+    num: Optional[int] = 3
+    marks: Optional[int] = 20
+    targetCOs: Optional[List[int]] = []
+
 @app.post("/api/generate-assignment")
 def api_generate_assignment(req: AssignmentRequest):
     return {"success": True, "data": generate_assignment(req.topic, req.level, req.num, req.marks)}
+
+@app.post("/api/generate-professional-assessment")
+def api_generate_professional_assessment(req: ProfessionalAssessmentRequest):
+    data = generate_professional_assessment(
+        course_name=req.courseName or "",
+        assess_type=req.assessmentType or "assignment",
+        topic=req.topic or "",
+        level=req.level or "L3",
+        num_questions=req.num or 3,
+        marks=req.marks or 20,
+        target_cos=req.targetCOs or []
+    )
+    return {"success": True, "data": data}
 
 class GradeRequest(BaseModel):
     text: str

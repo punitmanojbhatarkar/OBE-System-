@@ -41,6 +41,28 @@ const AI = (() => {
     };
   }
 
+  async function generateProfessionalAssessment({ courseName, assessmentType='assignment', topic='', level='L3', numQuestions=3, maxMarks=20, targetCOs=[] }) {
+    const data = await callBackend('generate-professional-assessment', {
+      courseName: courseName || '',
+      assessmentType: assessmentType || 'assignment',
+      topic: topic || '',
+      level: level || 'L3',
+      num: parseInt(numQuestions) || 3,
+      marks: parseInt(maxMarks) || 20,
+      targetCOs: targetCOs || []
+    });
+    return {
+      title: data.title,
+      assessmentType: data.assessmentType,
+      instructions: data.instructions || [],
+      questions: data.questions || [],
+      rubrics: data.rubrics || [],
+      generatedAt: new Date().toISOString(),
+      model: 'Gemini-2.5-Pro / NBA-Evaluator',
+      note: 'AI Generated OBE-Compliant Question Blueprint. Ready for faculty review.'
+    };
+  }
+
   async function gradeSubmission({ submissionText, rubrics, maxMarks }) {
     const data = await callBackend('grade', { text: submissionText, rubrics, maxMarks });
     return {
@@ -85,5 +107,5 @@ const AI = (() => {
     return await callBackend('chat', { message: prompt, context: '' });
   }
 
-  return { generateAssignment, gradeSubmission, generateTeachingPhilosophy, analyzeBlooms, autoMapCOPO, generateRemedialPlan, extractSyllabusFromText, generateCOsFromSyllabus, getUsageStats, callRealAPI };
+  return { generateAssignment, generateProfessionalAssessment, gradeSubmission, generateTeachingPhilosophy, analyzeBlooms, autoMapCOPO, generateRemedialPlan, extractSyllabusFromText, generateCOsFromSyllabus, getUsageStats, callRealAPI };
 })();

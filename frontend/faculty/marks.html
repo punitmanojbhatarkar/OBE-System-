@@ -403,6 +403,19 @@
       <button class="btn btn-secondary btn-sm btn-icon" onclick="closeAssessModal()"><span data-icon="close"></span></button>
     </div>
     <div class="modal-body">
+      <!-- AI Formulation Banner -->
+      <div style="background:linear-gradient(135deg, rgba(79,70,229,0.06), rgba(37,99,235,0.06)); border:1px dashed var(--primary); border-radius:var(--r-md); padding:10px 14px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="font-weight:700; font-size:12.5px; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
+            <span data-icon="sparkles" style="color:var(--primary);"></span> AI Question Blueprint Formulator
+          </div>
+          <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">Auto-generate professional questions & title using AI</div>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" id="btn-marks-ai-formulate" onclick="aiFormulateForMarksModal()" style="background: linear-gradient(135deg, #4f46e5, #2563eb); border: none;">
+          <span data-icon="sparkles"></span> <span>Auto-Formulate with AI</span>
+        </button>
+      </div>
+
       <div class="form-group">
         <label class="form-label">Assessment Type *</label>
         <select class="form-select" id="modal-assess-type" onchange="updateAssessModalDefaults()">
@@ -1288,6 +1301,51 @@
     }
   };
 
+  window.aiFormulateForMarksModal = async function() {
+    if (!CID) { Toast.warning('Select a course first.'); return; }
+    const course = DB.courses.byId(CID);
+    const type = document.getElementById('modal-assess-type').value;
+    const maxMarks = parseFloat(document.getElementById('modal-assess-max').value) || 20;
+
+    const btn = document.getElementById('btn-marks-ai-formulate');
+    const origHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<span data-icon="sparkles" class="spin"></span> <span>Formulating with AI...</span>`;
+
+    try {
+      Toast.info('Formulating CO-aligned examination blueprint using AI...');
+      const res = await AI.generateProfessionalAssessment({
+        courseName: course?.name || '',
+        assessmentType: type,
+        topic: course?.name || '',
+        level: 'L3',
+        numQuestions: type === 'assignment' ? 3 : 4,
+        maxMarks: maxMarks,
+        targetCOs: [1, 2]
+      });
+
+      if (res.title) {
+        document.getElementById('modal-assess-title').value = res.title;
+      }
+      window._marksModalAIQuestions = (res.questions || []).map(q => ({
+        qNo: q.qNo,
+        desc: q.text,
+        bloomsLevel: q.rbt || 'L3',
+        coNo: q.coNo || 1,
+        maxMarks: q.marks
+      }));
+
+      Toast.success(`AI formulated exam questions & title! Click 'Save Assessment' to finalize.`);
+    } catch (e) {
+      console.error(e);
+      Toast.error('AI formulation error: ' + (e.message || 'Please retry.'));
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = origHtml;
+      renderAllIcons(btn);
+    }
+  };
+
   window.saveNewAssessment = function() {
     const type = document.getElementById('modal-assess-type').value;
     const title = (document.getElementById('modal-assess-title').value || '').trim();
@@ -1296,6 +1354,13 @@
 
     if (!title) { Toast.warning('Please enter an assessment title.'); return; }
 
+    const isAI = !!(window._marksModalAIQuestions && window._marksModalAIQuestions.length);
+    const questions = isAI ? window._marksModalAIQuestions : [
+      { qNo: 1, desc: `${title} Q1`, bloomsLevel: 'L3', coNo: 1, maxMarks: Math.round(maxMarks / 2) },
+      { qNo: 2, desc: `${title} Q2`, bloomsLevel: 'L4', coNo: 2, maxMarks: Math.round(maxMarks / 2) }
+    ];
+    window._marksModalAIQuestions = null;
+
     const newAssess = {
       id: `asgn-${CID}-${type}-${Date.now()}`,
       courseId: CID,
@@ -1303,10 +1368,8 @@
       no: no,
       title: title,
       maxMarks: maxMarks,
-      questions: [
-        { qNo: 1, desc: `${title} Q1`, bloomsLevel: 'L3', coNo: 1, maxMarks: Math.round(maxMarks / 2) },
-        { qNo: 2, desc: `${title} Q2`, bloomsLevel: 'L4', coNo: 2, maxMarks: Math.round(maxMarks / 2) }
-      ],
+      aiGenerated: isAI,
+      questions: questions,
       createdAt: new Date().toISOString()
     };
 

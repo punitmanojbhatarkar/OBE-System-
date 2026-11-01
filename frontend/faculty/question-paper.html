@@ -335,9 +335,72 @@
 
   async function generatePaper() {
     if (!currentCourse) { Toast.warning('Select a course first.'); return; }
-    Toast.info('Generating AI balanced question paper blueprint…');
-    document.getElementById('saveAssessBtn').style.display = 'inline-flex';
-    Toast.success('Question paper generated from course outcomes.');
+    const examCategory = document.getElementById('cfg-type')?.value || 'Mid Semester Examination (MSE)';
+    const totalMarks = parseInt(document.getElementById('cfg-marks')?.value) || 50;
+
+    let assessType = 'mse';
+    if (examCategory.includes('IA-1') || examCategory.includes('IA-2')) assessType = 'ia';
+    else if (examCategory.includes('ESE') || examCategory.includes('End Semester')) assessType = 'ese';
+    else if (examCategory.includes('Assignment')) assessType = 'assignment';
+
+    Toast.info('Formulating AI balanced question paper from course outcomes…');
+    try {
+      const res = await AI.generateProfessionalAssessment({
+        courseName: currentCourse.name,
+        assessmentType: assessType,
+        topic: currentCourse.name,
+        level: 'L3',
+        numQuestions: assessType === 'ia' ? 4 : (assessType === 'mse' ? 4 : 6),
+        maxMarks: totalMarks,
+        targetCOs: [1, 2, 3]
+      });
+
+      const qList = res.questions || [];
+      const half = Math.ceil(qList.length / 2);
+      const sec1Q = qList.slice(0, half);
+      const sec2Q = qList.slice(half);
+
+      paper.sections = [
+        {
+          num: 1,
+          title: 'Section I (Unit 1 & 2)',
+          questions: sec1Q.map((q, idx) => ({
+            qNo: idx + 1,
+            isOR: idx > 0 && idx % 2 === 1,
+            parts: [{
+              label: 'a',
+              text: q.text,
+              marks: q.marks,
+              co: q.coNo || 1,
+              bl: parseInt(String(q.rbt).replace('L','')) || 3
+            }]
+          }))
+        },
+        {
+          num: 2,
+          title: 'Section II (Unit 3 & 4)',
+          questions: sec2Q.map((q, idx) => ({
+            qNo: sec1Q.length + idx + 1,
+            isOR: idx > 0 && idx % 2 === 1,
+            parts: [{
+              label: 'a',
+              text: q.text,
+              marks: q.marks,
+              co: q.coNo || 2,
+              bl: parseInt(String(q.rbt).replace('L','')) || 4
+            }]
+          }))
+        }
+      ];
+
+      renderEditor();
+      refreshPreview();
+      document.getElementById('saveAssessBtn').style.display = 'inline-flex';
+      Toast.success('Question paper formulated with AI and mapped to COs & Bloom\'s levels!');
+    } catch (e) {
+      console.error(e);
+      Toast.error('AI Paper Generation: ' + e.message);
+    }
   }
 
   async function saveAsAssessment() {

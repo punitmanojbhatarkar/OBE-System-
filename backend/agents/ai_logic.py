@@ -1228,13 +1228,14 @@ JSON OUTPUT FORMAT (MANDATORY — follow exactly):
 
 
 # ==========================================
-# 6. Assignment Generation Agent
+# 6. Professional Assessment & Exam Generation Agent (NBA/OBE Compliant)
 # ==========================================
 class AssignmentQuestion(BaseModel):
     qNo: int
     text: str
     marks: int
-    coNo: Optional[int] = None
+    coNo: Optional[int] = 1
+    rbt: Optional[str] = "L3"
 
 class AssignmentRubric(BaseModel):
     criterion: str
@@ -1243,39 +1244,198 @@ class AssignmentRubric(BaseModel):
     average: str
     low: str
 
-class AssignmentResponse(BaseModel):
+class ProfessionalAssessmentResponse(BaseModel):
+    title: str
+    assessmentType: str
+    instructions: List[str]
     questions: List[AssignmentQuestion]
     rubrics: List[AssignmentRubric]
 
+def generate_professional_assessment(
+    course_name: str = "",
+    assess_type: str = "assignment",
+    topic: str = "",
+    level: str = "L3",
+    num_questions: int = 3,
+    marks: int = 20,
+    target_cos: list = None
+) -> dict:
+    """Generate high-quality, college-standard exam paper or assignment with NBA/Bloom's taxonomy."""
+    if not target_cos:
+        target_cos = [1, 2] if assess_type in ["ia", "assignment"] else ([1, 2, 3] if assess_type == "mse" else [1, 2, 3, 4, 5, 6])
+    
+    num_q = max(1, min(int(num_questions or 3), 10))
+    total_m = max(5, int(marks or 20))
+    marks_per_q = round(total_m / num_q) if num_q > 0 else total_m
+    clean_topic = topic.strip() if topic else (f"Core concepts and practical applications of {course_name}" if course_name else "Engineering principles and application")
+    
+    type_titles = {
+        "assignment": f"Continuous Evaluation Assignment on {clean_topic[:30]}",
+        "ia": f"Internal Assessment Test (IA) – {clean_topic[:30]}",
+        "mse": f"Mid Semester Examination (MSE) – {course_name or 'Course'}",
+        "ese": f"End Semester Examination (ESE) – {course_name or 'Course'}"
+    }
+    suggested_title = type_titles.get(assess_type.lower(), f"Assessment – {clean_topic[:30]}")
+
+    try:
+        llm = get_llm(temperature=0.4).with_structured_output(ProfessionalAssessmentResponse)
+        template = """You are a senior engineering professor, Board of Studies member, and NBA Accreditation evaluator at a premier autonomous engineering college.
+Formulate a rigorous, university-grade {assess_type_upper} examination/assignment paper for the course: "{course_name}".
+
+SPECIFICATIONS:
+- Assessment Type: {assess_type} (e.g. assignment, Internal Assessment IA, Mid-Semester Exam MSE, End-Semester Exam ESE)
+- Course Name: {course_name}
+- Focus Topic / Module: {topic}
+- Target Course Outcomes: {target_cos}
+- Primary Bloom's Cognitive Level: {level}
+- Total Questions Required: {num_q}
+- Total Marks: {total_m} (~{marks_per_q} marks per question)
+
+ACADEMIC RIGOR GUIDELINES (NBA / SPPU Autonomous Standard):
+1. Question Formulation & Action Verbs:
+   - Use standard Bloom's Revised Taxonomy action verbs appropriate for {level}:
+     * L1 (Remember): Define, State, List, Recall
+     * L2 (Understand): Explain, Describe, Compare, Illustrate with diagrams
+     * L3 (Apply): Solve, Compute, Implement, Apply, Calculate
+     * L4 (Analyze): Analyze, Differentiate, Distinguish, Deconstruct, Investigate
+     * L5 (Evaluate): Evaluate, Critique, Justify, Assess, Validate
+     * L6 (Create): Design, Formulate, Propose, Synthesize, Architect
+2. Professional Question Design:
+   - Make questions realistic, scenario-based, and analytical with engineering problems, real-world datasets, architecture diagrams, or mathematical formulations.
+   - Avoid trivial 1-line definition questions. Provide clear numerical or architectural constraints.
+   - Assign exact marks to each question such that the sum equals {total_m}.
+   - Distribute target COs {target_cos} across the questions systematically.
+   - Assign the appropriate Bloom's level (e.g. 'L3', 'L4', 'L2') to each question.
+3. Instructions to Candidates:
+   - Include 3-4 professional instructions (e.g. 'Answer all questions', 'Figures to the right indicate full marks', 'Assume suitable data if necessary', 'Use of scientific calculator is permitted').
+4. Rubrics (if continuous assignment or subjective evaluation):
+   - Provide 4-tier rubric criteria for grading (exceptional, best, average, low)."""
+
+        prompt = PromptTemplate.from_template(template)
+        chain = prompt | llm
+        res = chain.invoke({
+            "assess_type": assess_type,
+            "assess_type_upper": assess_type.upper(),
+            "course_name": course_name or "Advanced Engineering Computing",
+            "topic": clean_topic,
+            "target_cos": target_cos,
+            "level": level,
+            "num_q": num_q,
+            "total_m": total_m,
+            "marks_per_q": marks_per_q
+        })
+        data = res.dict()
+        # Verify mark sum matches total_m
+        q_sum = sum(q.get("marks", 0) for q in data.get("questions", []))
+        if q_sum != total_m and len(data.get("questions", [])) > 0:
+            diff = total_m - q_sum
+            data["questions"][-1]["marks"] = max(1, data["questions"][-1]["marks"] + diff)
+        return data
+
+    except Exception as e:
+        print(f"[AI] generate_professional_assessment LLM failed, using autonomous college blueprint generator: {e}")
+        return _heuristic_professional_assessment(course_name, assess_type, clean_topic, level, num_q, total_m, target_cos, suggested_title)
+
+
+def _heuristic_professional_assessment(course_name: str, assess_type: str, topic: str, level: str, num_q: int, total_m: int, target_cos: list, title: str) -> dict:
+    """Domain-curated engineering question generator matching NBA/Bloom's standards."""
+    c_lower = (course_name or "").lower()
+    t_lower = (topic or "").lower()
+
+    # Pre-formulated high-quality engineering question bank
+    dl_questions = [
+        ("Derive the mathematical formulation of Scaled Dot-Product Attention in the Transformer architecture. Analyze why the scaling factor sqrt(d_k) is required to prevent gradient saturation in the softmax operation.", "L4", 1),
+        ("Compare Parameter-Efficient Fine-Tuning (PEFT/LoRA) with Full Parameter Fine-Tuning for a 7B parameter LLM. Calculate the reduction in GPU VRAM required during backpropagation assuming 16-bit precision.", "L3", 2),
+        ("Design an end-to-end Retrieval-Augmented Generation (RAG) pipeline for domain-specific engineering documentation. Formulate the chunking strategy, dense vector embedding selection, and hallucination reduction mechanism.", "L6", 3),
+        ("Analyze the gradient vanishing and exploding problem in deep feedforward neural networks. Evaluate how Residual Connections (ResNets) and Layer Normalization mathematically mitigate this degradation.", "L5", 2),
+        ("Implement a custom loss function combining Cross-Entropy Loss with Focal Loss for an imbalanced classification problem. Explain the role of the focusing parameter gamma.", "L3", 1),
+        ("Critique the trade-offs between Autoregressive models (GPT), Autoencoding models (BERT), and Sequence-to-Sequence models (T5) across zero-shot text summarization and code generation tasks.", "L5", 4)
+    ]
+
+    eda_questions = [
+        ("Formulate a complete data quality assessment and preprocessing pipeline for a high-frequency sensor dataset containing missing values, multicollinearity, and extreme outliers. Justify why robust scalers are preferred over standard min-max scaling.", "L4", 1),
+        ("Design a hypothesis testing experiment using Two-Sample t-test and Chi-Square test of independence to determine whether user interaction patterns differ significantly before and after a system upgrade. State null and alternate hypotheses with confidence level 95%.", "L4", 2),
+        ("Analyze a skewed multivariate distribution using Principal Component Analysis (PCA) and t-SNE. Compare how linear dimensionality reduction compares with manifold learning in preserving local vs global cluster structures.", "L4", 3),
+        ("Implement an outlier detection pipeline using Interquartile Range (IQR) and Isolation Forest. Calculate the upper and lower fences given a sample quartiles vector and explain boundary anomalies.", "L3", 1),
+        ("Evaluate the performance of linear regression under violations of homoscedasticity and normality of residuals. Propose variance-stabilizing transformations (Box-Cox / Log).", "L5", 2),
+        ("Formulate a feature selection framework combining mutual information gain, recursive feature elimination (RFE), and LASSO regularization. Explain feature sparsity in high dimensions.", "L6", 4)
+    ]
+
+    gen_questions = [
+        (f"Analyze the fundamental theoretical principles and engineering constraints underlying {topic}. Differentiate the primary approaches used in industry.", "L4", 1),
+        (f"Formulate a computational model or mathematical framework to solve an optimization problem involving {topic}. Compute the theoretical time and space complexity.", "L3", 2),
+        (f"Design an architectural blueprint and operational workflow integrating {topic} into a fault-tolerant software system. Justify your design choices.", "L6", 3),
+        (f"Evaluate the performance, scalability, and security bottlenecks when deploying {topic} in production environments. Propose concrete mitigation strategies.", "L5", 4),
+        (f"Explain the end-to-end operational lifecycle of {topic}. Illustrate key components, data flow, and state transitions with an engineering schematic.", "L2", 1)
+    ]
+
+    # Select domain pool
+    if "deep learning" in c_lower or "llm" in c_lower or "transformer" in t_lower or "neural" in t_lower:
+        pool = dl_questions
+    elif "data" in c_lower or "exploratory" in c_lower or "statistics" in t_lower or "analytics" in c_lower:
+        pool = eda_questions
+    else:
+        pool = gen_questions
+
+    # Distribute marks
+    base_m = total_m // num_q
+    rem_m = total_m % num_q
+
+    questions = []
+    rubrics = []
+    for i in range(num_q):
+        sample = pool[i % len(pool)]
+        co_idx = target_cos[i % len(target_cos)] if target_cos else (i + 1)
+        q_marks = base_m + (rem_m if i == num_q - 1 else 0)
+        q_rbt = level if i == 0 else sample[1]
+        
+        q_obj = {
+            "qNo": i + 1,
+            "text": sample[0],
+            "marks": q_marks,
+            "coNo": co_idx,
+            "rbt": q_rbt
+        }
+        questions.append(q_obj)
+
+        rubrics.append({
+            "criterion": f"Q{i+1}: Mastery of {topic[:25]} (CO{co_idx}, {q_rbt})",
+            "exceptional": f"90-100%: Comprehensive, mathematically and technically rigorous answer with complete derivation/design, precise notation, and critical analysis.",
+            "best": f"70-89%: Mostly accurate response covering core concepts with minor omissions in edge cases or secondary derivations.",
+            "average": f"50-69%: Partial understanding demonstrated; conceptual grasp present but lacks quantitative depth, correct equations, or thorough explanation.",
+            "low": f"<50%: Superficial or incomplete attempt with fundamental conceptual inaccuracies and absent technical justification."
+        })
+
+    instructions = [
+        "1. All questions are compulsory. Figures to the right indicate full marks allocated.",
+        "2. Assume suitable engineering parameters or constraints wherever necessary and state them clearly.",
+        "3. Neatly drawn schematic diagrams, mathematical equations, and architectural models carry due weightage.",
+        "4. Non-programmable scientific calculators are permitted."
+    ]
+
+    return {
+        "title": title,
+        "assessmentType": assess_type,
+        "instructions": instructions,
+        "questions": questions,
+        "rubrics": rubrics
+    }
+
+
 def generate_assignment(topic: str, level: str, num: int, marks: int) -> dict:
-    llm = get_llm(temperature=0.6).with_structured_output(AssignmentResponse)
-    marks_per_q = round(marks / num) if num > 0 else marks
-    template = """You are a senior professor and NBA-certified curriculum expert creating an assignment.
-
-TOPIC: {topic}
-BLOOMsS LEVEL: {level}
-NUMBER OF QUESTIONS: {num}
-TOTAL MARKS: {marks} (~{marks_per_q} per question)
-
-QUESTION RULES:
-1. Use action verbs appropriate for Blooms level {level}:
-   L1-Remember: define/list/state | L2-Understand: explain/describe/compare
-   L3-Apply: solve/compute/demonstrate | L4-Analyze: examine/differentiate
-   L5-Evaluate: critique/justify/assess | L6-Create: design/develop/propose
-2. Make questions specific, scenario-based, and unambiguous.
-3. Distribute marks proportionally to complexity.
-4. Avoid trivially simple questions.
-
-RUBRIC RULES:
-1. One rubric per question, specific to that question.
-2. exceptional: 90-100% score -- perfect answer criteria.
-3. best: 70-89% score -- mostly correct with minor gaps.
-4. average: 50-69% -- partial understanding, significant gaps.
-5. low: below 50% -- minimal attempt, mostly incorrect."""
-    prompt = PromptTemplate.from_template(template)
-    chain = prompt | llm
-    res = chain.invoke({"topic": topic, "level": level, "num": num, "marks": marks, "marks_per_q": marks_per_q})
-    return res.dict()
+    """Wrapper for backward compatibility."""
+    res = generate_professional_assessment(
+        course_name="",
+        assess_type="assignment",
+        topic=topic,
+        level=level,
+        num_questions=num,
+        marks=marks
+    )
+    return {
+        "questions": res.get("questions", []),
+        "rubrics": res.get("rubrics", [])
+    }
 
 
 # ==========================================

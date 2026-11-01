@@ -84,8 +84,11 @@
         <button class="btn btn-secondary btn-sm" onclick="openMoodleModal()">
           <span data-icon="upload"></span><span>Moodle Batch Grade</span>
         </button>
-        <button class="btn btn-primary btn-sm" id="createBtn" onclick="openCreateModal()">
-          <span data-icon="plus"></span><span>Create Assessment</span>
+        <button class="btn btn-secondary btn-sm" id="createBtn" onclick="openCreateModal()">
+          <span data-icon="plus"></span><span>Manual Assessment</span>
+        </button>
+        <button class="btn btn-primary btn-sm" id="aiGenTopBtn" onclick="openAIGeneratorModal()" style="background: linear-gradient(135deg, #4f46e5, #2563eb); border: none; box-shadow: 0 2px 8px rgba(79, 70, 229, 0.35);">
+          <span data-icon="sparkles"></span><span>AI Generate Assessment / Exam</span>
         </button>
       </div>
     </header>
@@ -121,8 +124,15 @@
       <div id="emptyState" class="card" style="display:none;text-align:center;padding:48px 20px;">
         <div style="margin-bottom:8px;color:var(--text-muted);"><span data-icon="assignments" data-icon-size="32"></span></div>
         <h3 style="font-size:16px;font-weight:700;">No Assessments Created</h3>
-        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">Create your first assessment manually or extract questions with AI.</p>
-        <button class="btn btn-primary" onclick="openCreateModal()"><span data-icon="plus"></span><span>Create Assessment</span></button>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">Formulate college-standard examinations and assignments with AI, or create manually.</p>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="openAIGeneratorModal()" style="background: linear-gradient(135deg, #4f46e5, #2563eb); border: none; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);">
+            <span data-icon="sparkles"></span><span>AI Generate Assessment / Exam</span>
+          </button>
+          <button class="btn btn-secondary" onclick="openCreateModal()">
+            <span data-icon="plus"></span><span>Create Manually</span>
+          </button>
+        </div>
       </div>
 
       <!-- Assessment Cards Grid -->
@@ -399,6 +409,23 @@
           </div>
         </div>
 
+        <!-- AI Assist Banner -->
+        <div style="background:linear-gradient(135deg, rgba(79,70,229,0.06), rgba(37,99,235,0.06)); border:1px dashed var(--primary); border-radius:var(--r-md); padding:12px 16px; margin:16px 0 12px 0;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div>
+              <div style="font-weight:700; font-size:13px; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
+                <span data-icon="sparkles" style="color:var(--primary);"></span> AI Question Formulator & Rubrics
+              </div>
+              <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">
+                Auto-generate professional, Bloom's-aligned questions based on your course syllabus and chosen COs.
+              </div>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" id="btn-modal-ai-formulate" onclick="formulateQuestionsInModal()" style="background: linear-gradient(135deg, #4f46e5, #2563eb); border: none;">
+              <span data-icon="sparkles"></span> <span>Formulate Questions with AI</span>
+            </button>
+          </div>
+        </div>
+
         <div style="margin-top:16px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
             <label class="form-label" style="margin-bottom:0;">Question Blueprint Breakdown</label>
@@ -443,6 +470,69 @@
     renderAllIcons(area);
   }
 
+  async function formulateQuestionsInModal() {
+    if (!currentCourseId) { Toast.warning('Please select a course first.'); return; }
+    const course = DB.courses.byId(currentCourseId);
+    const aType = document.getElementById('aType')?.value || 'assignment';
+    const maxMarks = parseInt(document.getElementById('aMaxMarks')?.value) || 20;
+    const coNosRaw = document.getElementById('aCoNos')?.value || '';
+    const coNos = coNosRaw.split(',').map(x => parseInt(x.trim())).filter(Boolean);
+    const rbt = document.getElementById('aRbt')?.value || '3';
+    let topic = document.getElementById('aTitle')?.value?.trim() || '';
+
+    const btn = document.getElementById('btn-modal-ai-formulate');
+    const origHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<span data-icon="sparkles" class="spin"></span> <span>Formulating Questions...</span>`;
+
+    try {
+      Toast.info('Formulating college-standard questions with AI...');
+      const res = await AI.generateProfessionalAssessment({
+        courseName: course?.name || '',
+        assessmentType: aType,
+        topic: topic,
+        level: 'L' + rbt,
+        numQuestions: aType === 'assignment' ? 3 : (aType === 'ia' ? 4 : 5),
+        maxMarks: maxMarks,
+        targetCOs: coNos.length ? coNos : [1, 2]
+      });
+
+      if (!document.getElementById('aTitle')?.value?.trim() && res.title) {
+        document.getElementById('aTitle').value = res.title;
+      }
+      if (res.instructions && res.instructions.length && !document.getElementById('aDesc')?.value?.trim()) {
+        document.getElementById('aDesc').value = res.instructions.join('\n');
+      }
+
+      // Populate questionsArea
+      const area = document.getElementById('questionsArea');
+      area.innerHTML = '';
+      (res.questions || []).forEach((q, i) => {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = qRowHtml(i, {
+          text: q.text,
+          marks: q.marks,
+          coNo: q.coNo || 1,
+          rbt: q.rbt || ('L' + rbt)
+        });
+        area.appendChild(tmp.firstElementChild);
+      });
+      renderAllIcons(area);
+
+      window._currentModalRubrics = res.rubrics || [];
+      window._currentModalIsAI = true;
+
+      Toast.success(`AI formulated ${res.questions?.length || 0} questions matching NBA & Bloom's criteria!`);
+    } catch (err) {
+      console.error('AI formulation error:', err);
+      Toast.error('AI generation failed: ' + (err.message || 'Please try again.'));
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = origHtml;
+      renderAllIcons(btn);
+    }
+  }
+
   function saveAssignment(existingId) {
     const title = document.getElementById('aTitle')?.value?.trim();
     if (!title) { Toast.error('Title is required.'); return; }
@@ -461,6 +551,9 @@
     const coNosRaw = document.getElementById('aCoNos').value;
     const coNos = coNosRaw.split(',').map(x=>parseInt(x.trim())).filter(Boolean);
 
+    const isAIGen = window._currentModalIsAI || false;
+    const rubrics = window._currentModalRubrics || [];
+
     const data = {
       courseId: currentCourseId,
       type: document.getElementById('aType').value,
@@ -472,8 +565,8 @@
       maxMarks: parseFloat(document.getElementById('aMaxMarks').value)||10,
       dueDate: document.getElementById('aDue').value||'',
       questions,
-      rubrics: [],
-      aiGenerated: false
+      rubrics: rubrics,
+      aiGenerated: isAIGen
     };
 
     if (existingId) {
@@ -483,8 +576,351 @@
       DB.assessments.add(data);
       Toast.success('Assessment created.');
     }
+    window._currentModalIsAI = false;
+    window._currentModalRubrics = [];
     Modal.close();
     renderAssignments();
+  }
+
+  /* ── Autonomous College / University AI Exam & Assignment Generator Modal ── */
+  function openAIGeneratorModal() {
+    if (!currentCourseId) { Toast.warning('Please select a course first.'); return; }
+    const course = DB.courses.byId(currentCourseId);
+    const cos = DB.cos.byCourse(currentCourseId) || [];
+
+    const defaultTopics = {
+      'crs-dl': 'Transformers, Multi-Head Self-Attention & LLM Fine-Tuning (LoRA)',
+      'crs-eda': 'Data Preprocessing, Outlier Detection, Hypothesis Testing & PCA',
+      'crs-ml': 'Supervised Learning, Regularization, Random Forests & Model Evaluation'
+    };
+    const defaultTopic = defaultTopics[currentCourseId] || (course ? `Core syllabus modules and practical applications of ${course.name}` : 'Advanced Engineering Principles');
+
+    const coCheckboxes = [1, 2, 3, 4, 5, 6].map(num => {
+      const coObj = cos.find(c => c.coNo === num);
+      const titleHint = coObj ? coObj.text.slice(0, 40) + '…' : `Outcome ${num}`;
+      return `
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;cursor:pointer;" title="${coObj ? coObj.text : ''}">
+          <input type="checkbox" name="aiTargetCO" value="${num}" ${num <= 2 ? 'checked' : ''}>
+          <span><strong>CO${num}</strong> <span style="color:var(--text-secondary);font-size:11px;">(${titleHint})</span></span>
+        </label>
+      `;
+    }).join('');
+
+    const modalHtml = `
+      <div class="modal-header" style="border-bottom:1px solid var(--border);padding-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#4f46e5,#2563eb);display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 4px 12px rgba(79,70,229,0.3);">
+            <span data-icon="sparkles" data-icon-size="22"></span>
+          </div>
+          <div>
+            <h3 class="modal-title" style="margin:0;font-size:16px;">AI Assessment & Exam Paper Formulator</h3>
+            <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Autonomous College Standard (SPPU / NBA Bloom's Taxonomy Compliant)</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="Modal.close()"><span data-icon="close"></span></button>
+      </div>
+
+      <div class="modal-body" style="max-height:680px;overflow-y:auto;padding:16px 20px;">
+        <!-- Course Banner -->
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);padding:10px 14px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;font-weight:600;letter-spacing:0.5px;">Target Course</div>
+            <div style="font-size:13.5px;font-weight:700;color:var(--text-primary);margin-top:2px;">${course ? course.code + ' – ' + course.name : 'Selected Course'}</div>
+          </div>
+          <span class="badge badge-primary">NBA Accredited Blueprint</span>
+        </div>
+
+        <!-- Configuration Controls -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Examination Category / Preset</label>
+            <select class="form-select" id="aiGenType" onchange="updateAIPreset(this.value)">
+              <option value="assignment">Continuous Evaluation Assignment (15M - Problem Set & Rubric)</option>
+              <option value="ia" selected>Internal Assessment (IA-1 / IA-2) (20M - Unit Specific)</option>
+              <option value="mse">Mid Semester Examination (MSE) (30M - Units 1-3)</option>
+              <option value="ese">End Semester Examination (ESE) (60M - Full Syllabus)</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Bloom's Cognitive Level Focus</label>
+            <select class="form-select" id="aiGenRbt">
+              <option value="L3" selected>L3: Apply (Implementation & Problem Solving)</option>
+              <option value="L4">L4: Analyze (Critical Comparison & Deconstruction)</option>
+              <option value="L5">L5: Evaluate (Critique & Architectural Trade-offs)</option>
+              <option value="L6">L6: Create (System Design & Algorithmic Synthesis)</option>
+              <option value="Balanced">Balanced Mix (NBA Standard: L2/L3/L4)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Curriculum Topic / Focus Modules</label>
+          <input type="text" class="form-input" id="aiGenTopic" value="${defaultTopic}" placeholder="e.g. Transformers, Self-Attention Mechanisms, PEFT & LoRA">
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Number of Questions</label>
+            <select class="form-select" id="aiGenNum">
+              <option value="2">2 Questions (Brief Assessment)</option>
+              <option value="3">3 Questions (Standard Assignment)</option>
+              <option value="4" selected>4 Questions (Internal Assessment)</option>
+              <option value="5">5 Questions (Comprehensive Mid-Sem)</option>
+              <option value="6">6 Questions (End-Sem University Paper)</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Total Maximum Marks</label>
+            <input type="number" class="form-input" id="aiGenMarks" value="20" min="5" max="100">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:16px;">
+          <label class="form-label" style="margin-bottom:6px;">Target Course Outcomes (COs)</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            ${coCheckboxes}
+          </div>
+        </div>
+
+        <div style="text-align:center;margin-bottom:18px;">
+          <button class="btn btn-primary" id="btnRunAIGen" onclick="executeAIGeneration()" style="background:linear-gradient(135deg,#4f46e5,#2563eb);padding:10px 24px;font-size:13.5px;box-shadow:0 4px 14px rgba(79,70,229,0.35);">
+            <span data-icon="sparkles"></span> <span>Generate Professional Paper with AI</span>
+          </button>
+        </div>
+
+        <!-- Generated Paper Preview Area -->
+        <div id="aiPaperPreviewArea" style="display:none;margin-top:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <div style="font-weight:700;font-size:14px;color:var(--text-primary);display:flex;align-items:center;gap:6px;">
+              <span data-icon="check" style="color:var(--success);"></span> Formulated Question Blueprint & Rubric
+            </div>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-secondary btn-sm" onclick="executeAIGeneration()"><span data-icon="refresh"></span> Regenerate</button>
+            </div>
+          </div>
+          <div id="aiPaperPreviewCard" style="background:#fff;color:#1e293b;border:1px solid #cbd5e1;border-radius:var(--r-md);padding:20px;box-shadow:0 4px 20px rgba(0,0,0,0.06);">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" id="aiGenModalFooter" style="display:none;justify-content:space-between;">
+        <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-secondary" onclick="openInQuestionPaperGen()">
+            <span data-icon="paper"></span> <span>Open in Question Paper Generator</span>
+          </button>
+          <button class="btn btn-primary" onclick="adoptAIGeneratedAssessment()" style="background:linear-gradient(135deg,#059669,#10b981);border-color:#059669;">
+            <span data-icon="check"></span> <span>Adopt & Save to Course</span>
+          </button>
+        </div>
+      </div>
+    `;
+
+    Modal.open(modalHtml, { wide: true });
+    renderAllIcons();
+  }
+
+  function updateAIPreset(type) {
+    const marksInp = document.getElementById('aiGenMarks');
+    const numSel = document.getElementById('aiGenNum');
+    const coChecks = document.querySelectorAll('input[name="aiTargetCO"]');
+
+    if (type === 'assignment') {
+      if (marksInp) marksInp.value = 15;
+      if (numSel) numSel.value = '3';
+      coChecks.forEach((c, idx) => c.checked = (idx < 2));
+    } else if (type === 'ia') {
+      if (marksInp) marksInp.value = 20;
+      if (numSel) numSel.value = '4';
+      coChecks.forEach((c, idx) => c.checked = (idx < 2));
+    } else if (type === 'mse') {
+      if (marksInp) marksInp.value = 30;
+      if (numSel) numSel.value = '4';
+      coChecks.forEach((c, idx) => c.checked = (idx < 3));
+    } else if (type === 'ese') {
+      if (marksInp) marksInp.value = 60;
+      if (numSel) numSel.value = '6';
+      coChecks.forEach(c => c.checked = true);
+    }
+  }
+
+  async function executeAIGeneration() {
+    const course = DB.courses.byId(currentCourseId);
+    const type = document.getElementById('aiGenType').value;
+    const level = document.getElementById('aiGenRbt').value;
+    const topic = document.getElementById('aiGenTopic').value.trim();
+    const num = parseInt(document.getElementById('aiGenNum').value) || 3;
+    const marks = parseInt(document.getElementById('aiGenMarks').value) || 20;
+
+    const selectedCOs = [];
+    document.querySelectorAll('input[name="aiTargetCO"]:checked').forEach(c => {
+      selectedCOs.push(parseInt(c.value));
+    });
+
+    const btn = document.getElementById('btnRunAIGen');
+    btn.disabled = true;
+    btn.innerHTML = `<span data-icon="sparkles" class="spin"></span> <span>Formulating College Standard Paper with AI...</span>`;
+
+    try {
+      Toast.info('Formulating rigorous question paper with NBA Bloom verbs...');
+      const res = await AI.generateProfessionalAssessment({
+        courseName: course?.name || '',
+        assessmentType: type,
+        topic: topic,
+        level: level,
+        numQuestions: num,
+        maxMarks: marks,
+        targetCOs: selectedCOs.length ? selectedCOs : [1, 2]
+      });
+
+      window._latestAIAssessment = res;
+      window._latestAIAssessmentConfig = {
+        courseId: currentCourseId,
+        type,
+        level,
+        topic,
+        marks,
+        selectedCOs
+      };
+
+      // Render the University Exam Paper preview
+      const previewArea = document.getElementById('aiPaperPreviewArea');
+      const previewCard = document.getElementById('aiPaperPreviewCard');
+      const footer = document.getElementById('aiGenModalFooter');
+
+      let qRowsHtml = (res.questions || []).map((q, idx) => `
+        <tr style="border-bottom:1px solid #e2e8f0;">
+          <td style="padding:10px 8px;font-weight:700;vertical-align:top;width:40px;text-align:center;">Q.${q.qNo || (idx+1)}</td>
+          <td style="padding:10px 12px;vertical-align:top;line-height:1.5;">${q.text}</td>
+          <td style="padding:10px 8px;vertical-align:top;text-align:center;font-weight:600;width:55px;">CO${q.coNo || 1}</td>
+          <td style="padding:10px 8px;vertical-align:top;text-align:center;font-weight:600;width:55px;"><span class="badge badge-info">${q.rbt || 'L3'}</span></td>
+          <td style="padding:10px 8px;vertical-align:top;text-align:center;font-weight:700;width:50px;">[${q.marks}]</td>
+        </tr>
+      `).join('');
+
+      let rubricsHtml = '';
+      if (res.rubrics && res.rubrics.length) {
+        rubricsHtml = `
+          <div style="margin-top:20px;border-top:2px solid #e2e8f0;padding-top:14px;">
+            <div style="font-weight:700;font-size:13px;color:#0f172a;margin-bottom:8px;">Continuous Evaluation Rubric (4-Tier Descriptors):</div>
+            <div style="overflow-x:auto;">
+              <table style="width:100%;font-size:11.5px;border-collapse:collapse;border:1px solid #cbd5e1;">
+                <thead>
+                  <tr style="background:#f1f5f9;color:#334155;border-bottom:1px solid #cbd5e1;">
+                    <th style="padding:6px 8px;text-align:left;width:25%;">Criterion</th>
+                    <th style="padding:6px 8px;text-align:left;width:20%;">Exceptional (90-100%)</th>
+                    <th style="padding:6px 8px;text-align:left;width:20%;">Proficient (70-89%)</th>
+                    <th style="padding:6px 8px;text-align:left;width:20%;">Developing (50-69%)</th>
+                    <th style="padding:6px 8px;text-align:left;width:15%;">Needs Work (&lt;50%)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${res.rubrics.map(r => `
+                    <tr style="border-bottom:1px solid #e2e8f0;">
+                      <td style="padding:6px 8px;font-weight:600;">${r.criterion}</td>
+                      <td style="padding:6px 8px;color:#059669;">${r.exceptional}</td>
+                      <td style="padding:6px 8px;color:#2563eb;">${r.best}</td>
+                      <td style="padding:6px 8px;color:#d97706;">${r.average}</td>
+                      <td style="padding:6px 8px;color:#dc2626;">${r.low}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      }
+
+      previewCard.innerHTML = `
+        <div style="text-align:center;border-bottom:2px solid #0f172a;padding-bottom:12px;margin-bottom:14px;">
+          <div style="font-weight:800;font-size:15px;letter-spacing:0.5px;color:#0f172a;">MIT ACADEMY OF ENGINEERING, ALANDI, PUNE</div>
+          <div style="font-size:11px;color:#475569;font-weight:600;">(An Autonomous Institute Affiliated to Savitribai Phule Pune University)</div>
+          <div style="font-weight:700;font-size:13px;color:#1e293b;margin-top:4px;">DEPARTMENT OF COMPUTER ENGINEERING</div>
+          <div style="font-size:13px;font-weight:800;color:#2563eb;margin-top:6px;text-transform:uppercase;">${res.title || (type.toUpperCase() + ' Examination')}</div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:#334155;margin-bottom:12px;border-bottom:1px dashed #cbd5e1;padding-bottom:8px;">
+          <div>Course: <span style="font-weight:700;color:#0f172a;">${course ? course.code + ' – ' + course.name : ''}</span></div>
+          <div>Max Marks: <span style="font-weight:700;color:#0f172a;">${marks}</span> &bull; Target COs: <span style="font-weight:700;color:#2563eb;">${selectedCOs.map(c=>'CO'+c).join(', ')}</span></div>
+        </div>
+
+        <div style="background:#f8fafc;border-left:3px solid #3b82f6;padding:8px 12px;margin-bottom:14px;font-size:11.5px;color:#475569;">
+          <div style="font-weight:700;margin-bottom:2px;color:#1e293b;">Instructions to Candidates:</div>
+          ${(res.instructions || []).map(ins => `<div>${ins}</div>`).join('')}
+        </div>
+
+        <table style="width:100%;font-size:12.5px;border-collapse:collapse;border:1px solid #cbd5e1;">
+          <thead>
+            <tr style="background:#f1f5f9;color:#334155;border-bottom:2px solid #cbd5e1;">
+              <th style="padding:8px;text-align:center;">Q.#</th>
+              <th style="padding:8px 12px;text-align:left;">Question Formulation</th>
+              <th style="padding:8px;text-align:center;">CO</th>
+              <th style="padding:8px;text-align:center;">RBT</th>
+              <th style="padding:8px;text-align:center;">Marks</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${qRowsHtml}
+          </tbody>
+        </table>
+
+        ${rubricsHtml}
+      `;
+
+      previewArea.style.display = 'block';
+      footer.style.display = 'flex';
+      previewArea.scrollIntoView({ behavior: 'smooth' });
+
+      Toast.success('Professional examination paper formulated successfully!');
+    } catch (err) {
+      console.error('AI generation error:', err);
+      Toast.error('AI generation failed: ' + (err.message || 'Please check connection.'));
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<span data-icon="sparkles"></span> <span>Generate Professional Paper with AI</span>`;
+      renderAllIcons();
+    }
+  }
+
+  function adoptAIGeneratedAssessment() {
+    if (!window._latestAIAssessment) { Toast.warning('Generate a paper first.'); return; }
+    const res = window._latestAIAssessment;
+    const cfg = window._latestAIAssessmentConfig;
+    const course = DB.courses.byId(currentCourseId);
+
+    const newAsgn = {
+      id: `asgn-${currentCourseId}-${cfg.type}-${Date.now()}`,
+      courseId: currentCourseId,
+      type: cfg.type,
+      title: res.title || `${course?.code || 'Course'} ${cfg.type.toUpperCase()}`,
+      description: (res.instructions || []).join('\n'),
+      coNos: cfg.selectedCOs || [1, 2],
+      rbtLevel: parseInt(String(cfg.level).replace('L','')) || 3,
+      maxMarks: cfg.marks || 20,
+      dueDate: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
+      questions: (res.questions || []).map((q, idx) => ({
+        qNo: q.qNo || (idx + 1),
+        text: q.text,
+        marks: q.marks,
+        coNo: q.coNo || 1,
+        rbt: q.rbt || 'L3'
+      })),
+      rubrics: res.rubrics || [],
+      aiGenerated: true,
+      createdAt: new Date().toISOString()
+    };
+
+    DB.assessments.add(newAsgn);
+    Modal.close();
+    renderAssignments();
+    Toast.success(`Assessment "${newAsgn.title}" created with AI! Ready for student submissions and marks entry.`);
+  }
+
+  function openInQuestionPaperGen() {
+    if (!window._latestAIAssessment) return;
+    adoptAIGeneratedAssessment();
+    window.location.href = 'question-paper.html';
   }
 
   function openMoodleModal() {
@@ -543,6 +979,12 @@
   window.saveAssignment = saveAssignment;
   window.openMoodleModal = openMoodleModal;
   window.processMoodleExport = processMoodleExport;
+  window.formulateQuestionsInModal = formulateQuestionsInModal;
+  window.openAIGeneratorModal = openAIGeneratorModal;
+  window.updateAIPreset = updateAIPreset;
+  window.executeAIGeneration = executeAIGeneration;
+  window.adoptAIGeneratedAssessment = adoptAIGeneratedAssessment;
+  window.openInQuestionPaperGen = openInQuestionPaperGen;
 })();
 </script>
 </body>
