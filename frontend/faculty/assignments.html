@@ -191,8 +191,6 @@
     sessionStorage.setItem('selected_course_id', currentCourseId);
 
     currentAssignments = DB.assessments.byCourse(currentCourseId);
-    const grid = document.getElementById('assignGrid');
-    const empty = document.getElementById('emptyState');
     const subs = DB.submissions.all();
 
     document.getElementById('statTotal').textContent = currentAssignments.length;
