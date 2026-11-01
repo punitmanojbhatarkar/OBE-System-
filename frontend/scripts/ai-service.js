@@ -6,12 +6,12 @@
 
 const AI = (() => {
 
-  async function callBackend(endpoint, payload) {
+  async function callBackend(endpoint, payload, timeoutMs = 7000) {
     const isLocal = typeof window !== 'undefined' && (window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
     const apiBase = typeof window !== 'undefined' && window.API_BASE !== undefined ? window.API_BASE : (isLocal ? 'http://127.0.0.1:8080' : 'https://obe-system-backend-t0ri.onrender.com');
 
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 35000);
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const res = await fetch(`${apiBase}/api/${endpoint}`, {
         method: 'POST',
@@ -149,7 +149,7 @@ const AI = (() => {
         num: parseInt(numQuestions) || 3,
         marks: parseInt(maxMarks) || 20,
         targetCOs: targetCOs || []
-      });
+      }, 7000);
       return {
         title: data.title,
         assessmentType: data.assessmentType,
@@ -161,38 +161,7 @@ const AI = (() => {
         note: 'AI Generated OBE-Compliant Question Blueprint. Ready for faculty review.'
       };
     } catch (err) {
-      console.warn('[AI Service] Backend professional generator fallback:', err);
-      try {
-        const legacy = await callBackend('generate-assignment', {
-          topic: topic || courseName || 'Engineering Application',
-          level: level === 'Balanced' ? 'L3' : level,
-          num: parseInt(numQuestions) || 3,
-          marks: parseInt(maxMarks) || 20
-        });
-        if (legacy && legacy.questions && legacy.questions.length) {
-          return {
-            title: `${courseName || 'Course'} ${assessmentType.toUpperCase()}`,
-            assessmentType,
-            instructions: [
-              '1. All questions are compulsory. Figures to the right indicate full marks.',
-              '2. Assume suitable engineering constraints wherever necessary.'
-            ],
-            questions: legacy.questions.map((q, idx) => ({
-              qNo: q.qNo || (idx + 1),
-              text: q.text,
-              marks: q.marks,
-              coNo: q.coNo || (targetCOs && targetCOs[idx % targetCOs.length]) || 1,
-              rbt: level === 'Balanced' ? 'L3' : level
-            })),
-            rubrics: legacy.rubrics || [],
-            generatedAt: new Date().toISOString(),
-            model: 'Gemini-1.5-Pro',
-            note: 'AI Generated Content. Ready for review.'
-          };
-        }
-      } catch (legacyErr) {
-        console.warn('[AI Service] Legacy endpoint fallback:', legacyErr);
-      }
+      console.warn('[AI Service] Fast fallback to client-side autonomous domain generator:', err);
       return buildClientSideAssessment({ courseName, assessmentType, topic, level, numQuestions, maxMarks, targetCOs });
     }
   }
