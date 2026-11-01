@@ -460,7 +460,13 @@
   // Initialize course dropdown
   const courseSel = document.getElementById('course-select');
   function initCourseDropdown() {
-    const facultyCourses = DB.courses.byFaculty(user.id);
+    let facultyCourses = DB.courses.byFaculty(user.id);
+    if (!facultyCourses || !facultyCourses.length) {
+      facultyCourses = DB.courses.all().filter(c => c.deptId === user.deptId || !c.facultyId || c.facultyId === user.id);
+    }
+    if (!facultyCourses || !facultyCourses.length) {
+      facultyCourses = DB.courses.all();
+    }
     courseSel.innerHTML = facultyCourses.map(c => `<option value="${c.id}">${c.code} – ${c.name}</option>`).join('');
 
     const storedCourseId = sessionStorage.getItem('selected_course_id');

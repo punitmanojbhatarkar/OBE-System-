@@ -164,7 +164,13 @@
 
   function loadCourses() {
     const sel = document.getElementById('courseSelect');
-    const courses = DB.courses.byFaculty(user.id);
+    let courses = DB.courses.byFaculty(user.id);
+    if (!courses || !courses.length) {
+      courses = DB.courses.all().filter(c => c.deptId === user.deptId || !c.facultyId || c.facultyId === user.id);
+    }
+    if (!courses || !courses.length) {
+      courses = DB.courses.all();
+    }
     sel.innerHTML = courses.map(c => `<option value="${c.id}">${c.code} – ${c.name}</option>`).join('');
     
     const saved = sessionStorage.getItem('selected_course_id');
