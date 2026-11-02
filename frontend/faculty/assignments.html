@@ -87,6 +87,9 @@
         <button class="btn btn-secondary btn-sm" id="createBtn" onclick="openCreateModal()">
           <span data-icon="plus"></span><span>Manual Assessment</span>
         </button>
+        <button class="btn btn-secondary btn-sm" id="catWtBtn" onclick="openCategoryWeightageModal()" title="View and balance total category weightages across CA, IA, MSE, ESE">
+          <span data-icon="sliders"></span><span>Category Weightages</span>
+        </button>
         <button class="btn btn-primary btn-sm" id="aiGenTopBtn" onclick="openAIGeneratorModal()" style="background: linear-gradient(135deg, #4f46e5, #2563eb); border: none; box-shadow: 0 2px 8px rgba(79, 70, 229, 0.35);">
           <span data-icon="sparkles"></span><span>AI Generate Assessment / Exam</span>
         </button>
@@ -360,6 +363,218 @@
     openCreateModal(a);
   }
 
+  /* ============================================================
+     CategoryBudgetEngine: Continuous Category Weightage & Rebalancer
+     Enables equal, unequal (proportional/custom), or averaged weightages
+     across multiple assessments while guaranteeing 100% data preservation
+     for existing student marks.
+     ============================================================ */
+  const CategoryBudgetEngine = {
+    BUDGETS: {
+      'ca': 25,
+      'assignment': 25,
+      'ia': 20,
+      'mse': 30,
+      'ese': 60
+    },
+    LABELS: {
+      'ca': 'Continuous Assessment (CA)',
+      'assignment': 'Continuous Assessment (CA)',
+      'ia': 'Internal Assessment (IA)',
+      'mse': 'Mid Semester Exam (MSE)',
+      'ese': 'End Semester Exam (ESE)'
+    },
+
+    getCategoryData(courseId, type, excludeAssessId = null) {
+      const normType = (type === 'assignment' || type === 'ca') ? 'ca' : type;
+      const budget = this.BUDGETS[normType] || 25;
+      const label = this.LABELS[normType] || normType.toUpperCase();
+      
+      const allAssess = DB.assessments.byCourse(courseId) || [];
+      const categoryAssess = allAssess.filter(a => {
+        const t = (a.type === 'assignment' || a.type === 'ca') ? 'ca' : a.type;
+        return t === normType && (!excludeAssessId || a.id !== excludeAssessId);
+      });
+
+      const existingTotal = categoryAssess.reduce((sum, a) => {
+        const effectiveWt = (window._pendingCategoryRebalance && window._pendingCategoryRebalance[a.id] !== undefined)
+          ? parseFloat(window._pendingCategoryRebalance[a.id])
+          : (parseFloat(a.weightage) || (normType === 'ia' ? 20 : (normType === 'mse' ? 30 : (normType === 'ese' ? 60 : 25))));
+        return sum + effectiveWt;
+      }, 0);
+
+      return {
+        normType,
+        budget,
+        label,
+        categoryAssess,
+        existingTotal,
+        remaining: Math.max(0, budget - existingTotal)
+      };
+    },
+
+    renderLiveTracker(containerId, courseId, type, currentWeightageVal, inputElemId, excludeAssessId = null) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+
+      const data = this.getCategoryData(courseId, type, excludeAssessId);
+      const currWt = parseFloat(currentWeightageVal) || 0;
+      const totalWithNew = data.existingTotal + currWt;
+      const diff = totalWithNew - data.budget;
+      const isBalanced = Math.abs(diff) < 0.05;
+      const isOver = diff > 0.05;
+
+      if (data.categoryAssess.length === 0) {
+        container.innerHTML = `
+          <div style="background:var(--surface-2);border:1px solid var(--border);border-left:4px solid var(--primary);padding:8px 12px;border-radius:6px;font-size:11.5px;margin-bottom:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-weight:700;color:var(--text-primary);">📊 ${data.label} Semester Budget: <strong>${data.budget}M</strong></span>
+              <span class="badge ${isBalanced ? 'badge-success' : 'badge-neutral'}">${currWt} / ${data.budget}M Allocated</span>
+            </div>
+            <div style="color:var(--text-secondary);font-size:11px;margin-top:2px;">
+              First assessment in this category. You can take any raw marks (e.g. 100M); this scales it to ${currWt}M towards course attainment.
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      const subs = DB.submissions ? (DB.submissions.all ? DB.submissions.all() : []) : [];
+      const existingPills = data.categoryAssess.map(a => {
+        const isRebalanced = window._pendingCategoryRebalance && window._pendingCategoryRebalance[a.id] !== undefined;
+        const wt = isRebalanced ? parseFloat(window._pendingCategoryRebalance[a.id]) : (parseFloat(a.weightage) || (data.normType === 'ia' ? 20 : 25));
+        const subCount = subs.filter(s => s.assignmentId === a.id).length;
+        return `<span style="background:var(--surface);border:1px solid ${isRebalanced ? '#10b981' : 'var(--border)'};padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;" title="${subCount} student submissions recorded">
+          ${a.title || a.id}: <strong>${wt}M</strong> ${isRebalanced ? '<span style="color:#059669;font-weight:700;">(Rebalanced)</span>' : ''} ${subCount > 0 ? `<span style="color:var(--success);">(${subCount} graded 🔒)</span>` : ''}
+        </span>`;
+      }).join(' ');
+
+      let alertColor = isBalanced ? '#10b981' : (isOver ? '#f59e0b' : '#3b82f6');
+      let statusBadge = isBalanced 
+        ? `<span class="badge badge-success" style="background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;font-weight:700;">✅ Balanced (${totalWithNew}/${data.budget}M)</span>` 
+        : (isOver 
+            ? `<span class="badge badge-warning" style="background:#fffbeb;color:#92400e;border:1px solid #fde68a;font-weight:700;">⚠️ Over Budget: +${diff.toFixed(1)}M (${totalWithNew}/${data.budget}M)</span>`
+            : `<span class="badge badge-neutral" style="font-weight:700;">ℹ️ Under Budget: ${totalWithNew}/${data.budget}M</span>`);
+
+      const count = data.categoryAssess.length + 1;
+      const equalShare = (data.budget / count).toFixed(1).replace('.0', '');
+
+      let presetsHtml = '';
+      if (count === 2) {
+        const other = data.categoryAssess[0];
+        presetsHtml = `
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="CategoryBudgetEngine.applyPreset('${inputElemId}', ${equalShare}, '${other.id}', ${equalShare}, '${containerId}')" style="font-size:11px;padding:3px 8px;">
+              ⚖️ Equal Split (${equalShare}M each)
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="CategoryBudgetEngine.applyPreset('${inputElemId}', 10, '${other.id}', 15, '${containerId}')" style="font-size:11px;padding:3px 8px;">
+              🎯 Unequal: 15M (${other.title.slice(0,10)}…) & 10M (This)
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="CategoryBudgetEngine.applyPreset('${inputElemId}', 15, '${other.id}', 10, '${containerId}')" style="font-size:11px;padding:3px 8px;">
+              🎯 Unequal: 10M (${other.title.slice(0,10)}…) & 15M (This)
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="CategoryBudgetEngine.applyPreset('${inputElemId}', ${data.budget}, '${other.id}', ${data.budget}, '${containerId}')" style="font-size:11px;padding:3px 8px;">
+              📐 Average Mode (${data.budget}M each)
+            </button>
+          </div>
+        `;
+      } else {
+        presetsHtml = `
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="CategoryBudgetEngine.applyEqualSplitAll('${inputElemId}', '${data.normType}', ${data.budget}, ${count}, '${containerId}')" style="font-size:11px;padding:3px 8px;">
+              ⚖️ Auto-Split Equally (${equalShare}M each across all ${count} assessments)
+            </button>
+          </div>
+        `;
+      }
+
+      let rebalanceNotice = '';
+      if (window._pendingCategoryRebalance && Object.keys(window._pendingCategoryRebalance).length > 0) {
+        const rebList = Object.entries(window._pendingCategoryRebalance).map(([aid, newW]) => {
+          const aObj = DB.assessments.byId(aid);
+          return `<strong>${aObj?.title || aid}</strong> ➔ <strong>${newW}M</strong>`;
+        }).join(', ');
+        rebalanceNotice = `
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;padding:4px 8px;border-radius:4px;font-size:11px;margin-top:5px;">
+            🔄 <strong>Auto-Rebalance Active:</strong> Saving will also adjust ${rebList} so total exactly equals ${data.budget}M.
+          </div>
+        `;
+      }
+
+      container.innerHTML = `
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-left:4px solid ${alertColor};padding:10px 14px;border-radius:8px;font-size:12px;margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-weight:700;color:var(--text-primary);">📊 ${data.label} (Semester Budget: ${data.budget}M)</span>
+            ${statusBadge}
+          </div>
+          
+          <div style="margin-top:5px;font-size:11px;color:var(--text-secondary);">
+            Existing in this course: ${existingPills} &bull; <span style="color:var(--primary);font-weight:700;">This: ${currWt}M</span>
+          </div>
+
+          <div style="font-size:11px;color:var(--text-primary);font-weight:600;margin-top:6px;">
+            Quick Weightage Distribution Options (Equal or Unequal):
+          </div>
+          ${presetsHtml}
+
+          ${rebalanceNotice}
+
+          <div style="font-size:10.5px;color:#059669;margin-top:5px;display:flex;align-items:center;gap:4px;">
+            <span>🔒</span> <span><strong>Data Preservation Guarantee:</strong> Student raw marks (100M) and submissions are permanently stored. Adjusting weightages recalculates scaled scores with zero data loss.</span>
+          </div>
+        </div>
+      `;
+    },
+
+    applyPreset(inputElemId, thisWeightage, otherId, otherWeightage, trackerContainerId) {
+      const inp = document.getElementById(inputElemId);
+      if (inp) inp.value = thisWeightage;
+      if (!window._pendingCategoryRebalance) window._pendingCategoryRebalance = {};
+      window._pendingCategoryRebalance[otherId] = otherWeightage;
+
+      const type = document.getElementById('aiGenType')?.value || document.getElementById('aType')?.value || 'ca';
+      this.renderLiveTracker(trackerContainerId, currentCourseId, type, thisWeightage, inputElemId);
+    },
+
+    applyEqualSplitAll(inputElemId, normType, budget, count, trackerContainerId) {
+      const inp = document.getElementById(inputElemId);
+      const share = parseFloat((budget / count).toFixed(1));
+      if (inp) inp.value = share;
+
+      const allAssess = DB.assessments.byCourse(currentCourseId) || [];
+      const categoryAssess = allAssess.filter(a => {
+        const t = (a.type === 'assignment' || a.type === 'ca') ? 'ca' : a.type;
+        return t === normType;
+      });
+
+      if (!window._pendingCategoryRebalance) window._pendingCategoryRebalance = {};
+      categoryAssess.forEach(a => {
+        window._pendingCategoryRebalance[a.id] = share;
+      });
+
+      this.renderLiveTracker(trackerContainerId, currentCourseId, normType, share, inputElemId);
+    },
+
+    commitPendingRebalance() {
+      if (window._pendingCategoryRebalance) {
+        for (const [aid, newWt] of Object.entries(window._pendingCategoryRebalance)) {
+          const a = DB.assessments.byId(aid);
+          if (a) {
+            a.weightage = parseFloat(newWt);
+            DB.assessments.update(a);
+          }
+        }
+        window._pendingCategoryRebalance = {};
+      }
+    }
+  };
+
+  function updateManualCategoryBudgetTracker(excludeId = null) {
+    const type = document.getElementById('aType')?.value || 'assignment';
+    const wt = parseFloat(document.getElementById('aWeightage')?.value) || 0;
+    CategoryBudgetEngine.renderLiveTracker('manualCategoryBudgetCard', currentCourseId, type, wt, 'aWeightage', excludeId);
+  }
+
   function updateManualModalDefaults(type) {
     const wtInp = document.getElementById('aWeightage');
     if (!wtInp) return;
@@ -367,9 +582,11 @@
     else if (type === 'mse') wtInp.value = 30;
     else if (type === 'ese') wtInp.value = 60;
     else wtInp.value = 25;
+    updateManualCategoryBudgetTracker();
   }
 
   function openCreateModal(existing) {
+    window._pendingCategoryRebalance = {};
     const isEdit = !!existing;
     const defaultWt = existing?.weightage || (existing?.type === 'ia' ? 20 : (existing?.type === 'mse' ? 30 : (existing?.type === 'ese' ? 60 : 25)));
     const modalHtml = `
@@ -381,7 +598,7 @@
         <div class="form-row" style="display:grid;grid-template-columns:1.2fr 0.6fr 1fr 1fr;gap:12px;">
           <div class="form-group">
             <label class="form-label">Examination Category</label>
-            <select class="form-select" id="aType" onchange="updateManualModalDefaults(this.value)">
+            <select class="form-select" id="aType" onchange="updateManualModalDefaults(this.value); updateManualCategoryBudgetTracker('${existing?.id || ''}');">
               <option value="assignment" ${existing?.type==='assignment'||existing?.type==='ca'?'selected':''}>Continuous Assessment (CA)</option>
               <option value="ia" ${existing?.type==='ia'?'selected':''}>Internal Assessment (IA)</option>
               <option value="mse" ${existing?.type==='mse'?'selected':''}>Mid-Sem Exam (MSE)</option>
@@ -398,9 +615,12 @@
           </div>
           <div class="form-group">
             <label class="form-label">Scaled Weightage</label>
-            <input type="number" class="form-input" id="aWeightage" value="${defaultWt}" min="1">
+            <input type="number" class="form-input" id="aWeightage" value="${defaultWt}" min="1" oninput="updateManualCategoryBudgetTracker('${existing?.id || ''}')">
           </div>
         </div>
+
+        <div id="manualCategoryBudgetCard" style="margin-bottom:12px;"></div>
+
         <div class="form-group">
           <label class="form-label">Assessment Title *</label>
           <input type="text" class="form-input" id="aTitle" value="${existing?.title||''}" placeholder="e.g. Unit 2 Quiz, Mid-Sem Evaluation">
@@ -462,6 +682,7 @@
     if (!existing || !existing.questions || !existing.questions.length) {
       addQRow();
     }
+    updateManualCategoryBudgetTracker(existing?.id || null);
     renderAllIcons();
   }
 
@@ -594,6 +815,7 @@
       DB.assessments.add(data);
       Toast.success('Assessment created.');
     }
+    CategoryBudgetEngine.commitPendingRebalance();
     window._currentModalIsAI = false;
     window._currentModalRubrics = [];
     Modal.close();
@@ -602,6 +824,7 @@
 
   /* ── Autonomous College / University AI Exam & Assignment Generator Modal ── */
   function openAIGeneratorModal() {
+    window._pendingCategoryRebalance = {};
     if (!currentCourseId) { Toast.warning('Please select a course first.'); return; }
     const course = DB.courses.byId(currentCourseId);
     const cos = DB.cos.byCourse(currentCourseId) || [];
@@ -699,9 +922,11 @@
           </div>
           <div class="form-group" style="margin-bottom:0;">
             <label class="form-label">Attainment Weightage</label>
-            <input type="number" class="form-input" id="aiGenWeightage" value="20" min="1" max="100">
+            <input type="number" class="form-input" id="aiGenWeightage" value="20" min="1" max="100" oninput="updateAICategoryBudgetTracker()">
           </div>
         </div>
+
+        <div id="aiCategoryBudgetCard" style="margin-bottom:12px;"></div>
 
         <div style="font-size:11.5px;color:var(--text-secondary);background:var(--surface-2);border-left:3px solid var(--primary);padding:8px 12px;border-radius:4px;margin-bottom:14px;line-height:1.4;">
           💡 <strong>Flexible Scoring & Scaling:</strong> You can take any exam or assignment out of 100 marks (or any desired raw score). The system automatically converts and scales it to the required weightage (e.g., 20 marks for IA) during CO & PO attainment calculations.
@@ -775,6 +1000,7 @@
     Modal.open(modalHtml, { wide: true });
     renderAIQuestionBlueprint(false);
     handleAITopicInput(document.getElementById('aiGenTopic')?.value || '');
+    updateAICategoryBudgetTracker();
     renderAllIcons();
   }
 
@@ -934,6 +1160,13 @@
     } else {
       if (weightageInp) weightageInp.value = 25;
     }
+    updateAICategoryBudgetTracker();
+  }
+
+  function updateAICategoryBudgetTracker() {
+    const type = document.getElementById('aiGenType')?.value || 'ia';
+    const wt = parseFloat(document.getElementById('aiGenWeightage')?.value) || 0;
+    CategoryBudgetEngine.renderLiveTracker('aiCategoryBudgetCard', currentCourseId, type, wt, 'aiGenWeightage', null);
   }
 
   async function executeAIGeneration() {
@@ -1139,6 +1372,7 @@
     };
 
     DB.assessments.add(newAsgn);
+    CategoryBudgetEngine.commitPendingRebalance();
     Modal.close();
     renderAssignments();
     Toast.success(`Assessment "${newAsgn.title}" created with AI (${maxMarks}M raw scaled to ${weightage}M weightage)!`);
@@ -1196,6 +1430,230 @@
     Modal.close();
   }
 
+  /* ── Course Category Weightages & Budget Rebalancer Modal ── */
+  function openCategoryWeightageModal() {
+    if (!currentCourseId) { Toast.warning('Please select a course first.'); return; }
+    const course = DB.courses.byId(currentCourseId);
+    const allAssess = DB.assessments.byCourse(currentCourseId) || [];
+
+    const categories = [
+      { key: 'ca', label: 'Continuous Assessment (CA)', budget: 25, types: ['assignment', 'ca'], icon: 'clipboard' },
+      { key: 'ia', label: 'Internal Assessment (IA / Test)', budget: 20, types: ['ia'], icon: 'file-text' },
+      { key: 'mse', label: 'Mid-Semester Exam (MSE)', budget: 30, types: ['mse'], icon: 'book' },
+      { key: 'ese', label: 'End-Semester Exam (ESE)', budget: 60, types: ['ese'], icon: 'award' }
+    ];
+
+    let sectionsHtml = categories.map(cat => {
+      const assessList = allAssess.filter(a => cat.types.includes(a.type));
+      const currentSum = assessList.reduce((s, a) => s + (parseFloat(a.weightage) || (cat.key === 'ia' ? 20 : (cat.key === 'mse' ? 30 : (cat.key === 'ese' ? 60 : 25)))), 0);
+      const isBalanced = Math.abs(currentSum - cat.budget) < 0.05;
+      const statusBadge = isBalanced 
+        ? `<span class="badge badge-success" id="badge-${cat.key}">✅ Balanced (${currentSum.toFixed(1)} / ${cat.budget}M)</span>`
+        : (currentSum > cat.budget 
+            ? `<span class="badge badge-warning" id="badge-${cat.key}">⚠️ Exceeds Budget (${currentSum.toFixed(1)} / ${cat.budget}M)</span>`
+            : `<span class="badge badge-info" id="badge-${cat.key}">ℹ️ Deficit (${currentSum.toFixed(1)} / ${cat.budget}M)</span>`);
+
+      let bodyContent = '';
+      if (assessList.length === 0) {
+        bodyContent = `
+          <div style="font-size:12px;color:var(--text-secondary);padding:10px;text-align:center;background:var(--surface);border-radius:6px;border:1px dashed var(--border);">
+            No assessments currently created under this category.
+          </div>
+        `;
+      } else {
+        const rowsHtml = assessList.map((a, idx) => {
+          const wt = parseFloat(a.weightage) || (cat.key === 'ia' ? 20 : (cat.key === 'mse' ? 30 : (cat.key === 'ese' ? 60 : 25)));
+          const subs = DB.submissions ? (DB.submissions.byAssessment ? DB.submissions.byAssessment(a.id) : (DB.submissions.all ? DB.submissions.all().filter(s => s.assignmentId === a.id) : [])) : [];
+          const subCount = subs.length;
+          const statusPill = subCount > 0 
+            ? `<span class="badge badge-success" style="font-size:10.5px;">🔒 ${subCount} Graded Submissions (Raw Marks Preserved)</span>`
+            : `<span class="badge badge-secondary" style="font-size:10.5px;">Draft / Not Graded Yet</span>`;
+
+          return `
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:10px 12px;font-weight:600;color:var(--text-primary);">
+                ${a.title}
+                <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">
+                  Paper Raw Marks: <strong>${a.maxMarks || 100}M</strong> &bull; ${statusPill}
+                </div>
+              </td>
+              <td style="padding:10px 12px;text-align:right;width:170px;">
+                <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;">
+                  <input type="number" class="form-input cat-wt-input" data-cat="${cat.key}" data-aid="${a.id}" value="${wt}" min="1" max="${cat.budget}" step="0.5" style="width:75px;text-align:right;font-weight:700;" oninput="updateCategoryModalTally('${cat.key}', ${cat.budget})">
+                  <span style="font-size:12px;font-weight:700;color:var(--text-secondary);">M</span>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        let quickButtons = '';
+        if (assessList.length === 2) {
+          quickButtons = `
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
+              <span style="font-size:11px;font-weight:700;align-self:center;color:var(--text-secondary);">1-Click Presets:</span>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="distributeCategoryEqually('${cat.key}', ${cat.budget})" style="font-size:11px;padding:3px 8px;">
+                ⚖️ Equal Split (${(cat.budget / 2).toFixed(1)}M each)
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="distributeCategoryUnequal('${cat.key}', [15, 10], ${cat.budget})" style="font-size:11px;padding:3px 8px;">
+                🎯 Unequal: 15M & 10M
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="distributeCategoryUnequal('${cat.key}', [10, 15], ${cat.budget})" style="font-size:11px;padding:3px 8px;">
+                🎯 Unequal: 10M & 15M
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="distributeCategoryUnequal('${cat.key}', [${(cat.budget * 0.6).toFixed(1)}, ${(cat.budget * 0.4).toFixed(1)}], ${cat.budget})" style="font-size:11px;padding:3px 8px;">
+                🎯 60% / 40% Split
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="distributeCategoryUnequal('${cat.key}', [${cat.budget}, ${cat.budget}], ${cat.budget})" style="font-size:11px;padding:3px 8px;">
+                📐 Average Mode (${cat.budget}M each)
+              </button>
+            </div>
+          `;
+        } else if (assessList.length > 2) {
+          const share = (cat.budget / assessList.length).toFixed(1);
+          quickButtons = `
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
+              <span style="font-size:11px;font-weight:700;align-self:center;color:var(--text-secondary);">1-Click Presets:</span>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="distributeCategoryEqually('${cat.key}', ${cat.budget})" style="font-size:11px;padding:3px 8px;">
+                ⚖️ Split Equally (${share}M each)
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="distributeCategoryUnequal('${cat.key}', [${cat.budget}, ${cat.budget}, ${cat.budget}], ${cat.budget})" style="font-size:11px;padding:3px 8px;">
+                📐 Average Mode (${cat.budget}M each)
+              </button>
+            </div>
+          `;
+        }
+
+        bodyContent = `
+          ${quickButtons}
+          <div class="table-responsive" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden;">
+            <table class="table" style="font-size:12px;margin-bottom:0;">
+              <thead>
+                <tr style="background:var(--surface-2);">
+                  <th style="padding:8px 12px;">Assessment Details</th>
+                  <th style="padding:8px 12px;text-align:right;">Assigned Weightage</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rowsHtml}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      return `
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px;margin-bottom:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+            <div>
+              <div style="font-size:13.5px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:6px;">
+                <span data-icon="${cat.icon}" style="color:var(--primary);"></span>
+                <span>${cat.label}</span>
+              </div>
+              <div style="font-size:11.5px;color:var(--text-secondary);margin-top:2px;">
+                Semester Budget Ceiling: <strong>${cat.budget} Marks</strong>
+              </div>
+            </div>
+            ${statusBadge}
+          </div>
+          ${bodyContent}
+        </div>
+      `;
+    }).join('');
+
+    const modalHtml = `
+      <div class="modal-header" style="border-bottom:1px solid var(--border);padding-bottom:12px;">
+        <div>
+          <h3 class="modal-title" style="margin:0;font-size:16px;">Category Weightages & Budget Rebalancer</h3>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">
+            Course: <strong>${course ? course.code + ' – ' + course.name : ''}</strong>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="Modal.close()"><span data-icon="close"></span></button>
+      </div>
+
+      <div class="modal-body" style="max-height:650px;overflow-y:auto;padding:16px 20px;">
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;padding:12px 16px;border-radius:8px;font-size:12px;margin-bottom:16px;line-height:1.5;">
+          <div style="font-weight:700;display:flex;align-items:center;gap:6px;font-size:12.5px;margin-bottom:4px;">
+            <span>🔒</span> Zero Data Loss Guarantee
+          </div>
+          Student raw marks (e.g. 85/100) and submissions are permanently stored in the OBE database. You can freely configure <strong>unequal</strong> (e.g., 15M & 10M), <strong>equal</strong> (12.5M each), or <strong>averaged</strong> weightages at any point in the semester. The system automatically recalculates the scaled attainment scores without touching or modifying student answer scripts.
+        </div>
+
+        ${sectionsHtml}
+      </div>
+
+      <div class="modal-footer" style="justify-content:space-between;">
+        <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveAllCategoryWeightages()" style="background:linear-gradient(135deg,#059669,#10b981);border-color:#059669;box-shadow:0 4px 12px rgba(5,150,105,0.25);">
+          <span data-icon="check"></span> <span>Save & Rebalance Weightages</span>
+        </button>
+      </div>
+    `;
+
+    Modal.open(modalHtml, { wide: true });
+    renderAllIcons();
+  }
+
+  function updateCategoryModalTally(catKey, budget) {
+    const inputs = document.querySelectorAll(`.cat-wt-input[data-cat="${catKey}"]`);
+    let sum = 0;
+    inputs.forEach(inp => sum += (parseFloat(inp.value) || 0));
+    const badge = document.getElementById(`badge-${catKey}`);
+    if (badge) {
+      if (Math.abs(sum - budget) < 0.05) {
+        badge.className = 'badge badge-success';
+        badge.textContent = `✅ Balanced (${sum.toFixed(1)} / ${budget}M)`;
+      } else if (sum > budget) {
+        badge.className = 'badge badge-warning';
+        badge.textContent = `⚠️ Exceeds Budget (${sum.toFixed(1)} / ${budget}M)`;
+      } else {
+        badge.className = 'badge badge-info';
+        badge.textContent = `ℹ️ Deficit (${sum.toFixed(1)} / ${budget}M)`;
+      }
+    }
+  }
+
+  function distributeCategoryEqually(catKey, budget) {
+    const inputs = document.querySelectorAll(`.cat-wt-input[data-cat="${catKey}"]`);
+    if (!inputs.length) return;
+    const share = parseFloat((budget / inputs.length).toFixed(1));
+    inputs.forEach(inp => inp.value = share);
+    updateCategoryModalTally(catKey, budget);
+  }
+
+  function distributeCategoryUnequal(catKey, ratios, budget) {
+    const inputs = document.querySelectorAll(`.cat-wt-input[data-cat="${catKey}"]`);
+    if (!inputs.length) return;
+    inputs.forEach((inp, idx) => {
+      if (idx < ratios.length) {
+        inp.value = ratios[idx];
+      }
+    });
+    updateCategoryModalTally(catKey, budget);
+  }
+
+  function saveAllCategoryWeightages() {
+    const inputs = document.querySelectorAll('.cat-wt-input');
+    let updatedCount = 0;
+    inputs.forEach(inp => {
+      const aid = inp.getAttribute('data-aid');
+      const newWt = parseFloat(inp.value);
+      if (aid && !isNaN(newWt)) {
+        const a = DB.assessments.byId(aid);
+        if (a) {
+          a.weightage = newWt;
+          DB.assessments.update(a);
+          updatedCount++;
+        }
+      }
+    });
+
+    Modal.close();
+    renderAssignments();
+    Toast.success(`Successfully updated ${updatedCount} assessment weightages! 🔒 Raw student marks preserved with zero data loss.`);
+  }
+
   window.openCreateModal = openCreateModal;
   window.editAssignment = editAssignment;
   window.deleteAssignment = deleteAssignment;
@@ -1215,6 +1673,15 @@
   window.executeAIGeneration = executeAIGeneration;
   window.adoptAIGeneratedAssessment = adoptAIGeneratedAssessment;
   window.openInQuestionPaperGen = openInQuestionPaperGen;
+  window.renderAssignments = renderAssignments;
+  window.openCategoryWeightageModal = openCategoryWeightageModal;
+  window.updateCategoryModalTally = updateCategoryModalTally;
+  window.distributeCategoryEqually = distributeCategoryEqually;
+  window.distributeCategoryUnequal = distributeCategoryUnequal;
+  window.saveAllCategoryWeightages = saveAllCategoryWeightages;
+  window.updateAICategoryBudgetTracker = updateAICategoryBudgetTracker;
+  window.updateManualCategoryBudgetTracker = updateManualCategoryBudgetTracker;
+  window.CategoryBudgetEngine = CategoryBudgetEngine;
 })();
 </script>
 </body>
