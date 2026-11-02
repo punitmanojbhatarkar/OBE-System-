@@ -113,36 +113,17 @@ const DB = (() => {
     byId(id)         { return courses.all().find(c=>c.id===id); },
     byFaculty(fid)   { 
       if (!fid) return [];
-      const u = users.byId(fid) || users.byEmail(fid);
-      const targetIds = new Set([fid]);
-      if (u) {
-        if (u.id) targetIds.add(u.id);
-        if (u.email) targetIds.add(u.email.toLowerCase());
-        // Link dual faculty/HOD accounts for the same person
-        if (u.id === 'usr-hod1' || u.id === 'usr-vw' || (u.email && u.email.toLowerCase().includes('wangikar'))) {
-          targetIds.add('usr-hod1');
-          targetIds.add('usr-vw');
-        } else if (u.id === 'usr-hod2' || u.id === 'usr-am' || (u.email && u.email.toLowerCase().includes('mehta'))) {
-          targetIds.add('usr-hod2');
-          targetIds.add('usr-am');
-        } else {
-          const cleanName = (u.name || '').toLowerCase().replace(/^(dr\.|prof\.|mr\.|mrs\.|ms\.)\s*/, '').trim();
-          if (cleanName && cleanName.length > 3) {
-            users.all().forEach(other => {
-              if (other.id === u.id) return;
-              const otherClean = (other.name || '').toLowerCase().replace(/^(dr\.|prof\.|mr\.|mrs\.|ms\.)\s*/, '').trim();
-              if (otherClean && (otherClean === cleanName || otherClean.includes(cleanName) || cleanName.includes(otherClean))) {
-                targetIds.add(other.id);
-                if (other.email) targetIds.add(other.email.toLowerCase());
-              }
-            });
-          }
-        }
-      }
+      const cleanFid = String(fid).trim();
+      const u = (typeof users !== 'undefined' && users.byId) ? (users.byId(cleanFid) || users.byEmail(cleanFid)) : null;
+      const userEmail = (u && u.email ? u.email : (cleanFid.includes('@') ? cleanFid : '')).toLowerCase();
+
       return courses.all().filter(c => {
-        if (c.facultyId && targetIds.has(c.facultyId)) return true;
-        if (c.facultyEmail && targetIds.has(c.facultyEmail.toLowerCase())) return true;
-        if (Array.isArray(c.facultyIds) && c.facultyIds.some(id => targetIds.has(id))) return true;
+        if (!c) return false;
+        // Strictly only courses created by or assigned to this exact login ID
+        if (c.facultyId && String(c.facultyId).trim() === cleanFid) return true;
+        if (c.createdBy && String(c.createdBy).trim() === cleanFid) return true;
+        if (userEmail && c.facultyEmail && String(c.facultyEmail).trim().toLowerCase() === userEmail) return true;
+        if (Array.isArray(c.facultyIds) && c.facultyIds.map(x => String(x).trim()).includes(cleanFid)) return true;
         return false;
       });
     },
@@ -297,8 +278,15 @@ const DB = (() => {
     },
     byFaculty(fid)     {
       if (!fid) return [];
-      const facultyCourseIds = courses.byFaculty(fid).map(c => c.id);
-      return assessments.all().filter(a => facultyCourseIds.includes(a.courseId) || a.facultyId === fid);
+      const cleanFid = String(fid).trim();
+      const facultyCourseIds = courses.byFaculty(cleanFid).map(c => c.id);
+      return assessments.all().filter(a => {
+        if (!a) return false;
+        if (facultyCourseIds.includes(a.courseId)) return true;
+        if (a.facultyId && String(a.facultyId).trim() === cleanFid) return true;
+        if (a.createdBy && String(a.createdBy).trim() === cleanFid) return true;
+        return false;
+      });
     },
     byId(id)           { return assessments.all().find(a=>a.id===id); },
     add(a)             { const all=assessments.all(); a.id=a.id||uid(); a.createdAt=a.createdAt||new Date().toISOString(); all.push(a); set(KEYS.assessments,all); return a; },

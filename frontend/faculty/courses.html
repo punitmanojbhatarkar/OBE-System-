@@ -411,6 +411,8 @@
       batch      : document.getElementById('f-batch').value.trim(),
       status     : 'active',
       facultyId  : user.id,
+      createdBy  : user.id,
+      facultyEmail: (user.email || ''),
       examScheme : { ia, mse, ese },
       attainmentLevels: { 1:65, 2:75, 3:85 },
       directWeight: 80, indirectWeight: 20,

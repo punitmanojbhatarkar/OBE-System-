@@ -215,15 +215,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     } catch(e) {}
 
-    // Strict scoping: only include assessments belonging to active course and faculty
-    const facultyTargetIds = [user.id, (user.email || '').toLowerCase()];
-    if (user.id === 'usr-hod1' || user.id === 'usr-vw') facultyTargetIds.push('usr-hod1', 'usr-vw');
-    if (user.id === 'usr-hod2' || user.id === 'usr-am') facultyTargetIds.push('usr-hod2', 'usr-am');
-
+    // Strict scoping: only include assessments belonging to active course and created by this exact user
     assessmentsList = assessmentsList.filter(a => {
       const matchCourse = validCourseKeys.includes(a.courseId) || (activeCourse && (a.courseCode === activeCourse.code || a.courseId === activeCourse.id));
       if (!matchCourse) return false;
-      if (a.facultyId && !facultyTargetIds.includes(a.facultyId) && !facultyTargetIds.includes(String(a.facultyId).toLowerCase())) {
+      if (a.facultyId && String(a.facultyId).trim() !== String(user.id).trim() && String(a.facultyId).trim().toLowerCase() !== (user.email || '').toLowerCase()) {
         return false;
       }
       return true;

@@ -391,6 +391,12 @@ function patchDBWriteMethods() {
   // ── Courses ──
   const _courseAdd = DB.courses.add.bind(DB.courses);
   DB.courses.add = function(c) {
+    const session = typeof Auth !== 'undefined' ? Auth.getUser() : null;
+    if (session && session.id) {
+      if (!c.facultyId) c.facultyId = session.id;
+      if (!c.createdBy) c.createdBy = session.id;
+      if (!c.facultyEmail && session.email) c.facultyEmail = session.email;
+    }
     const result = _courseAdd(c);
     apiFetch('/api/courses', { method: 'POST', body: { ...c, klass: c.class } }).catch(e => console.warn('[API] course add failed', e));
     return result;
