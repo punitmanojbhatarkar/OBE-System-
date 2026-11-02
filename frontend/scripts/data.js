@@ -112,9 +112,39 @@ const DB = (() => {
     get()            { return get(KEYS.courses); }, // alias for all()
     byId(id)         { return courses.all().find(c=>c.id===id); },
     byFaculty(fid)   { 
-      const u = users.byId(fid);
-      if (u && u.role === 'hod') return courses.byDept(u.deptId);
-      return courses.all().filter(c=>c.facultyId===fid || (c.facultyIds && c.facultyIds.includes(fid))); 
+      if (!fid) return [];
+      const u = users.byId(fid) || users.byEmail(fid);
+      const targetIds = new Set([fid]);
+      if (u) {
+        if (u.id) targetIds.add(u.id);
+        if (u.email) targetIds.add(u.email.toLowerCase());
+        // Link dual faculty/HOD accounts for the same person
+        if (u.id === 'usr-hod1' || u.id === 'usr-vw' || (u.email && u.email.toLowerCase().includes('wangikar'))) {
+          targetIds.add('usr-hod1');
+          targetIds.add('usr-vw');
+        } else if (u.id === 'usr-hod2' || u.id === 'usr-am' || (u.email && u.email.toLowerCase().includes('mehta'))) {
+          targetIds.add('usr-hod2');
+          targetIds.add('usr-am');
+        } else {
+          const cleanName = (u.name || '').toLowerCase().replace(/^(dr\.|prof\.|mr\.|mrs\.|ms\.)\s*/, '').trim();
+          if (cleanName && cleanName.length > 3) {
+            users.all().forEach(other => {
+              if (other.id === u.id) return;
+              const otherClean = (other.name || '').toLowerCase().replace(/^(dr\.|prof\.|mr\.|mrs\.|ms\.)\s*/, '').trim();
+              if (otherClean && (otherClean === cleanName || otherClean.includes(cleanName) || cleanName.includes(otherClean))) {
+                targetIds.add(other.id);
+                if (other.email) targetIds.add(other.email.toLowerCase());
+              }
+            });
+          }
+        }
+      }
+      return courses.all().filter(c => {
+        if (c.facultyId && targetIds.has(c.facultyId)) return true;
+        if (c.facultyEmail && targetIds.has(c.facultyEmail.toLowerCase())) return true;
+        if (Array.isArray(c.facultyIds) && c.facultyIds.some(id => targetIds.has(id))) return true;
+        return false;
+      });
     },
     byDept(did)      { 
       return courses.all().filter(c=>c.deptId===did); 
@@ -264,6 +294,11 @@ const DB = (() => {
         const isLegacyMock = id.endsWith('-ia1') || id.endsWith('-ia2') || id.endsWith('-mse') || id.endsWith('-ese') || id.endsWith('-asgn1');
         return !isLegacyMock;
       });
+    },
+    byFaculty(fid)     {
+      if (!fid) return [];
+      const facultyCourseIds = courses.byFaculty(fid).map(c => c.id);
+      return assessments.all().filter(a => facultyCourseIds.includes(a.courseId) || a.facultyId === fid);
     },
     byId(id)           { return assessments.all().find(a=>a.id===id); },
     add(a)             { const all=assessments.all(); a.id=a.id||uid(); a.createdAt=a.createdAt||new Date().toISOString(); all.push(a); set(KEYS.assessments,all); return a; },

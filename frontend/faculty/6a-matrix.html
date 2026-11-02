@@ -187,7 +187,8 @@
   let courseTargetMapping = {};
 
   let myCourses = DB.courses.byFaculty(user.id);
-  if (!myCourses || myCourses.length === 0) myCourses = DB.courses.all();
+  if ((!myCourses || myCourses.length === 0) && user.role === 'admin') myCourses = DB.courses.all();
+  myCourses = myCourses || [];
   
   sel.innerHTML = '<option value="">— Select Course —</option>' + myCourses.map(c => `<option value="${c.id}">${c.code} – ${c.name}</option>`).join('');
   

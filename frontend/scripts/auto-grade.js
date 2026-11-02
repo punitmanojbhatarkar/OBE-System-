@@ -59,19 +59,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   let lastGradedData = null;
   let ocrExtractedText = '';
 
-  // ── 1. Populate Courses ────────────────────────────────────────────────────
+  // ── 1. Populate Courses strictly for this logged-in faculty/user ──────────
   let coursesList = [];
   try {
-    if (user.role === 'hod' || user.role === 'admin') {
+    coursesList = DB.courses.byFaculty(user.id);
+    // Only if admin has no assigned personal teaching courses, fall back to all
+    if ((!coursesList || coursesList.length === 0) && user.role === 'admin') {
       coursesList = DB.courses.all();
-    } else {
-      coursesList = DB.courses.byFaculty(user.id);
-      if (!coursesList || coursesList.length === 0) {
-        coursesList = DB.courses.all();
-      }
     }
   } catch (err) {
-    coursesList = DB.courses.all() || [];
+    coursesList = (DB.courses && DB.courses.byFaculty ? DB.courses.byFaculty(user.id) : []) || [];
   }
 
   if (courseSelect) {
@@ -217,6 +214,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
       }
     } catch(e) {}
+
+    // Strict scoping: only include assessments belonging to active course and faculty
+    const facultyTargetIds = [user.id, (user.email || '').toLowerCase()];
+    if (user.id === 'usr-hod1' || user.id === 'usr-vw') facultyTargetIds.push('usr-hod1', 'usr-vw');
+    if (user.id === 'usr-hod2' || user.id === 'usr-am') facultyTargetIds.push('usr-hod2', 'usr-am');
+
+    assessmentsList = assessmentsList.filter(a => {
+      const matchCourse = validCourseKeys.includes(a.courseId) || (activeCourse && (a.courseCode === activeCourse.code || a.courseId === activeCourse.id));
+      if (!matchCourse) return false;
+      if (a.facultyId && !facultyTargetIds.includes(a.facultyId) && !facultyTargetIds.includes(String(a.facultyId).toLowerCase())) {
+        return false;
+      }
+      return true;
+    });
 
     currentLoadedAssignments = assessmentsList;
 
@@ -408,6 +419,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         { criterion: 'Architectural schematics, diagrams, and illustrative depth', weightage: 20 },
         { criterion: 'Synthesized evaluation, critical reasoning, and clarity of prose', weightage: 20 }
       ],
+      facultyId: user.id,
       createdAt: new Date().toISOString()
     };
 

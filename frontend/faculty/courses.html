@@ -187,12 +187,11 @@
   renderAllIcons();
 
   function loadCourses() {
-    if (user.role === 'hod') {
-      const allC = DB.courses.all ? DB.courses.all() : JSON.parse(localStorage.getItem('obe_courses') || '[]');
-      allCourses = allC.filter(c => c.deptId === user.deptId);
-    } else {
-      allCourses = DB.courses.byFaculty(user.id);
+    allCourses = DB.courses.byFaculty(user.id);
+    if ((!allCourses || !allCourses.length) && user.role === 'admin') {
+      allCourses = DB.courses.all();
     }
+    allCourses = allCourses || [];
     renderCourses(allCourses);
   }
 

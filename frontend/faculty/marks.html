@@ -541,12 +541,10 @@
   const courseSel = document.getElementById('course-select');
   function initCourseDropdown() {
     let facultyCourses = DB.courses.byFaculty(user.id);
-    if (!facultyCourses || !facultyCourses.length) {
-      facultyCourses = DB.courses.all().filter(c => c.deptId === user.deptId || !c.facultyId || c.facultyId === user.id);
-    }
-    if (!facultyCourses || !facultyCourses.length) {
+    if ((!facultyCourses || !facultyCourses.length) && user.role === 'admin') {
       facultyCourses = DB.courses.all();
     }
+    facultyCourses = facultyCourses || [];
     courseSel.innerHTML = facultyCourses.map(c => `<option value="${c.id}">${c.code} – ${c.name}</option>`).join('');
 
     const storedCourseId = sessionStorage.getItem('selected_course_id');

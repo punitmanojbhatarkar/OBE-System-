@@ -178,12 +178,10 @@
   function loadCourses() {
     const sel = document.getElementById('courseSelect');
     let courses = DB.courses.byFaculty(user.id);
-    if (!courses || !courses.length) {
-      courses = DB.courses.all().filter(c => c.deptId === user.deptId || !c.facultyId || c.facultyId === user.id);
-    }
-    if (!courses || !courses.length) {
+    if ((!courses || !courses.length) && user.role === 'admin') {
       courses = DB.courses.all();
     }
+    courses = courses || [];
     sel.innerHTML = courses.map(c => `<option value="${c.id}">${c.code} – ${c.name}</option>`).join('');
     
     const saved = sessionStorage.getItem('selected_course_id');
@@ -794,6 +792,7 @@
 
     const data = {
       courseId: currentCourseId,
+      facultyId: user.id,
       type: document.getElementById('aType').value,
       no: parseInt(document.getElementById('aNo').value)||1,
       title,
