@@ -15,12 +15,15 @@ const Attainment = (() => {
     return map[level] || level;
   }
 
-  /* ── Attainment level from % ── */
+  /* ── Attainment level from % (NBA SAR Criterion 3 Standard) ── */
   function getLevelFromPct(pct, levels) {
-    // levels = {1: 65, 2: 75, 3: 85}
-    if (pct >= (levels[3] || 85)) return 3;
-    if (pct >= (levels[2] || 75)) return 2;
-    if (pct >= (levels[1] || 65)) return 1;
+    if (pct === null || pct === undefined) return null;
+    const l3 = (levels && levels[3] !== undefined) ? Number(levels[3]) : 70;
+    const l2 = (levels && levels[2] !== undefined) ? Number(levels[2]) : 60;
+    const l1 = (levels && levels[1] !== undefined) ? Number(levels[1]) : 50;
+    if (pct >= l3) return 3;
+    if (pct >= l2) return 2;
+    if (pct >= l1) return 1;
     return 0;
   }
 
@@ -57,10 +60,21 @@ const Attainment = (() => {
   }
 
   /* ── Universal Marks Aggregator per Assessment Type ──
-     Handles both Question Blueprint Mapping AND Direct CO-Wise Marks Entry
+     Handles Question Blueprint Mapping AND Direct CO-Wise Marks Entry
   ── */
   function getMarksByTypeAndCO(courseId, type) {
-    const assessments = DB.assessments.byCourse(courseId).filter(a => a.type === type || (type === 'assignment' && a.type === 'ca') || (type === 'ca' && a.type === 'assignment'));
+    const assessments = DB.assessments.byCourse(courseId).filter(a => {
+      const t = (a.type || '').toLowerCase();
+      const cat = (a.category || '').toLowerCase();
+      if (type === 'ia') return t === 'ia' || cat === 'ia';
+      if (type === 'mse') return t === 'mse' || cat === 'mse';
+      if (type === 'ese') return t === 'ese' || cat === 'ese';
+      if (type === 'assignment' || type === 'ca') {
+        return t === 'assignment' || t === 'ca' || cat === 'assignment' || cat === 'ca' || t === 'quiz' || t === 'project' || t === 'lab';
+      }
+      return t === type;
+    });
+
     const allMarks = DB.marks.get(courseId);
     const students = DB.students.byCourse(courseId);
     const cos = getCleanCOs(courseId);
@@ -98,26 +112,41 @@ const Attainment = (() => {
       students.forEach(s => {
         targetCOs.forEach(co => {
           const coNo = co.no;
-          if (!result[s.prn][coNo]) result[s.prn][coNo] = { earned: 0, max: 0 };
+          if (!result[s.prn][coNo]) result[s.prn][coNo] = { earned: 0, max: 0, items: [] };
 
-          // 1. Question Blueprint Marks Check (preferred for question-wise mapped exams)
           if (hasQuestions) {
             const mappedQuestions = asgn.questions.filter(q => parseInt(q.coNo) === coNo);
             mappedQuestions.forEach(q => {
               const qMark = allMarks.find(m => m.prn === s.prn && m.assessId === asgn.id && m.qNo === q.qNo);
               const qMax = parseFloat(q.maxMarks || q.marks || 10);
               if (qMark && qMark.marks !== null && qMark.marks !== undefined) {
-                result[s.prn][coNo].earned += (parseFloat(qMark.marks) || 0) * scaleFactor;
-                result[s.prn][coNo].max += qMax * scaleFactor;
+                const scaledEarned = (parseFloat(qMark.marks) || 0) * scaleFactor;
+                const scaledMax = qMax * scaleFactor;
+                result[s.prn][coNo].earned += scaledEarned;
+                result[s.prn][coNo].max += scaledMax;
+                result[s.prn][coNo].items.push({
+                  title: `${asgn.title || 'Exam'} - Q${q.qNo}`,
+                  rawEarned: parseFloat(qMark.marks) || 0,
+                  rawMax: qMax,
+                  scaledEarned,
+                  scaledMax
+                });
               }
             });
-          }
-          // 2. Direct CO Marks Check (where qNo === coNo)
-          else {
+          } else {
             const directMark = allMarks.find(m => m.prn === s.prn && m.assessId === asgn.id && m.qNo === coNo);
             if (directMark && directMark.marks !== null && directMark.marks !== undefined) {
-              result[s.prn][coNo].earned += (parseFloat(directMark.marks) || 0) * scaleFactor;
-              result[s.prn][coNo].max += coDirectMax;
+              const scaledEarned = (parseFloat(directMark.marks) || 0) * scaleFactor;
+              const scaledMax = coDirectMax;
+              result[s.prn][coNo].earned += scaledEarned;
+              result[s.prn][coNo].max += scaledMax;
+              result[s.prn][coNo].items.push({
+                title: asgn.title || 'Assessment',
+                rawEarned: parseFloat(directMark.marks) || 0,
+                rawMax: maxTotal / (targetCOs.length || 1),
+                scaledEarned,
+                scaledMax
+              });
             }
           }
         });
@@ -133,94 +162,140 @@ const Attainment = (() => {
   function getESEMarksByCO(courseId) { return getMarksByTypeAndCO(courseId, 'ese'); }
 
   /* ── Calculate CO Direct Attainment ── */
-  function calcCODirect(courseId) {
+  function calcCODirect(courseId, customOptions = {}) {
     const course = DB.courses.byId(courseId) || {};
     const cos = getCleanCOs(courseId);
     const students = DB.students.byCourse(courseId);
-    const levels = course.attainmentLevels || { 1: 65, 2: 75, 3: 85 };
+    const levels = customOptions.levels || course.attainmentLevels || { 1: 60, 2: 70, 3: 80 };
 
     if (!students.length) return [];
 
     const iaByPRN = getIAMarksByCO(courseId);
     const mseByPRN = getMSEMarksByCO(courseId);
+    const caByPRN = getAssignMarksByCO(courseId);
     const eseByPRN = getESEMarksByCO(courseId);
-    const assignByPRN = getAssignMarksByCO(courseId);
+
+    const cieWeight = parseFloat(course.directCieWeight) || 50;
+    const eseWeight = parseFloat(course.directEseWeight) || 50;
 
     return cos.map(co => {
       const coNo = co.no;
-      const coThreshold = (co.studentThreshold !== undefined && co.studentThreshold !== null && co.studentThreshold !== '') ? Number(co.studentThreshold) : 60;
+      const coThreshold = (customOptions.threshold !== undefined && customOptions.threshold !== null)
+        ? Number(customOptions.threshold)
+        : ((co.studentThreshold !== undefined && co.studentThreshold !== null && co.studentThreshold !== '')
+            ? Number(co.studentThreshold)
+            : (course.passingThreshold ? Number(course.passingThreshold) : 60));
+
       const coLevels = {
         1: (co.levels && co.levels[1] !== undefined && co.levels[1] !== null) ? Number(co.levels[1]) : levels[1],
         2: (co.levels && co.levels[2] !== undefined && co.levels[2] !== null) ? Number(co.levels[2]) : levels[2],
         3: (co.levels && co.levels[3] !== undefined && co.levels[3] !== null) ? Number(co.levels[3]) : levels[3]
       };
 
-      let iaStudents = 0, iaTotal = 0;
-      let mseStudents = 0, mseTotal = 0;
-      let cieStudents = 0, cieTotal = 0;
-      let eseStudents = 0, eseTotal = 0;
+      let iaTotal = 0, iaPassed = 0, iaEarnedSum = 0, iaMaxSum = 0;
+      let mseTotal = 0, msePassed = 0, mseEarnedSum = 0, mseMaxSum = 0;
+      let caTotal = 0, caPassed = 0, caEarnedSum = 0, caMaxSum = 0;
+      let cieTotal = 0, ciePassed = 0, cieEarnedSum = 0, cieMaxSum = 0;
+      let eseTotal = 0, esePassed = 0, eseEarnedSum = 0, eseMaxSum = 0;
 
       students.forEach(s => {
         const rem = DB.remedial.get(courseId, s.prn);
         const retestScore = rem && rem.retestScores && rem.retestScores[coNo] !== undefined && rem.retestScores[coNo] !== null ? Number(rem.retestScores[coNo]) : null;
         const retestPassed = retestScore !== null && retestScore >= coThreshold;
 
-        let cieEarned = 0, cieMax = 0;
-
-        // IA
+        // 1. IA
         const ia = iaByPRN[s.prn]?.[coNo];
         if (ia && ia.max > 0) {
           iaTotal++;
-          cieEarned += ia.earned;
-          cieMax += ia.max;
+          iaEarnedSum += ia.earned;
+          iaMaxSum += ia.max;
           const pct = (ia.earned / ia.max) * 100;
-          if (pct >= coThreshold || retestPassed) iaStudents++;
+          if (pct >= coThreshold || retestPassed) iaPassed++;
         }
 
-        // MSE
+        // 2. MSE
         const mse = mseByPRN[s.prn]?.[coNo];
         if (mse && mse.max > 0) {
           mseTotal++;
-          cieEarned += mse.earned;
-          cieMax += mse.max;
+          mseEarnedSum += mse.earned;
+          mseMaxSum += mse.max;
           const pct = (mse.earned / mse.max) * 100;
-          if (pct >= coThreshold || retestPassed) mseStudents++;
+          if (pct >= coThreshold || retestPassed) msePassed++;
         }
 
-        // Assignment
-        const asgn = assignByPRN[s.prn]?.[coNo];
-        if (asgn && asgn.max > 0) {
-          cieEarned += asgn.earned;
-          cieMax += asgn.max;
+        // 3. CA / Assignment
+        const ca = caByPRN[s.prn]?.[coNo];
+        if (ca && ca.max > 0) {
+          caTotal++;
+          caEarnedSum += ca.earned;
+          caMaxSum += ca.max;
+          const pct = (ca.earned / ca.max) * 100;
+          if (pct >= coThreshold || retestPassed) caPassed++;
         }
 
-        // CIE Total
-        if (cieMax > 0) {
+        // 4. Combined CIE (All internals)
+        const sCieEarned = (ia ? ia.earned : 0) + (mse ? mse.earned : 0) + (ca ? ca.earned : 0);
+        const sCieMax = (ia ? ia.max : 0) + (mse ? mse.max : 0) + (ca ? ca.max : 0);
+        if (sCieMax > 0) {
           cieTotal++;
-          const ciePctStudent = (cieEarned / cieMax) * 100;
-          if (ciePctStudent >= coThreshold || retestPassed) cieStudents++;
+          cieEarnedSum += sCieEarned;
+          cieMaxSum += sCieMax;
+          const sCiePct = (sCieEarned / sCieMax) * 100;
+          if (sCiePct >= coThreshold || retestPassed) ciePassed++;
         }
 
-        // ESE
+        // 5. ESE
         const ese = eseByPRN[s.prn]?.[coNo];
         if (ese && ese.max > 0) {
           eseTotal++;
-          const esePctStudent = (ese.earned / ese.max) * 100;
-          if (esePctStudent >= coThreshold || retestPassed) eseStudents++;
+          eseEarnedSum += ese.earned;
+          eseMaxSum += ese.max;
+          const pct = (ese.earned / ese.max) * 100;
+          if (pct >= coThreshold || retestPassed) esePassed++;
         }
       });
 
-      const iaPct = iaTotal > 0 ? Math.round((iaStudents / iaTotal) * 100) : null;
-      const msePct = mseTotal > 0 ? Math.round((mseStudents / mseTotal) * 100) : null;
-      const ciePct = cieTotal > 0 ? Math.round((cieStudents / cieTotal) * 100) : (iaPct !== null || msePct !== null ? Math.round(((iaPct||0) + (msePct||0)) / ([iaPct, msePct].filter(x=>x!==null).length || 1)) : null);
+      // Calculate component percentages and NBA levels
+      const iaPct = iaTotal > 0 ? Math.round((iaPassed / iaTotal) * 100) : null;
+      const iaAvgScorePct = iaMaxSum > 0 ? parseFloat(((iaEarnedSum / iaMaxSum) * 100).toFixed(1)) : null;
+      const iaLevel = iaPct !== null ? getLevelFromPct(iaPct, coLevels) : null;
+
+      const msePct = mseTotal > 0 ? Math.round((msePassed / mseTotal) * 100) : null;
+      const mseAvgScorePct = mseMaxSum > 0 ? parseFloat(((mseEarnedSum / mseMaxSum) * 100).toFixed(1)) : null;
+      const mseLevel = msePct !== null ? getLevelFromPct(msePct, coLevels) : null;
+
+      const caPct = caTotal > 0 ? Math.round((caPassed / caTotal) * 100) : null;
+      const caAvgScorePct = caMaxSum > 0 ? parseFloat(((caEarnedSum / caMaxSum) * 100).toFixed(1)) : null;
+      const caLevel = caPct !== null ? getLevelFromPct(caPct, coLevels) : null;
+
+      const ciePct = cieTotal > 0 ? Math.round((ciePassed / cieTotal) * 100) : null;
+      const cieAvgScorePct = cieMaxSum > 0 ? parseFloat(((cieEarnedSum / cieMaxSum) * 100).toFixed(1)) : null;
       const cieLevel = ciePct !== null ? getLevelFromPct(ciePct, coLevels) : null;
 
-      const esePct = eseTotal > 0 ? Math.round((eseStudents / eseTotal) * 100) : null;
+      const esePct = eseTotal > 0 ? Math.round((esePassed / eseTotal) * 100) : null;
+      const eseAvgScorePct = eseMaxSum > 0 ? parseFloat(((eseEarnedSum / eseMaxSum) * 100).toFixed(1)) : null;
       const eseLevel = esePct !== null ? getLevelFromPct(esePct, coLevels) : null;
 
-      // Direct Attainment Level (CIE & ESE)
-      const validLevels = [cieLevel, eseLevel].filter(x => x !== null);
-      const directLevel = validLevels.length ? (validLevels.reduce((a, b) => a + b, 0) / validLevels.length) : (cieLevel !== null ? cieLevel : null);
+      // Direct Attainment Level (NBA Sheet 14A Formula)
+      let directLevel = null;
+      let isInterimOnly = false;
+      let directFormulaExplanation = '';
+
+      if (cieLevel !== null && eseLevel !== null) {
+        const totalW = cieWeight + eseWeight;
+        directLevel = parseFloat((((cieLevel * cieWeight) + (eseLevel * eseWeight)) / totalW).toFixed(2));
+        directFormulaExplanation = `(${cieWeight}% × CIE Level ${cieLevel}) + (${eseWeight}% × ESE Level ${eseLevel}) = ${directLevel}`;
+      } else if (cieLevel !== null) {
+        directLevel = parseFloat(cieLevel.toFixed(2));
+        isInterimOnly = true;
+        directFormulaExplanation = `Interim CIE Level (${cieLevel}) — End-Semester Examination pending`;
+      } else if (eseLevel !== null) {
+        directLevel = parseFloat(eseLevel.toFixed(2));
+        directFormulaExplanation = `Direct ESE Level (${eseLevel})`;
+      }
+
+      const validDirectPcts = [ciePct, esePct].filter(x => x !== null);
+      const directPct = validDirectPcts.length ? Math.round(validDirectPcts.reduce((a, b) => a + b, 0) / validDirectPcts.length) : null;
 
       return {
         co,
@@ -229,16 +304,140 @@ const Attainment = (() => {
         coText: co.text || `Course Outcome ${coNo}`,
         bloomsLevel: co.blooms || co.bloomsLevel || 'L3',
         targetScorePct: coThreshold,
+
+        // IA
+        iaTotal,
+        iaPassed,
         iaPct,
+        iaAvgScorePct,
+        iaLevel,
+
+        // MSE
+        mseTotal,
+        msePassed,
         msePct,
+        mseAvgScorePct,
+        mseLevel,
+
+        // CA
+        caTotal,
+        caPassed,
+        caPct,
+        caAvgScorePct,
+        caLevel,
+
+        // CIE Combined
+        cieTotal,
+        ciePassed,
         ciePct,
+        cieAvgScorePct,
         cieLevel,
+
+        // ESE
+        eseTotal,
+        esePassed,
         esePct,
+        eseAvgScorePct,
         eseLevel,
-        directPct: ciePct !== null || esePct !== null ? Math.round(((ciePct || 0) + (esePct || 0)) / (([ciePct, esePct].filter(x => x !== null).length) || 1)) : null,
-        directLevel: directLevel !== null ? directLevel : null
+
+        // Direct
+        isInterimOnly,
+        directPct,
+        directLevel,
+        directFormulaExplanation
       };
     });
+  }
+
+  /* ── Get Student-by-Student Audit Breakdown for a specific CO ── */
+  function getCOStudentBreakdown(courseId, coNo, customOptions = {}) {
+    const course = DB.courses.byId(courseId) || {};
+    const cos = getCleanCOs(courseId);
+    const targetCO = cos.find(c => c.no === parseInt(coNo)) || { no: coNo, code: `CO${coNo}`, text: `Course Outcome ${coNo}` };
+    const students = DB.students.byCourse(courseId);
+    const levels = customOptions.levels || course.attainmentLevels || { 1: 60, 2: 70, 3: 80 };
+
+    const coThreshold = (customOptions.threshold !== undefined && customOptions.threshold !== null)
+      ? Number(customOptions.threshold)
+      : ((targetCO.studentThreshold !== undefined && targetCO.studentThreshold !== null && targetCO.studentThreshold !== '')
+          ? Number(targetCO.studentThreshold)
+          : (course.passingThreshold ? Number(course.passingThreshold) : 60));
+
+    const iaByPRN = getIAMarksByCO(courseId);
+    const mseByPRN = getMSEMarksByCO(courseId);
+    const caByPRN = getAssignMarksByCO(courseId);
+    const eseByPRN = getESEMarksByCO(courseId);
+
+    const studentLedger = [];
+    let appearedCount = 0;
+    let attainedCount = 0;
+    let totalScoreSum = 0;
+    let totalMaxSum = 0;
+
+    students.forEach(s => {
+      const ia = iaByPRN[s.prn]?.[coNo] || { earned: 0, max: 0, items: [] };
+      const mse = mseByPRN[s.prn]?.[coNo] || { earned: 0, max: 0, items: [] };
+      const ca = caByPRN[s.prn]?.[coNo] || { earned: 0, max: 0, items: [] };
+      const ese = eseByPRN[s.prn]?.[coNo] || { earned: 0, max: 0, items: [] };
+
+      const totalEarned = ia.earned + mse.earned + ca.earned + ese.earned;
+      const totalMax = ia.max + mse.max + ca.max + ese.max;
+
+      const rem = DB.remedial.get(courseId, s.prn);
+      const retestScore = rem && rem.retestScores && rem.retestScores[coNo] !== undefined && rem.retestScores[coNo] !== null ? Number(rem.retestScores[coNo]) : null;
+      const retestPassed = retestScore !== null && retestScore >= coThreshold;
+
+      const hasAppeared = totalMax > 0;
+      const pct = hasAppeared ? parseFloat(((totalEarned / totalMax) * 100).toFixed(1)) : null;
+      const isAttained = hasAppeared && (pct >= coThreshold || retestPassed);
+
+      if (hasAppeared) {
+        appearedCount++;
+        totalScoreSum += totalEarned;
+        totalMaxSum += totalMax;
+        if (isAttained) attainedCount++;
+      }
+
+      studentLedger.push({
+        prn: s.prn,
+        name: s.name,
+        rollNo: s.rollNo || s.seatNo || s.prn.slice(-3),
+        hasAppeared,
+        ia: { earned: parseFloat(ia.earned.toFixed(1)), max: parseFloat(ia.max.toFixed(1)), pct: ia.max > 0 ? Math.round((ia.earned/ia.max)*100) : null },
+        mse: { earned: parseFloat(mse.earned.toFixed(1)), max: parseFloat(mse.max.toFixed(1)), pct: mse.max > 0 ? Math.round((mse.earned/mse.max)*100) : null },
+        ca: { earned: parseFloat(ca.earned.toFixed(1)), max: parseFloat(ca.max.toFixed(1)), pct: ca.max > 0 ? Math.round((ca.earned/ca.max)*100) : null },
+        ese: { earned: parseFloat(ese.earned.toFixed(1)), max: parseFloat(ese.max.toFixed(1)), pct: ese.max > 0 ? Math.round((ese.earned/ese.max)*100) : null },
+        totalEarned: parseFloat(totalEarned.toFixed(1)),
+        totalMax: parseFloat(totalMax.toFixed(1)),
+        scorePct: pct,
+        retestScore,
+        retestPassed,
+        attained: isAttained,
+        statusText: hasAppeared ? (isAttained ? `Attained (${pct}% ≥ ${coThreshold}%)` : `Not Met (${pct}% < ${coThreshold}%)`) : 'Not Appeared'
+      });
+    });
+
+    const cohortAttainmentPct = appearedCount > 0 ? Math.round((attainedCount / appearedCount) * 100) : 0;
+    const classAvgScorePct = totalMaxSum > 0 ? parseFloat(((totalScoreSum / totalMaxSum) * 100).toFixed(1)) : 0;
+    const nbaLevel = getLevelFromPct(cohortAttainmentPct, levels);
+
+    return {
+      co: targetCO,
+      coNo,
+      coCode: targetCO.code,
+      coText: targetCO.text || `Course Outcome ${coNo}`,
+      coThreshold,
+      totalStudents: students.length,
+      appearedCount,
+      attainedCount,
+      cohortAttainmentPct,
+      classAvgScorePct,
+      totalScoreSum: parseFloat(totalScoreSum.toFixed(1)),
+      totalMaxSum: parseFloat(totalMaxSum.toFixed(1)),
+      nbaLevel,
+      levels,
+      students: studentLedger
+    };
   }
 
   /* ── Calculate CO Indirect Attainment (Exit Survey) ── */
@@ -287,13 +486,13 @@ const Attainment = (() => {
   }
 
   /* ── Calculate Final CO Attainment (Direct + Indirect weighted) ── */
-  function calcCOFinal(courseId) {
+  function calcCOFinal(courseId, customOptions = {}) {
     const course = DB.courses.byId(courseId) || {};
     const directW = (course.directWeight || 80) / 100;
     const indirectW = (course.indirectWeight || 20) / 100;
     const targetCQI = parseFloat(course.targetLevel) || 2.0;
 
-    const directData = calcCODirect(courseId);
+    const directData = calcCODirect(courseId, customOptions);
     const indirectData = calcCOIndirect(courseId);
 
     return directData.map((d, i) => {
@@ -328,8 +527,8 @@ const Attainment = (() => {
      For each PO: weighted sum of CO attainment × CO-PO mapping value
      PO_att = sum(CO_final_level × mapping_val) / sum(mapping_val)
   ── */
-  function calcPOAttainment(courseId) {
-    const finalCOs = calcCOFinal(courseId);
+  function calcPOAttainment(courseId, customOptions = {}) {
+    const finalCOs = calcCOFinal(courseId, customOptions);
     const levels   = DB.courses.byId(courseId)?.attainmentLevels || { 1:65, 2:75, 3:85 };
 
     const activePOs = (typeof DB !== 'undefined' && DB.getPOList) ? DB.getPOList() : PO_LIST;
@@ -530,6 +729,7 @@ const Attainment = (() => {
     PO_LIST, PSO_LIST, ALL_POS,
     bloomsLabel, getLevelFromPct, levelBadge,
     calcCODirect, calcCOIndirect, calcCOFinal, calcPOAttainment, calcStudentPOAttainment,
-    getStudentTotals, getDashboardStats, getIAMarksByCO, getAtRiskStudents,
+    getStudentTotals, getDashboardStats, getIAMarksByCO, getAssignMarksByCO, getAtRiskStudents,
+    getCOStudentBreakdown,
   };
 })();
