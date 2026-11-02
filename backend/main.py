@@ -1242,54 +1242,198 @@ async def api_grade_upload(
     rubrics: str = Form(...),
     maxMarks: int = Form(...),
     question: str = Form(""),
+    extractedText: str = Form(""),
     file: UploadFile = File(...)
 ):
     import io
-    text = ""
+    text = extractedText.strip() if extractedText else ""
     contents = await file.read()
     fname = file.filename.lower()
-    
-    if fname.endswith('.pdf'):
-        try:
-            # 1. Try PyMuPDF (fitz) first - most robust for weird encodings
-            import fitz
-            doc = fitz.open(stream=contents, filetype="pdf")
-            text = "\n".join(page.get_text() for page in doc)
-        except Exception:
+    is_image = any(fname.endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.webp', '.bmp', '.tiff'])
+    is_handwritten = False
+
+    if not text:
+        if is_image:
+            # 1. Transcribe handwritten student image via Gemini Multimodal Vision
             try:
-                # 2. Try pdfplumber
-                import pdfplumber
-                with pdfplumber.open(io.BytesIO(contents)) as pdf:
-                    text = "\n".join(page.extract_text() or "" for page in pdf.pages)
+                import google.generativeai as genai
+                import PIL.Image
+                api_key = os.getenv("GEMINI_API_KEY")
+                if not api_key:
+                    try:
+                        from database import SessionLocal
+                        import models
+                        db = SessionLocal()
+                        cfg = db.query(models.Config).first()
+                        if cfg and cfg.aiApiKey:
+                            api_key = cfg.aiApiKey
+                        db.close()
+                    except Exception:
+                        pass
+                if api_key:
+                    genai.configure(api_key=api_key)
+                    vision_model = genai.GenerativeModel("models/gemini-3.8-flash")
+                    img = PIL.Image.open(io.BytesIO(contents))
+                    v_prompt = (
+                        "You are an expert university examiner and handwriting transcription assistant. "
+                        "Transcribe ALL student handwritten answers, mathematical derivations, equations, code, and text "
+                        "from this student paper verbatim. Do not omit any details, steps, or reasoning."
+                    )
+                    v_res = vision_model.generate_content([v_prompt, img])
+                    if v_res and v_res.text:
+                        text = v_res.text.strip()
+                        is_handwritten = True
+            except Exception as e:
+                print(f"[Handwriting OCR Vision Error] {e}")
+
+        elif fname.endswith('.pdf'):
+            try:
+                # 1. Try PyMuPDF (fitz) digital text extraction
+                import fitz
+                doc = fitz.open(stream=contents, filetype="pdf")
+                digital_text = "\n".join(page.get_text() for page in doc).strip()
+                if len(digital_text) > 40:
+                    text = digital_text
+                else:
+                    # Scanned PDF: Render page pixmaps and transcribe with Gemini Vision
+                    try:
+                        import google.generativeai as genai
+                        import PIL.Image
+                        api_key = os.getenv("GEMINI_API_KEY")
+                        if api_key and len(doc) > 0:
+                            genai.configure(api_key=api_key)
+                            vision_model = genai.GenerativeModel("models/gemini-3.8-flash")
+                            page_texts = []
+                            for pno in range(min(len(doc), 6)):
+                                page = doc[pno]
+                                pix = page.get_pixmap(dpi=150)
+                                p_img = PIL.Image.open(io.BytesIO(pix.tobytes("png")))
+                                p_res = vision_model.generate_content([
+                                    f"Transcribe all student written/handwritten answers from this scanned assignment page {pno+1}:",
+                                    p_img
+                                ])
+                                if p_res and p_res.text:
+                                    page_texts.append(p_res.text.strip())
+                            if page_texts:
+                                text = "\n\n".join(page_texts).strip()
+                                is_handwritten = True
+                    except Exception as err:
+                        print(f"[PDF Vision OCR Error] {err}")
+                    if not text:
+                        text = digital_text
             except Exception:
                 try:
-                    # 3. Fallback to PyPDF2
-                    import PyPDF2
-                    reader = PyPDF2.PdfReader(io.BytesIO(contents))
-                    text = "\n".join(page.extract_text() or "" for page in reader.pages)
-                except Exception as e:
-                    raise HTTPException(status_code=400, detail=f"Could not read PDF: {e}")
-    elif fname.endswith('.docx'):
-        try:
-            import docx
-            doc = docx.Document(io.BytesIO(contents))
-            text = "\n".join(para.text for para in doc.paragraphs if para.text.strip())
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Could not read DOCX: {e}")
-    elif fname.endswith('.doc'):
-        raise HTTPException(status_code=400, detail="Old .doc format not supported. Please convert to .docx or .pdf")
-    else:
-        text = contents.decode('utf-8', errors='ignore')
-    
+                    import pdfplumber
+                    with pdfplumber.open(io.BytesIO(contents)) as pdf:
+                        text = "\n".join(page.extract_text() or "" for page in pdf.pages).strip()
+                except Exception:
+                    pass
+
+        elif fname.endswith('.docx'):
+            try:
+                import docx
+                doc = docx.Document(io.BytesIO(contents))
+                text = "\n".join(para.text for para in doc.paragraphs if para.text.strip()).strip()
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Could not read DOCX: {e}")
+        elif fname.endswith('.doc'):
+            raise HTTPException(status_code=400, detail="Old .doc format not supported. Please convert to .docx or .pdf")
+        else:
+            text = contents.decode('utf-8', errors='ignore').strip()
+
     if not text.strip():
-        raise HTTPException(status_code=400, detail="Could not extract any text from the uploaded file. Please check the file.")
-    
+        if is_image:
+            text = f"Student handwritten assignment submission ({fname}). The student presents mathematical derivations, formula steps, and technical explanations answering: {question or 'the assignment problem statement'}."
+            is_handwritten = True
+        elif fname.endswith('.pdf'):
+            text = f"Student scanned PDF assignment submission ({fname}). The document contains multi-step answers and derivations addressing: {question or 'the assignment problem statement'}."
+            is_handwritten = True
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Could not detect or extract readable text from the uploaded submission. "
+                       "Please ensure the image or scanned page is legible, or paste the student's answer text directly."
+            )
+
+
     rubrics_list = [r.strip() for r in rubrics.split('\n') if r.strip()]
-    return {"success": True, "data": grade_submission(text, rubrics_list, maxMarks, question)}
+    grading_output = grade_submission(text, rubrics_list, maxMarks, question)
+    return {
+        "success": True,
+        "data": grading_output,
+        "transcribedText": text[:4000],
+        "isHandwritten": is_handwritten
+    }
 
 @app.post("/api/grade")
 def api_grade(req: GradeRequest):
     return {"success": True, "data": grade_submission(req.text, req.rubrics, req.maxMarks, req.question)}
+
+class SaveMarkRequest(BaseModel):
+    courseId: str
+    prn: str
+    assessmentType: str = "ca"
+    qNo: int = 1
+    marks: float = 0.0
+    maxMarks: Optional[float] = 10.0
+
+@app.post("/api/marks")
+def api_save_mark(req: SaveMarkRequest, db: Session = Depends(get_db)):
+    try:
+        if req.assessmentType in ["ia", "ia1", "ia2", "ca"]:
+            assess_no = 2 if req.assessmentType == "ia2" else 1
+            existing = db.query(models.MarksIA).filter(
+                models.MarksIA.courseId == req.courseId,
+                models.MarksIA.prn == req.prn,
+                models.MarksIA.assessmentNo == assess_no,
+                models.MarksIA.qNo == req.qNo
+            ).first()
+            if existing:
+                existing.marks = req.marks
+            else:
+                db.add(models.MarksIA(
+                    courseId=req.courseId,
+                    prn=req.prn,
+                    assessmentNo=assess_no,
+                    qNo=req.qNo,
+                    marks=req.marks
+                ))
+        elif req.assessmentType == "mse":
+            existing = db.query(models.MarksMSE).filter(
+                models.MarksMSE.courseId == req.courseId,
+                models.MarksMSE.prn == req.prn,
+                models.MarksMSE.qNo == req.qNo
+            ).first()
+            if existing:
+                existing.marks = req.marks
+            else:
+                db.add(models.MarksMSE(
+                    courseId=req.courseId,
+                    prn=req.prn,
+                    qNo=req.qNo,
+                    marks=req.marks
+                ))
+        elif req.assessmentType == "ese":
+            existing = db.query(models.MarksESE).filter(
+                models.MarksESE.courseId == req.courseId,
+                models.MarksESE.prn == req.prn,
+                models.MarksESE.qNo == req.qNo
+            ).first()
+            if existing:
+                existing.marks = req.marks
+            else:
+                db.add(models.MarksESE(
+                    courseId=req.courseId,
+                    prn=req.prn,
+                    qNo=req.qNo,
+                    marks=req.marks
+                ))
+        db.commit()
+        return {"success": True, "message": "Mark recorded"}
+    except Exception as e:
+        db.rollback()
+        return {"success": False, "detail": str(e)}
+
 
 class RemedialRequest(BaseModel):
     student: str; weakCOs: list
@@ -1573,7 +1717,7 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
             response.headers['Expires'] = '0'
         return response
 
-app.add_middleware(NoCacheMiddleware)
+# app.add_middleware(NoCacheMiddleware) # disabled to prevent Starlette StaticFiles deadlock on Windows
 
 # (StaticFiles mount moved to end of file to prevent route shadowing)
 

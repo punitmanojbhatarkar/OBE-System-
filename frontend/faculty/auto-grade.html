@@ -3,11 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Auto-Grading Engine | OBE System – MITAOE</title>
+  <title>AI Auto-Grading Engine & Written Evaluation | OBE System – MITAOE</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../styles/main.css">
   <link rel="stylesheet" href="../styles/components.css">
+  <!-- Open-Source Free In-Browser OCR Engine (Tesseract.js v5) -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     .auto-grade-layout {
       display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
@@ -17,9 +19,10 @@
     }
     .score-hero-flat {
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--r-md); padding: 24px; text-align: center; margin-bottom: 16px;
+      border-radius: var(--r-md); padding: 22px; text-align: center; margin-bottom: 16px;
+      position: relative; overflow: hidden;
     }
-    .score-number { font-size: 40px; font-weight: 800; color: var(--primary); line-height: 1; }
+    .score-number { font-size: 44px; font-weight: 800; color: var(--primary); line-height: 1; }
     .score-max { font-size: 16px; color: var(--text-secondary); font-weight: 600; }
 
     .summary-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
@@ -31,14 +34,66 @@
 
     .rubric-card {
       border: 1px solid var(--border); border-radius: var(--r-md); overflow: hidden;
-      margin-bottom: 8px; background: var(--surface);
+      margin-bottom: 8px; background: var(--surface); transition: box-shadow 0.2s ease;
     }
+    .rubric-card:hover { border-color: var(--primary); }
     .rubric-card-header {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 14px; background: var(--surface-2); cursor: pointer;
+      padding: 10px 14px; background: var(--surface-2); cursor: pointer; user-select: none;
     }
+    .rubric-name { font-weight: 600; font-size: 12.5px; color: var(--text-primary); flex: 1; padding-right: 12px; }
     .rubric-card-body { padding: 14px; display: none; border-top: 1px solid var(--border); }
     .rubric-card.open .rubric-card-body { display: block; }
+
+    .rubric-score-pill {
+      display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700;
+    }
+    .rubric-score-bar-wrap {
+      width: 64px; height: 6px; background: #e2e8f0; border-radius: 999px; overflow: hidden;
+    }
+    .rubric-score-bar { height: 100%; border-radius: 999px; }
+    .rubric-chevron { font-size: 10px; color: var(--text-secondary); transition: transform 0.2s; }
+    .rubric-card.open .rubric-chevron { transform: rotate(180deg); }
+
+    .rubric-detail-row {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;
+    }
+    .rubric-detail-box {
+      background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 8px 10px;
+    }
+    .rubric-detail-box label {
+      display: block; font-size: 10.5px; font-weight: 700; text-transform: uppercase; margin-bottom: 3px; color: var(--text-secondary);
+    }
+    .rubric-detail-box p { font-size: 12px; margin: 0; line-height: 1.4; color: var(--text-primary); }
+
+    /* OCR Live Processing Box */
+    .ocr-progress-box {
+      background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--r-md);
+      padding: 12px 14px; margin-bottom: 10px; display: none;
+    }
+    .ocr-progress-box.processing {
+      background: #eff6ff; border-color: #bfdbfe;
+    }
+    .ocr-progress-bar-wrap {
+      background: #dbeafe; border-radius: 999px; height: 6px; overflow: hidden; margin-top: 6px;
+    }
+    .ocr-progress-bar {
+      height: 100%; background: #2563eb; width: 0%; transition: width 0.2s ease;
+    }
+
+    /* Thumbnail Preview */
+    .doc-preview-box {
+      border: 1px solid var(--border); border-radius: var(--r-md); padding: 10px;
+      margin-bottom: 10px; display: none; background: var(--surface-2);
+    }
+    .doc-preview-thumb {
+      max-height: 140px; border-radius: 4px; border: 1px solid var(--border); object-fit: contain; cursor: pointer;
+    }
+
+    .concept-tag {
+      display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px;
+      font-weight: 600; background: #fee2e2; color: #dc2626; margin: 2px 4px 2px 0;
+    }
   </style>
 </head>
 <body>
@@ -85,8 +140,13 @@
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
-        <h1 class="topbar-title">AI Auto-Grading & Rubric Evaluation</h1>
-        <div class="topbar-breadcrumb">Assessment <span>›</span> Automated Descriptive Grading</div>
+        <h1 class="topbar-title">AI Auto-Grading & Written Assignment Evaluation</h1>
+        <div class="topbar-breadcrumb">Assessment <span>›</span> Automated Descriptive & Handwritten Grading Engine</div>
+      </div>
+      <div class="topbar-right" style="display:flex;gap:8px;align-items:center;">
+        <a href="assignments.html" class="btn btn-secondary btn-sm">
+          <span data-icon="assignments"></span><span>Manage Assessments</span>
+        </a>
       </div>
     </header>
 
@@ -97,8 +157,10 @@
         <div class="card">
           <div class="card-header">
             <div>
-              <div class="card-title"><span data-icon="grade"></span><span>Submission Evaluation Workbench</span></div>
-              <div class="card-subtitle">Evaluate descriptive student answers against analytical rubrics</div>
+              <div class="card-title" style="display:flex;align-items:center;gap:6px;">
+                <span data-icon="grade"></span><span>Submission Evaluation Workbench</span>
+              </div>
+              <div class="card-subtitle">Grade handwritten sheets, scanned PDFs, DOCX, or typed answers against analytical rubrics</div>
             </div>
           </div>
           <form id="grade-form">
@@ -110,39 +172,92 @@
 
             <!-- Optional: Select Assignment -->
             <div class="form-group">
-              <label class="form-label">Select Assignment (Optional)</label>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                <label class="form-label" style="margin-bottom:0;">Select Assessment / Assignment</label>
+                <a href="assignments.html" style="font-size:11px;color:var(--primary);font-weight:600;text-decoration:none;">+ New Assessment ↗</a>
+              </div>
               <select class="form-select" id="assignment-select">
-                <option value="">-- Choose Assignment --</option>
-                <option value="manual">-- Custom / Manual --</option>
+                <option value="">-- Loading Assignments... --</option>
+              </select>
+              <div id="assignment-hint" style="font-size:11.5px;color:var(--text-secondary);margin-top:4px;"></div>
+            </div>
+
+            <!-- Optional: Question Selector for Multi-Question Assignments -->
+            <div class="form-group" id="question-select-wrap" style="display:none;">
+              <label class="form-label">Target Question / Problem</label>
+              <select class="form-select" id="question-select">
+                <option value="all">Evaluate Entire Assignment Submission</option>
               </select>
             </div>
 
-            <!-- Step 2: Question -->
+            <!-- Step 2: Question Statement -->
             <div class="form-group">
               <label class="form-label">Question Statement / Problem Prompt</label>
-              <textarea class="form-textarea" id="manual-question" rows="3" placeholder="Enter the exact question prompt given to students…"></textarea>
+              <textarea class="form-textarea" id="manual-question" rows="3" placeholder="Enter or confirm the exact question prompt given to students…"></textarea>
             </div>
 
-            <!-- Step 3: Answer -->
+            <!-- Step 3: Answer Submission (Written / Handwritten / PDF / DOCX / Text) -->
             <div class="form-group">
-              <label class="form-label">Student Answer Text / Submission</label>
-              <div class="drop-zone" id="drop-zone" style="margin-bottom:8px;padding:16px;">
-                <input type="file" id="answer-file" accept=".pdf,.docx,.txt" style="display:none;">
-                <span data-icon="upload" data-icon-size="24"></span>
-                <p style="font-size:12px;margin:4px 0 0;">Click to upload PDF / DOCX or drag file here</p>
-                <div id="file-selected-name" style="font-weight:700;font-size:11px;color:var(--primary);margin-top:4px;display:none;"></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                <label class="form-label" style="margin-bottom:0;">Student Submission (Handwritten, Scanned PDF, or Document)</label>
+                <span class="badge badge-primary" style="font-size:10.5px;">Tesseract OCR + Multimodal Vision</span>
               </div>
-              <textarea class="form-textarea" id="answer-text" rows="4" placeholder="Or paste the student's answer text directly…"></textarea>
+              
+              <!-- Drop Zone -->
+              <div class="drop-zone" id="drop-zone" style="margin-bottom:8px;padding:16px;cursor:pointer;border:2px dashed var(--border);border-radius:var(--r-md);text-align:center;">
+                <input type="file" id="answer-file" accept=".pdf,.png,.jpg,.jpeg,.webp,.bmp,.tiff,.docx,.txt" style="display:none;">
+                <span data-icon="upload" data-icon-size="28" style="color:var(--primary);"></span>
+                <p style="font-size:13px;font-weight:600;margin:6px 0 2px;color:var(--text-primary);">
+                  Click or drag handwritten photos, scanned PDFs, or DOCX files here
+                </p>
+                <p style="font-size:11.5px;color:var(--text-secondary);margin:0;">
+                  Supports handwritten pages (.jpg, .png, .pdf), typed reports (.docx), and text files
+                </p>
+                <div id="file-selected-name" style="font-weight:700;font-size:11.5px;color:var(--primary);margin-top:6px;display:none;"></div>
+              </div>
+
+              <!-- Live OCR Progress Bar -->
+              <div class="ocr-progress-box" id="ocr-progress-box">
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;font-weight:600;">
+                  <span id="ocr-status-text" style="color:#1e40af;">🔬 Initializing Open-Source OCR Engine...</span>
+                  <span id="ocr-pct-text" style="color:#1e40af;">0%</span>
+                </div>
+                <div class="ocr-progress-bar-wrap">
+                  <div class="ocr-progress-bar" id="ocr-progress-bar"></div>
+                </div>
+              </div>
+
+              <!-- Visual Thumbnail Preview Box -->
+              <div class="doc-preview-box" id="doc-preview-box">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                  <span style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;">Handwritten / Scanned Document Preview</span>
+                  <button type="button" class="btn btn-secondary btn-sm" id="btn-zoom-preview" style="font-size:11px;padding:2px 8px;">View Full Image</button>
+                </div>
+                <div style="display:flex;gap:12px;align-items:center;">
+                  <img id="preview-img" class="doc-preview-thumb" alt="Submission Preview" src="" />
+                  <div style="font-size:12px;color:var(--text-secondary);">
+                    <div id="preview-meta-name" style="font-weight:700;color:var(--text-primary);"></div>
+                    <div id="preview-meta-size"></div>
+                    <div style="color:var(--success);font-weight:600;margin-top:4px;">✨ Handwriting & Math OCR Active</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Transcribed / Text Input -->
+              <label class="form-label" style="font-size:11px;color:var(--text-secondary);margin-top:4px;">
+                Transcribed Student Text <span style="font-weight:400;">(Auto-filled by OCR or paste answer text directly):</span>
+              </label>
+              <textarea class="form-textarea" id="answer-text" rows="5" placeholder="Transcribed text from handwritten upload will appear here automatically, or you can paste text directly…"></textarea>
             </div>
 
-            <!-- Step 4: Rubrics -->
+            <!-- Step 4: Rubrics & Configuration -->
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
               <div class="form-group">
                 <label class="form-label">Maximum Score</label>
                 <input type="number" class="form-input" id="max-marks" value="10" min="1" max="100">
               </div>
               <div class="form-group">
-                <label class="form-label">Bloom's Level</label>
+                <label class="form-label">Bloom's Taxonomy Level</label>
                 <select class="form-select" id="blooms-level">
                   <option value="L1">L1 – Remember</option>
                   <option value="L2">L2 – Understand</option>
@@ -155,11 +270,11 @@
             </div>
 
             <div class="form-group">
-              <label class="form-label">Evaluation Rubric Criteria <span style="font-weight:400;color:var(--text-secondary);font-size:11px;">(one per line)</span></label>
+              <label class="form-label">Evaluation Rubric Criteria <span style="font-weight:400;color:var(--text-secondary);font-size:11px;">(one criterion per line)</span></label>
               <textarea class="form-textarea" id="rubrics-text" rows="4" placeholder="Correct technical conceptual definitions&#10;Accurate mathematical derivation / algorithm implementation&#10;Appropriate diagram / architecture schematic&#10;Synthesized conclusion and clarity of reasoning"></textarea>
             </div>
 
-            <button type="submit" class="btn btn-primary w-full" id="btn-grade">
+            <button type="submit" class="btn btn-primary w-full" id="btn-grade" style="padding:12px;font-size:14px;font-weight:700;">
               <span data-icon="sparkles"></span><span id="btn-grade-text">Evaluate with AI Engine</span>
             </button>
           </form>
@@ -168,45 +283,122 @@
         <!-- RIGHT: Results Panel -->
         <div id="grade-result" style="display:none;">
 
-          <!-- Score Hero -->
+          <!-- Score Hero Flat -->
           <div class="score-hero-flat">
-            <div style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;margin-bottom:8px;">Evaluation Score</div>
+            <div style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;margin-bottom:8px;letter-spacing:0.5px;">
+              Evaluated Score
+            </div>
             <div>
               <span class="score-number" id="final-score">0</span>
               <span class="score-max"> / <span id="display-max">10</span></span>
             </div>
-            <div style="margin-top:8px;">
-              <span class="badge badge-success" id="grade-badge" style="font-size:13px;padding:4px 12px;">—</span>
-              <span id="pct-display" style="font-size:13px;font-weight:700;color:var(--text-secondary);margin-left:6px;">0%</span>
+            <div style="margin-top:10px;display:flex;justify-content:center;align-items:center;gap:10px;">
+              <span class="badge badge-success" id="grade-badge" style="font-size:13px;padding:4px 14px;font-weight:700;">—</span>
+              <span id="pct-display" style="font-size:14px;font-weight:700;color:var(--text-primary);">0%</span>
+              <span class="badge badge-neutral" id="blooms-display" style="font-size:12px;padding:3px 10px;">—</span>
+            </div>
+
+            <!-- Exam Readiness Indicator -->
+            <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+              <div style="display:flex;justify-content:space-between;font-size:11.5px;font-weight:600;margin-bottom:4px;">
+                <span style="color:var(--text-secondary);">Exam Readiness & Subject Mastery</span>
+                <span id="readiness-score-label" style="color:var(--primary);font-weight:700;">0 / 100</span>
+              </div>
+              <div style="height:6px;background:var(--border);border-radius:999px;overflow:hidden;">
+                <div id="readiness-bar" style="height:100%;width:0%;background:var(--primary);border-radius:999px;transition:width 0.4s ease;"></div>
+              </div>
+              <div style="display:none;" id="readiness-display">0/100</div>
             </div>
           </div>
 
           <!-- Strengths & Weaknesses -->
           <div class="summary-row">
             <div class="summary-card strength">
-              <div style="font-size:11px;font-weight:700;color:var(--success);text-transform:uppercase;margin-bottom:4px;">Demonstrated Strengths</div>
-              <p id="overall-strengths" style="font-size:12.5px;color:var(--text-primary);margin:0;line-height:1.4;">—</p>
+              <div style="font-size:11px;font-weight:700;color:var(--success);text-transform:uppercase;margin-bottom:4px;display:flex;align-items:center;gap:4px;">
+                <span>Demonstrated Strengths</span>
+              </div>
+              <p id="overall-strengths" style="font-size:12.5px;color:var(--text-primary);margin:0;line-height:1.45;">—</p>
             </div>
             <div class="summary-card weakness">
-              <div style="font-size:11px;font-weight:700;color:var(--danger);text-transform:uppercase;margin-bottom:4px;">Identified Deficiencies</div>
-              <p id="overall-weaknesses" style="font-size:12.5px;color:var(--text-primary);margin:0;line-height:1.4;">—</p>
+              <div style="font-size:11px;font-weight:700;color:var(--danger);text-transform:uppercase;margin-bottom:4px;display:flex;align-items:center;gap:4px;">
+                <span>Identified Deficiencies & Gaps</span>
+              </div>
+              <p id="overall-weaknesses" style="font-size:12.5px;color:var(--text-primary);margin:0;line-height:1.45;">—</p>
             </div>
+          </div>
+
+          <!-- Key Concepts Missed -->
+          <div class="card" id="concepts-missed-wrap" style="margin-bottom:16px;display:none;padding:14px;">
+            <div style="font-size:11px;font-weight:700;color:var(--danger);text-transform:uppercase;margin-bottom:6px;">
+              Key Theoretical Concepts Missed
+            </div>
+            <div id="concepts-missed-list"></div>
           </div>
 
           <!-- Rubric Breakdown -->
           <div class="card" style="margin-bottom:16px;">
-            <div class="card-header">
-              <div class="card-title">Rubric-by-Rubric Score Breakdown</div>
+            <div class="card-header" style="padding:12px 16px;">
+              <div class="card-title" style="font-size:13.5px;">Rubric-by-Rubric Score Breakdown</div>
             </div>
-            <div id="feedback-container"></div>
+            <div id="feedback-container" style="padding:12px 16px;"></div>
           </div>
 
           <!-- Overall Feedback -->
-          <div class="card">
-            <div class="card-header">
-              <div class="card-title">Examiner Summary Feedback</div>
+          <div class="card" style="margin-bottom:16px;">
+            <div class="card-header" style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
+              <div class="card-title" style="font-size:13.5px;">Examiner Summary Feedback</div>
+              <button class="btn btn-secondary btn-sm" id="btn-copy-feedback" style="font-size:11px;padding:3px 8px;">
+                Copy Feedback
+              </button>
             </div>
-            <p id="overall-feedback" style="font-size:13px;color:var(--text-primary);line-height:1.6;margin:0;">—</p>
+            <div style="padding:14px 16px;">
+              <p id="overall-feedback" style="font-size:13px;color:var(--text-primary);line-height:1.6;margin:0;">—</p>
+            </div>
+          </div>
+
+          <!-- Record Grade to Student Ledger & Attainment -->
+          <div class="card" style="border:1.5px solid #bfdbfe;background:var(--surface);">
+            <div class="card-header" style="background:rgba(37,99,235,0.04);padding:12px 16px;">
+              <div>
+                <div class="card-title" style="display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--primary);">
+                  <span data-icon="check-circle"></span>
+                  <span>Record Grade to Student Ledger & Attainment</span>
+                </div>
+                <div class="card-subtitle" style="font-size:11.5px;">Directly record this evaluated score into the student's academic record</div>
+              </div>
+            </div>
+            <div style="padding:16px;">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+                <div>
+                  <label class="form-label" style="font-size:11.5px;">Select Student</label>
+                  <select class="form-select" id="ledger-student-select">
+                    <option value="">-- Choose Student --</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="form-label" style="font-size:11.5px;">Assessment Component</label>
+                  <select class="form-select" id="ledger-component-select">
+                    <option value="ca">Continuous Assessment (CA)</option>
+                    <option value="ia1">Internal Assessment 1 (IA1)</option>
+                    <option value="ia2">Internal Assessment 2 (IA2)</option>
+                    <option value="mse">Mid-Semester Exam (MSE)</option>
+                    <option value="ese">End-Semester Exam (ESE)</option>
+                  </select>
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <button type="button" class="btn btn-primary btn-sm" id="btn-save-to-ledger">
+                  <span data-icon="save"></span><span>Save Mark to Ledger</span>
+                </button>
+                <a href="marks.html" class="btn btn-secondary btn-sm" id="btn-goto-marks" target="_blank">
+                  <span>Open Marks Ledger ↗</span>
+                </a>
+                <a href="attainment.html" class="btn btn-secondary btn-sm" id="btn-goto-attainment" target="_blank">
+                  <span>View Attainment ↗</span>
+                </a>
+              </div>
+              <div id="ledger-save-status" style="margin-top:10px;font-size:12px;display:none;"></div>
+            </div>
           </div>
 
         </div>
@@ -214,6 +406,14 @@
       </div>
     </div>
   </main>
+</div>
+
+<!-- Modal for viewing full submission image -->
+<div id="image-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;align-items:center;justify-content:center;padding:24px;">
+  <div style="position:relative;max-width:90vw;max-height:90vh;background:var(--surface);border-radius:var(--r-md);padding:16px;overflow:auto;text-align:center;">
+    <button type="button" onclick="document.getElementById('image-modal').style.display='none'" style="position:absolute;top:10px;right:14px;background:none;border:none;font-size:24px;cursor:pointer;color:var(--text-primary);">&times;</button>
+    <img id="image-modal-img" src="" style="max-width:100%;max-height:80vh;border-radius:4px;" alt="Handwritten Paper Full View" />
+  </div>
 </div>
 
 <script src="../scripts/icons.js"></script>
