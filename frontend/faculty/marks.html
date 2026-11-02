@@ -357,7 +357,14 @@
     <div class="modal-body">
       <div class="alert alert-info" style="font-size:12.5px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
         <span>Supports Excel (<strong>.xlsx, .xls</strong>) and <strong>.csv</strong> files. Automatically recognizes PRNs, Student Names, and CO/Question marks.</span>
-        <button class="btn btn-secondary btn-sm" style="font-size:11px;padding:3px 8px;" onclick="downloadMarksTemplate()">Download Template</button>
+        <div style="display:flex;gap:6px;">
+          <button type="button" class="btn btn-secondary btn-sm" style="font-size:11px;padding:4px 10px;font-weight:600;" onclick="downloadMarksTemplate('xlsx')" title="Download Excel template (.xlsx)">
+            <span data-icon="download"></span> <span>Excel (.xlsx)</span>
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" style="font-size:11px;padding:4px 10px;font-weight:600;" onclick="downloadMarksTemplate('csv')" title="Download CSV template (.csv)">
+            <span data-icon="download"></span> <span>CSV (.csv)</span>
+          </button>
+        </div>
       </div>
 
       <!-- Dropzone -->
@@ -1233,28 +1240,89 @@
     Toast.success(`Applied spreadsheet scores to ${appliedCount} marks inputs! Click "Save Marks" to persist.`);
   };
 
-  /* ── Download Pre-Formatted Marks Template ── */
-  window.downloadMarksTemplate = function() {
-    const asgn = getActiveAssess();
-    if (!asgn) return;
+  /* ── Download Pre-Formatted Marks Template (Excel & CSV) ── */
+  window.downloadMarksTemplate = function(preferredFormat = 'xlsx') {
+    try {
+      const course = activeCourse || (CID ? DB.courses.byId(CID) : null) || { code: 'COURSE', name: 'Course' };
+      const asgn = getActiveAssess() || (courseAssessments && courseAssessments[0]) || { title: 'Marks_Evaluation', maxMarks: 100, questions: [] };
 
-    let headers = ['PRN Identifier', 'Student Full Name'];
-    if (currentEntryMode === 'co') {
-      activeCOs.forEach(co => headers.push(`${co.code} [Max Marks]`));
-    } else {
-      (asgn.questions || []).forEach(q => headers.push(`Q${q.qNo} [CO${q.coNo}]`));
+      let headers = ['PRN Identifier', 'Student Full Name'];
+      if (currentEntryMode === 'co' || !asgn.questions || !asgn.questions.length) {
+        if (activeCOs && activeCOs.length) {
+          activeCOs.forEach(co => headers.push(`${co.code} [Max Marks]`));
+        } else {
+          [1, 2, 3, 4, 5, 6].forEach(n => headers.push(`CO${n} [Max Marks]`));
+        }
+      } else {
+        asgn.questions.forEach(q => headers.push(`Q${q.qNo} [CO${q.coNo}]`));
+      }
+
+      const rows = [headers];
+      const studentsList = (enrolledStudents && enrolledStudents.length) 
+        ? enrolledStudents 
+        : (CID ? DB.students.byCourse(CID) : []);
+
+      if (studentsList && studentsList.length) {
+        studentsList.forEach(s => {
+          rows.push([s.prn || '', s.name || '', ...new Array(headers.length - 2).fill('')]);
+        });
+      } else {
+        rows.push(['202201040001', 'Sample Student 1', ...new Array(headers.length - 2).fill('')]);
+        rows.push(['202201040002', 'Sample Student 2', ...new Array(headers.length - 2).fill('')]);
+      }
+
+      const cleanCourseCode = (course.code || 'Course').replace(/[^a-zA-Z0-9_\-]/g, '_');
+      const cleanTitle = (asgn.title || 'Assessment').replace(/[^a-zA-Z0-9_\-]/g, '_').slice(0, 30);
+      const baseFilename = `${cleanCourseCode}_${cleanTitle}_Template`;
+
+      // Helper for direct CSV download with UTF-8 BOM
+      const triggerCsvDownload = () => {
+        const csvContent = rows.map(r => r.map(cell => {
+          const str = String(cell ?? '');
+          return (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r'))
+            ? `"${str.replace(/"/g, '""')}"`
+            : str;
+        }).join(',')).join('\r\n');
+
+        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${baseFilename}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 150);
+        Toast.success('Downloaded reference marks template (.csv)');
+      };
+
+      if (preferredFormat === 'csv' || typeof XLSX === 'undefined') {
+        triggerCsvDownload();
+        return;
+      }
+
+      // Excel XLSX generation
+      try {
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+
+        // Excel strictly limits worksheet names to <= 31 characters and forbids: \ / ? * : [ ]
+        const rawSheetName = (asgn.title || 'Marks').replace(/[:\\\/\?\*\[\]]/g, '_').trim();
+        const safeSheetName = (rawSheetName.slice(0, 31) || 'Marks').trim();
+
+        XLSX.utils.book_append_sheet(wb, ws, safeSheetName);
+        XLSX.writeFile(wb, `${baseFilename}.xlsx`);
+        Toast.success('Downloaded reference marks template (.xlsx)');
+      } catch (xlsxErr) {
+        console.warn('XLSX generation failed, falling back to CSV:', xlsxErr);
+        triggerCsvDownload();
+      }
+    } catch (err) {
+      console.error('Error generating marks template:', err);
+      Toast.error('Could not download template: ' + (err.message || 'Unknown error'));
     }
-
-    const rows = [headers];
-    enrolledStudents.forEach(s => {
-      rows.push([s.prn, s.name, ...new Array(headers.length - 2).fill('')]);
-    });
-
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, `${asgn.title || 'Marks'}`);
-    XLSX.writeFile(wb, `${activeCourse.code || 'Course'}_${(asgn.title || 'Assessment').replace(/\s+/g, '_')}_Template.xlsx`);
-    Toast.info('Downloaded reference marks template.');
   };
 
   /* ── Course Exit Survey Sheet ── */
