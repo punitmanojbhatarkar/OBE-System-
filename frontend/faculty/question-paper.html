@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>University Question Paper Generator | OBE System – MITAOE</title>
+  <title>University Question Paper & Assessment Formulation | OBE System – MITAOE</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../styles/main.css">
   <link rel="stylesheet" href="../styles/components.css">
   <style>
-    /* Question Paper Preview (clean printable document) */
+    /* Question Paper Preview (Clean Printable Autonomous University Format) */
     .qp-preview {
       background: #FFFFFF; color: #0F172A; padding: 40px; border-radius: var(--r-md);
       font-family: 'Times New Roman', Georgia, serif; font-size: 13px; line-height: 1.5;
@@ -24,18 +24,33 @@
     .qp-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 12px; margin-bottom: 12px; border: 1px solid #94A3B8; padding: 6px 10px; }
     .qp-instructions { border: 1px solid #CBD5E1; padding: 8px 12px; margin-bottom: 12px; font-size: 11.5px; }
 
+    /* Workbench Editors */
     .q-editor { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-md); padding: 16px; margin-bottom: 16px; }
-    .q-box { margin-bottom: 12px; padding: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); transition: border-color 0.2s ease; }
+    .q-box { margin-bottom: 12px; padding: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); transition: border-color 0.2s ease; }
     .q-box:hover { border-color: var(--primary); }
     .q-box.is-or-choice { border-left: 4px solid #F59E0B; }
-    
+    .q-box.is-optional-choice { border-left: 4px solid #3B82F6; }
+
+    /* Scope Pills & Quick Selection */
     .unit-pill {
-      display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px;
-      font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--surface);
+      display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 20px;
+      font-size: 11.5px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--surface);
       user-select: none; transition: all 0.2s ease;
     }
     .unit-pill.active { background: var(--primary-light, rgba(37,99,235,0.1)); border-color: var(--primary); color: var(--primary); }
 
+    /* Blueprint Stats Banner */
+    .stats-bar {
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+      padding: 10px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-sm);
+      margin-top: 12px; font-size: 12px;
+    }
+
+    .badge-choice-or { background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; }
+    .badge-choice-compulsory { background: #E2E8F0; color: #334155; border: 1px solid #CBD5E1; }
+    .badge-choice-any { background: #DBEAFE; color: #1E40AF; border: 1px solid #93C5FD; }
+
+    /* Print Styles */
     @media print {
       body * { visibility: hidden; }
       .qp-preview, .qp-preview * { visibility: visible; }
@@ -87,13 +102,16 @@
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
-        <h1 class="topbar-title">University Question Paper Generator</h1>
-        <div class="topbar-breadcrumb">Assessment <span>›</span> Exam Blueprint & Formulation</div>
+        <h1 class="topbar-title">University Question Paper & Assessment Formulation</h1>
+        <div class="topbar-breadcrumb">Assessment <span>›</span> Institutional Blueprint & Question Authoring</div>
       </div>
       <div class="topbar-right" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
         <select class="form-select" id="course-select" style="min-width:240px;font-size:12.5px;"></select>
         <button class="btn btn-primary btn-sm" onclick="openBlueprintCustomizerModal()">
-          <span data-icon="sparkles"></span><span>AI Generate Paper</span>
+          <span data-icon="sparkles"></span><span>⚙️ Customize & Generate Blueprint</span>
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="autoRebalanceMarks()">
+          <span>⚖️ Auto-Rebalance Marks</span>
         </button>
         <button class="btn btn-secondary btn-sm" id="saveAssessBtn" onclick="saveAsAssessment()">
           <span data-icon="check"></span><span>Save as Assessment</span>
@@ -106,9 +124,9 @@
 
     <div class="page-content">
 
-      <!-- Tabs -->
+      <!-- Navigation Tabs -->
       <div class="tab-list">
-        <button class="tab-btn active" onclick="switchQPTab('editor', this)">Blueprint & Questions Configuration</button>
+        <button class="tab-btn active" onclick="switchQPTab('editor', this)">Blueprint & Questions Workbench</button>
         <button class="tab-btn" onclick="switchQPTab('preview', this)">Printable Exam Paper View</button>
       </div>
 
@@ -116,44 +134,35 @@
       <div id="tab-editor" class="tab-content active">
         <!-- Configuration Card -->
         <div class="card" style="margin-bottom:16px;">
-          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
             <div>
-              <div class="card-title">Exam Blueprint Metadata & Syllabus Scope</div>
-              <div class="card-subtitle">Define examination parameters, units covered, and question choice structure</div>
+              <div class="card-title">Exam Blueprint Metadata & Parameters</div>
+              <div class="card-subtitle">Full institutional freedom: configure any exam category, custom title, marks, and units</div>
             </div>
-            <button class="btn btn-secondary btn-sm" onclick="openBlueprintCustomizerModal()">
-              <span data-icon="sparkles"></span><span>Customize Units & Questions...</span>
-            </button>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-secondary btn-sm" onclick="openBlueprintCustomizerModal()">
+                <span data-icon="sparkles"></span><span>Open Full Blueprint Customizer...</span>
+              </button>
+            </div>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;">
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));gap:12px;">
             <div class="form-group">
-              <label class="form-label">Examination Category</label>
-              <select class="form-select" id="cfg-type" onchange="onExamCategoryChange()">
-                <option value="Mid Semester Examination (MSE)" selected>Mid Semester Exam (MSE)</option>
-                <option value="Internal Assessment (IA-1)">Internal Assessment (IA-1)</option>
-                <option value="Internal Assessment (IA-2)">Internal Assessment (IA-2)</option>
-                <option value="End Semester Examination (ESE)">End Semester Exam (ESE)</option>
+              <label class="form-label">Assessment Category</label>
+              <select class="form-select" id="cfg-type" onchange="onCategorySelectChange()">
+                <option value="mse" selected>Mid Semester Examination (MSE)</option>
+                <option value="ia1">Internal Assessment 1 (IA-1)</option>
+                <option value="ia2">Internal Assessment 2 (IA-2)</option>
+                <option value="ca">Continuous Assessment (CA)</option>
+                <option value="assignment">Written Assignment / Tutorial</option>
+                <option value="unit-test">Unit Test / Class Test</option>
+                <option value="ese">End Semester Examination (ESE)</option>
+                <option value="custom">Custom Examination...</option>
               </select>
             </div>
             <div class="form-group">
-              <label class="form-label">Syllabus Units Covered</label>
-              <select class="form-select" id="cfg-units" onchange="onUnitsPresetChange()">
-                <option value="1-2" selected>Units 1 & 2 (Mid Sem Standard)</option>
-                <option value="1-3">Units 1, 2 & 3</option>
-                <option value="1-4">Units 1 to 4 (Comprehensive)</option>
-                <option value="1-6">All Units 1 to 6 (End Sem)</option>
-                <option value="custom">⚙️ Custom Unit Selection...</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Question Pattern & Choice</label>
-              <select class="form-select" id="cfg-pattern" onchange="onPatternPresetChange()">
-                <option value="6-or" selected>6 Questions (Pairs with OR Choice: Q1/Q2, Q3/Q4, Q5/Q6)</option>
-                <option value="4-or">4 Questions (Pairs with OR Choice: Q1/Q2, Q3/Q4)</option>
-                <option value="6-direct">6 Questions (All Compulsory — No OR Choice)</option>
-                <option value="4-direct">4 Questions (All Compulsory — No OR Choice)</option>
-                <option value="8-or">8 Questions (4 Pairs with OR Choice)</option>
-              </select>
+              <label class="form-label">Examination Title / Subject Header</label>
+              <input type="text" class="form-input" id="cfg-title" value="MID SEMESTER EXAMINATION (MSE)" onchange="refreshPreview()">
             </div>
             <div class="form-group">
               <label class="form-label">Question Set</label>
@@ -161,11 +170,13 @@
                 <option value="Set A">Set A</option>
                 <option value="Set B">Set B</option>
                 <option value="Set C">Set C</option>
+                <option value="Set D">Set D</option>
+                <option value="">No Set Specified</option>
               </select>
             </div>
             <div class="form-group">
-              <label class="form-label">Maximum Marks</label>
-              <input type="number" class="form-input" id="cfg-marks" value="50" onchange="refreshPreview()">
+              <label class="form-label">Target Maximum Marks</label>
+              <input type="number" class="form-input" id="cfg-marks" value="50" min="5" max="200" onchange="updateMarksTracker(); refreshPreview();">
             </div>
             <div class="form-group">
               <label class="form-label">Duration</label>
@@ -176,14 +187,62 @@
               <input type="date" class="form-input" id="cfg-date" onchange="refreshPreview()">
             </div>
           </div>
+
+          <!-- Active Units & Choice Structure Bar -->
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <span style="font-size:12px;font-weight:700;color:var(--text-secondary);">Syllabus Units Covered:</span>
+              <div id="active-units-pills" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+              <button class="btn btn-secondary btn-xs" onclick="openBlueprintCustomizerModal()">
+                <span>Edit Scope</span>
+              </button>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:12px;font-weight:700;color:var(--text-secondary);">Choice Model:</span>
+              <span id="active-choice-badge" class="badge badge-primary" style="font-size:11.5px;">Pairwise OR (Q1/Q2, Q3/Q4, Q5/Q6)</span>
+            </div>
+          </div>
+
+          <!-- Live Marks & Cognitive Balance Tracker -->
+          <div class="stats-bar" id="blueprint-stats-bar">
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+              <div>
+                <strong>Questions:</strong> <span id="stat-q-count">6</span>
+              </div>
+              <div>
+                <strong>Sections:</strong> <span id="stat-sec-count">2</span>
+              </div>
+              <div>
+                <strong>Author Marks:</strong> <span id="stat-marks-sum">50</span> / <span id="stat-marks-target">50</span>
+                <span id="stat-marks-status" class="badge badge-success" style="margin-left:6px;">Balanced ✓</span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <button class="btn btn-secondary btn-xs" onclick="autoRebalanceMarks()">
+                <span>⚖️ Auto-Rebalance Marks</span>
+              </button>
+              <button class="btn btn-secondary btn-xs" onclick="toggleInstructionsEditor()">
+                <span>📝 Edit Candidate Instructions</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Collapsible Candidate Instructions Editor -->
+          <div id="instructions-editor-panel" style="display:none;margin-top:12px;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);">
+            <label class="form-label" style="font-weight:700;">Instructions to Candidates (Printable Header)</label>
+            <textarea class="form-input" id="cfg-custom-instructions" rows="3" style="font-size:12.5px;resize:vertical;" onchange="refreshPreview()"></textarea>
+            <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">
+              Tip: Standard instructions are dynamically formulated from your choice model. You can add or revise any rules here.
+            </div>
+          </div>
         </div>
 
-        <!-- Sections Builder -->
+        <!-- Sections & Questions Builder -->
         <div class="card">
-          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
             <div>
               <div class="card-title">Sections & Question Structures</div>
-              <div class="card-subtitle">Add, edit, remove questions, toggle OR choices, and map sub-parts to Bloom's levels & COs</div>
+              <div class="card-subtitle">Complete in-place authoring: add/delete questions, sub-parts, toggle OR choices, and map COs/Bloom's</div>
             </div>
             <div style="display:flex;gap:8px;">
               <button class="btn btn-secondary btn-sm" onclick="addSection()">
@@ -213,11 +272,7 @@
           </div>
           <div class="qp-instructions">
             <strong>Instructions to the Candidates:</strong>
-            <ol style="margin:4px 0 0 16px;padding:0;font-size:11px;" id="pv-instructions-list">
-              <li>Answer all questions following the section blueprints.</li>
-              <li>Figures to the right indicate full marks.</li>
-              <li>Assume suitable data if necessary.</li>
-            </ol>
+            <ol style="margin:4px 0 0 16px;padding:0;font-size:11px;" id="pv-instructions-list"></ol>
           </div>
           <div id="pv-sections"></div>
         </div>
@@ -244,7 +299,24 @@
 
   let currentCourse = null;
 
-  // Active paper state
+  // Active Blueprint Configuration
+  let blueprint = {
+    category: 'mse',
+    title: 'MID SEMESTER EXAMINATION (MSE)',
+    marks: 50,
+    duration: '2 Hours',
+    set: 'Set A',
+    units: [1, 2], // Default 2 units for Mid Sem
+    choiceModel: 'pairwise-or', // 'pairwise-or', 'attempt-n-of-m', 'compulsory', 'custom'
+    attemptCount: 3, // For 'attempt-n-of-m'
+    totalQ: 6,
+    partsPerQ: 1, // 1, 2, or 3
+    bloomsMix: 'balanced',
+    customPrompt: '',
+    customInstructions: ''
+  };
+
+  // Active Paper Data Model
   let paper = {
     sections: [
       {
@@ -254,29 +326,33 @@
           {
             qNo: 1,
             isOR: false,
+            choiceType: 'compulsory',
             parts: [
-              { label: 'a', text: 'Analyze foundational principles and architecture pipeline with suitable structural block schematics.', marks: 8, co: 1, bl: 3 }
+              { label: 'a', text: 'Analyze foundational principles, underlying mathematical formulations, and structural block schematics.', marks: 8, co: 1, bl: 3 }
             ]
           },
           {
             qNo: 2,
             isOR: true,
+            choiceType: 'or',
             parts: [
-              { label: 'a', text: 'Compare key alternative paradigms and evaluate their computational trade-offs, advantages, and limitations.', marks: 8, co: 1, bl: 3 }
+              { label: 'a', text: 'Critically compare alternative algorithmic paradigms and evaluate computational trade-offs, advantages, and constraints.', marks: 8, co: 1, bl: 3 }
             ]
           },
           {
             qNo: 3,
             isOR: false,
+            choiceType: 'compulsory',
             parts: [
-              { label: 'a', text: 'Derive the mathematical formulation and optimization loss objective function step-by-step.', marks: 8, co: 1, bl: 4 }
+              { label: 'a', text: 'Derive the optimization loss function and mathematical parameter update mechanics step-by-step.', marks: 8, co: 1, bl: 4 }
             ]
           },
           {
             qNo: 4,
             isOR: true,
+            choiceType: 'or',
             parts: [
-              { label: 'a', text: 'Design an end-to-end algorithmic workflow addressing practical real-world edge cases.', marks: 8, co: 1, bl: 4 }
+              { label: 'a', text: 'Design an end-to-end operational pipeline to mitigate practical computational bottlenecks and variance.', marks: 8, co: 1, bl: 4 }
             ]
           }
         ]
@@ -288,15 +364,17 @@
           {
             qNo: 5,
             isOR: false,
+            choiceType: 'compulsory',
             parts: [
-              { label: 'a', text: 'Formulate an end-to-end evaluation pipeline for model performance and validate generalization accuracy.', marks: 9, co: 2, bl: 4 }
+              { label: 'a', text: 'Formulate a robust evaluation pipeline for model performance and validate generalization accuracy on unseen data.', marks: 9, co: 2, bl: 4 }
             ]
           },
           {
             qNo: 6,
             isOR: true,
+            choiceType: 'or',
             parts: [
-              { label: 'a', text: 'Critically investigate hyperparameter optimization strategies and outline a structured tuning protocol.', marks: 9, co: 2, bl: 5 }
+              { label: 'a', text: 'Conduct an in-depth diagnostic error analysis and outline a systematic hyperparameter tuning protocol.', marks: 9, co: 2, bl: 5 }
             ]
           }
         ]
@@ -304,6 +382,7 @@
     ]
   };
 
+  /* ── Course Initialization ── */
   const sel = document.getElementById('course-select');
   const courses = DB.courses.byFaculty(user.id);
 
@@ -329,14 +408,17 @@
   }
 
   sel.addEventListener('change', e => {
-    currentCourse = DB.courses.byId(e.target.value);
+    currentCourse = DB.courses.byId(e.target.value) || { id: e.target.value, code: 'COURSE', name: 'Course' };
     sessionStorage.setItem('selected_course_id', e.target.value);
+    renderActiveUnitsPills();
     refreshPreview();
   });
 
   document.getElementById('cfg-date').value = new Date().toISOString().split('T')[0];
 
+  renderActiveUnitsPills();
   renderEditor();
+  updateMarksTracker();
   refreshPreview();
   renderAllIcons();
 
@@ -349,17 +431,110 @@
     if (tab === 'preview') refreshPreview();
   }
 
+  /* ── Active Units Pills ── */
+  function renderActiveUnitsPills() {
+    const container = document.getElementById('active-units-pills');
+    if (!container) return;
+    const units = blueprint.units || [1, 2];
+    container.innerHTML = units.map(u => `<span class="unit-pill active" onclick="openBlueprintCustomizerModal()">Unit ${u}</span>`).join('');
+
+    const choiceBadge = document.getElementById('active-choice-badge');
+    if (choiceBadge) {
+      if (blueprint.choiceModel === 'pairwise-or') {
+        choiceBadge.textContent = 'Pairwise OR (Q1/Q2, Q3/Q4, etc.)';
+        choiceBadge.className = 'badge badge-warning';
+      } else if (blueprint.choiceModel === 'attempt-n-of-m') {
+        choiceBadge.textContent = `Attempt Any ${blueprint.attemptCount} of ${blueprint.totalQ}`;
+        choiceBadge.className = 'badge badge-primary';
+      } else if (blueprint.choiceModel === 'compulsory') {
+        choiceBadge.textContent = 'All Compulsory (No Choice)';
+        choiceBadge.className = 'badge badge-neutral';
+      } else {
+        choiceBadge.textContent = 'Custom Choice Architecture';
+        choiceBadge.className = 'badge badge-secondary';
+      }
+    }
+  }
+
   /* ── Renumber Questions Sequentially Across All Sections ── */
   function renumberAllQuestions() {
     let currentQ = 1;
-    paper.sections.forEach(sec => {
-      sec.questions.forEach((q, idx) => {
+    (paper.sections || []).forEach(sec => {
+      (sec.questions || []).forEach(q => {
         q.qNo = currentQ++;
       });
     });
   }
 
-  /* ── Render Sections and Questions Editor ── */
+  /* ── Update Marks & Blueprint Tracker ── */
+  function updateMarksTracker() {
+    renumberAllQuestions();
+    let totalQuestions = 0;
+    let sumMarks = 0;
+    (paper.sections || []).forEach(sec => {
+      totalQuestions += (sec.questions || []).length;
+      (sec.questions || []).forEach(q => {
+        (q.parts || []).forEach(p => {
+          sumMarks += (parseInt(p.marks) || 0);
+        });
+      });
+    });
+
+    const targetMarks = parseInt(document.getElementById('cfg-marks')?.value) || blueprint.marks || 50;
+    blueprint.marks = targetMarks;
+
+    const statQ = document.getElementById('stat-q-count');
+    const statSec = document.getElementById('stat-sec-count');
+    const statSum = document.getElementById('stat-marks-sum');
+    const statTarget = document.getElementById('stat-marks-target');
+    const statStatus = document.getElementById('stat-marks-status');
+
+    if (statQ) statQ.textContent = totalQuestions;
+    if (statSec) statSec.textContent = (paper.sections || []).length;
+    if (statSum) statSum.textContent = sumMarks;
+    if (statTarget) statTarget.textContent = targetMarks;
+
+    if (statStatus) {
+      if (sumMarks === targetMarks) {
+        statStatus.textContent = 'Balanced ✓';
+        statStatus.className = 'badge badge-success';
+      } else if (sumMarks < targetMarks) {
+        statStatus.textContent = `${targetMarks - sumMarks}M Deficit ⚠️`;
+        statStatus.className = 'badge badge-warning';
+      } else {
+        statStatus.textContent = `${sumMarks - targetMarks}M Surplus ⚠️`;
+        statStatus.className = 'badge badge-danger';
+      }
+    }
+  }
+
+  /* ── Auto-Rebalance Marks Tool ── */
+  function autoRebalanceMarks() {
+    const targetMarks = parseInt(document.getElementById('cfg-marks')?.value) || blueprint.marks || 50;
+    const allParts = [];
+    (paper.sections || []).forEach(sec => {
+      (sec.questions || []).forEach(q => {
+        (q.parts || []).forEach(p => allParts.push(p));
+      });
+    });
+
+    if (allParts.length === 0) return;
+
+    // Distribute target marks evenly across sub-parts
+    const baseMark = Math.floor(targetMarks / allParts.length);
+    let remainder = targetMarks % allParts.length;
+
+    allParts.forEach((p, idx) => {
+      p.marks = baseMark + (idx < remainder ? 1 : 0);
+    });
+
+    renderEditor();
+    updateMarksTracker();
+    refreshPreview();
+    Toast.success(`Rebalanced questions to total exactly ${targetMarks} Marks!`);
+  }
+
+  /* ── Render Workbench Sections and Questions Editor ── */
   function renderEditor() {
     renumberAllQuestions();
     const container = document.getElementById('sections-editor');
@@ -367,15 +542,23 @@
 
     if (!paper.sections || paper.sections.length === 0) {
       container.innerHTML = `
-        <div style="text-align:center;padding:32px;color:var(--text-secondary);">
-          <p>No sections defined yet. Click "Add Section" or "AI Generate Paper" above.</p>
+        <div style="text-align:center;padding:40px;color:var(--text-secondary);">
+          <p style="font-size:14px;margin-bottom:12px;">No sections created yet.</p>
+          <div style="display:flex;gap:10px;justify-content:center;">
+            <button class="btn btn-primary btn-sm" onclick="openBlueprintCustomizerModal()">
+              <span>⚙️ Open Blueprint Customizer</span>
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="addSection()">
+              <span>+ Add Blank Section</span>
+            </button>
+          </div>
         </div>
       `;
       return;
     }
 
     container.innerHTML = paper.sections.map((sec, sIdx) => {
-      const secTotalMarks = sec.questions.reduce((sum, q) => {
+      const secTotalMarks = (sec.questions || []).reduce((sum, q) => {
         return sum + (q.parts || []).reduce((pSum, p) => pSum + (parseInt(p.marks) || 0), 0);
       }, 0);
 
@@ -383,7 +566,7 @@
         <div class="q-editor" data-sidx="${sIdx}">
           <!-- Section Header -->
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
-            <div style="display:flex;align-items:center;gap:10px;flex:1;max-width:480px;">
+            <div style="display:flex;align-items:center;gap:10px;flex:1;max-width:540px;">
               <span style="font-weight:700;font-size:13px;color:var(--text-secondary);white-space:nowrap;">Section ${sIdx + 1}:</span>
               <input class="form-input" style="font-weight:700;font-size:13.5px;" value="${sec.title.replace(/"/g, '&quot;')}" onchange="paper.sections[${sIdx}].title=this.value;refreshPreview();">
             </div>
@@ -405,21 +588,25 @@
           <!-- Questions List -->
           ${sec.questions.map((q, qIdx) => {
             const nextPartLetter = String.fromCharCode(97 + (q.parts ? q.parts.length : 0));
-            const orBadge = q.isOR 
-              ? `<span class="badge badge-warning" style="font-size:11px;">OR Choice to Q.${q.qNo - 1}</span>` 
-              : `<span class="badge badge-neutral" style="font-size:11px;">Compulsory</span>`;
             
-            const orToggleBtn = q.isOR
-              ? `<button class="btn btn-neutral btn-xs" style="font-size:11px;" onclick="toggleOR(${sIdx}, ${qIdx})">Change to Compulsory</button>`
-              : `<button class="btn btn-neutral btn-xs" style="font-size:11px;" onclick="toggleOR(${sIdx}, ${qIdx})">+ Set as OR Choice</button>`;
+            // Choice badge & toggle
+            let choiceBadge = `<span class="badge badge-neutral" style="font-size:11px;">Compulsory</span>`;
+            let choiceToggleBtn = `<button class="btn btn-neutral btn-xs" style="font-size:11px;" onclick="toggleOR(${sIdx}, ${qIdx})">+ Set as OR Choice</button>`;
+            
+            if (q.isOR) {
+              choiceBadge = `<span class="badge badge-warning" style="font-size:11px;">OR Choice to Q.${q.qNo - 1}</span>`;
+              choiceToggleBtn = `<button class="btn btn-neutral btn-xs" style="font-size:11px;" onclick="toggleOR(${sIdx}, ${qIdx})">Change to Compulsory</button>`;
+            } else if (blueprint.choiceModel === 'attempt-n-of-m') {
+              choiceBadge = `<span class="badge badge-choice-any" style="font-size:11px;">Option ${q.qNo}</span>`;
+            }
 
             return `
               <div class="q-box ${q.isOR ? 'is-or-choice' : ''}" data-qidx="${qIdx}">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px;">
-                  <div style="display:flex;align-items:center;gap:8px;">
-                    <span style="font-weight:800;font-size:13px;color:var(--primary);">Question ${q.qNo}</span>
-                    ${orBadge}
-                    ${orToggleBtn}
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <span style="font-weight:800;font-size:13.5px;color:var(--primary);">Question ${q.qNo}</span>
+                    ${choiceBadge}
+                    ${choiceToggleBtn}
                   </div>
                   <div style="display:flex;gap:6px;align-items:center;">
                     <button class="btn btn-secondary btn-xs" onclick="addPart(${sIdx}, ${qIdx})">
@@ -433,13 +620,13 @@
 
                 <!-- Sub-parts List -->
                 ${(q.parts || []).map((p, pIdx) => `
-                  <div style="display:grid;grid-template-columns:28px 1fr 85px 85px 110px 32px;gap:8px;align-items:flex-start;margin-bottom:8px;">
-                    <span style="font-weight:700;font-size:13px;margin-top:6px;">${p.label})</span>
+                  <div style="display:grid;grid-template-columns:30px 1fr 85px 85px 120px 32px;gap:8px;align-items:flex-start;margin-bottom:8px;">
+                    <span style="font-weight:700;font-size:13px;margin-top:6px;color:var(--text-primary);">${p.label})</span>
                     <div>
-                      <textarea class="form-input" style="font-size:12.5px;min-height:36px;resize:vertical;" rows="1" onchange="paper.sections[${sIdx}].questions[${qIdx}].parts[${pIdx}].text=this.value;refreshPreview();">${p.text}</textarea>
+                      <textarea class="form-input" style="font-size:12.5px;min-height:38px;resize:vertical;" rows="1" onchange="paper.sections[${sIdx}].questions[${qIdx}].parts[${pIdx}].text=this.value;refreshPreview();">${p.text}</textarea>
                     </div>
                     <div>
-                      <input type="number" class="form-input" style="font-size:12px;" value="${p.marks}" min="1" placeholder="Marks" title="Marks" onchange="paper.sections[${sIdx}].questions[${qIdx}].parts[${pIdx}].marks=parseInt(this.value)||0;renderEditor();refreshPreview();">
+                      <input type="number" class="form-input" style="font-size:12px;" value="${p.marks}" min="1" placeholder="Marks" title="Marks" onchange="paper.sections[${sIdx}].questions[${qIdx}].parts[${pIdx}].marks=parseInt(this.value)||0;updateMarksTracker();renderEditor();refreshPreview();">
                     </div>
                     <div>
                       <select class="form-select" style="font-size:12px;" title="Course Outcome" onchange="paper.sections[${sIdx}].questions[${qIdx}].parts[${pIdx}].co=parseInt(this.value)||1;refreshPreview();">
@@ -470,7 +657,7 @@
           }).join('')}
 
           <!-- Bottom Section Adders -->
-          <div style="display:flex;gap:8px;margin-top:12px;padding-top:10px;border-top:1px dashed var(--border);">
+          <div style="display:flex;gap:8px;margin-top:12px;padding-top:10px;border-top:1px dashed var(--border);flex-wrap:wrap;">
             <button class="btn btn-secondary btn-sm" onclick="addQuestionToSection(${sIdx}, false)">
               <span data-icon="plus"></span> Add Question to ${sec.title}
             </button>
@@ -483,6 +670,7 @@
     }).join('');
 
     renderAllIcons(container);
+    updateMarksTracker();
   }
 
   /* ── Add Question To Section ── */
@@ -490,15 +678,15 @@
     if (!paper.sections[sIdx]) return;
     const questions = paper.sections[sIdx].questions;
     const defaultMarks = 8;
-    const nextQNo = 1; // Will be auto-renumbered
 
     questions.push({
-      qNo: nextQNo,
+      qNo: 1, // Will be sequentially auto-renumbered
       isOR: isOR,
+      choiceType: isOR ? 'or' : 'compulsory',
       parts: [
         {
           label: 'a',
-          text: isOR ? 'Alternative problem formulation and comparative evaluation.' : 'Critically analyze key principles and formulate solutions with technical diagrams.',
+          text: isOR ? 'Alternative problem formulation: Evaluate comparative trade-offs and computational performance.' : 'Critically analyze foundational principles and formulate solutions with technical diagrams.',
           marks: defaultMarks,
           co: sIdx + 1,
           bl: 3
@@ -507,6 +695,7 @@
     });
 
     renderEditor();
+    updateMarksTracker();
     refreshPreview();
     Toast.success(isOR ? 'Added OR Choice Question.' : 'Added new Question.');
   }
@@ -516,6 +705,7 @@
     if (!paper.sections[sIdx]) return;
     paper.sections[sIdx].questions.splice(qIdx, 1);
     renderEditor();
+    updateMarksTracker();
     refreshPreview();
     Toast.info('Question removed.');
   }
@@ -525,12 +715,13 @@
     if (!paper.sections[sIdx] || !paper.sections[sIdx].questions[qIdx]) return;
     const q = paper.sections[sIdx].questions[qIdx];
     q.isOR = !q.isOR;
+    q.choiceType = q.isOR ? 'or' : 'compulsory';
     renderEditor();
     refreshPreview();
     Toast.success(q.isOR ? `Question ${q.qNo} set as OR choice.` : `Question ${q.qNo} set as Compulsory.`);
   }
 
-  /* ── Add Sub-Part (b, c, etc.) ── */
+  /* ── Add Sub-Part (b, c, d) ── */
   function addPart(sIdx, qIdx) {
     if (!paper.sections[sIdx] || !paper.sections[sIdx].questions[qIdx]) return;
     const parts = paper.sections[sIdx].questions[qIdx].parts;
@@ -543,6 +734,7 @@
       bl: 3
     });
     renderEditor();
+    updateMarksTracker();
     refreshPreview();
   }
 
@@ -551,11 +743,11 @@
     if (!paper.sections[sIdx] || !paper.sections[sIdx].questions[qIdx]) return;
     const parts = paper.sections[sIdx].questions[qIdx].parts;
     parts.splice(pIdx, 1);
-    // Relabel remaining parts sequentially (a, b, c)
     parts.forEach((p, idx) => {
       p.label = String.fromCharCode(97 + idx);
     });
     renderEditor();
+    updateMarksTracker();
     refreshPreview();
   }
 
@@ -564,21 +756,24 @@
     const num = paper.sections.length + 1;
     paper.sections.push({
       num,
-      title: `Section ${num} (Unit ${num})`,
+      title: `Section ${num} (Unit ${num <= 6 ? num : 1})`,
       questions: [
         {
           qNo: 1,
           isOR: false,
-          parts: [{ label: 'a', text: 'Formulate core theoretical principles with diagrams and equations.', marks: 8, co: num, bl: 3 }]
+          choiceType: 'compulsory',
+          parts: [{ label: 'a', text: 'Formulate core theoretical principles with diagrams and equations.', marks: 8, co: num <= 6 ? num : 1, bl: 3 }]
         },
         {
           qNo: 2,
           isOR: true,
-          parts: [{ label: 'a', text: 'Evaluate trade-offs and performance criteria under operational constraints.', marks: 8, co: num, bl: 4 }]
+          choiceType: 'or',
+          parts: [{ label: 'a', text: 'Evaluate trade-offs and performance criteria under operational constraints.', marks: 8, co: num <= 6 ? num : 1, bl: 4 }]
         }
       ]
     });
     renderEditor();
+    updateMarksTracker();
     refreshPreview();
     Toast.success(`Section ${num} added.`);
   }
@@ -591,13 +786,52 @@
     }
     paper.sections.splice(sIdx, 1);
     renderEditor();
+    updateMarksTracker();
     refreshPreview();
     Toast.info('Section deleted.');
   }
 
+  /* ── Toggle Instructions Editor ── */
+  function toggleInstructionsEditor() {
+    const panel = document.getElementById('instructions-editor-panel');
+    if (!panel) return;
+    const isShown = panel.style.display !== 'none';
+    panel.style.display = isShown ? 'none' : 'block';
+    if (!isShown) {
+      const curInst = document.getElementById('cfg-custom-instructions');
+      if (curInst && !curInst.value) {
+        curInst.value = buildCandidateInstructionsText();
+      }
+    }
+  }
+
+  /* ── Helper to build instructions string ── */
+  function buildCandidateInstructionsText() {
+    if (blueprint.customInstructions && blueprint.customInstructions.trim()) {
+      return blueprint.customInstructions;
+    }
+
+    const orPairs = [];
+    (paper.sections || []).forEach(sec => {
+      (sec.questions || []).forEach(q => {
+        if (q.isOR) orPairs.push(`Q.${q.qNo - 1} OR Q.${q.qNo}`);
+      });
+    });
+
+    if (blueprint.choiceModel === 'attempt-n-of-m') {
+      return `Attempt any ${blueprint.attemptCount} questions out of ${blueprint.totalQ} questions. Figures to the right indicate full marks. Assume suitable data if necessary.`;
+    } else if (orPairs.length > 0) {
+      return `Attempt ${orPairs.join(', ')}. Figures to the right indicate full marks. Assume suitable data if necessary.`;
+    } else {
+      return `All questions are compulsory. Figures to the right indicate full marks. Assume suitable data if necessary.`;
+    }
+  }
+
   /* ── Refresh Printable Exam Paper View ── */
   function refreshPreview() {
-    if (!currentCourse) return;
+    if (!currentCourse) {
+      currentCourse = DB.courses.all()[0] || { id: 'temp-course', code: 'COURSE', name: 'Course' };
+    }
     const pvSet = document.getElementById('pv-set');
     const pvExam = document.getElementById('pv-exam-title');
     const pvCourse = document.getElementById('pv-course');
@@ -607,38 +841,44 @@
     const pvSec = document.getElementById('pv-sections');
     const pvInstructions = document.getElementById('pv-instructions-list');
 
-    if (pvSet) pvSet.textContent = (document.getElementById('cfg-set')?.value || 'Set A').toUpperCase();
-    if (pvExam) pvExam.textContent = (document.getElementById('cfg-type')?.value || 'MID SEMESTER EXAMINATION').toUpperCase();
+    const setVal = document.getElementById('cfg-set')?.value || blueprint.set || 'Set A';
+    if (pvSet) {
+      if (setVal) {
+        pvSet.style.display = 'block';
+        pvSet.textContent = setVal.toUpperCase();
+      } else {
+        pvSet.style.display = 'none';
+      }
+    }
+
+    const titleVal = document.getElementById('cfg-title')?.value || blueprint.title || 'EXAMINATION';
+    if (pvExam) pvExam.textContent = titleVal.toUpperCase();
     if (pvCourse) pvCourse.textContent = `${currentCourse.code} – ${currentCourse.name}`;
     if (pvDate) pvDate.textContent = document.getElementById('cfg-date')?.value || '';
-    if (pvDuration) pvDuration.textContent = document.getElementById('cfg-duration')?.value || '2 Hours';
-    if (pvMarks) pvMarks.textContent = document.getElementById('cfg-marks')?.value || '50';
+    if (pvDuration) pvDuration.textContent = document.getElementById('cfg-duration')?.value || blueprint.duration || '2 Hours';
+    if (pvMarks) pvMarks.textContent = document.getElementById('cfg-marks')?.value || blueprint.marks || '50';
 
-    // Build smart candidate instructions
-    const orPairs = [];
-    paper.sections.forEach(sec => {
-      sec.questions.forEach(q => {
-        if (q.isOR) orPairs.push(`Q.${q.qNo - 1} OR Q.${q.qNo}`);
-      });
-    });
-
+    // Candidate instructions
     if (pvInstructions) {
-      let orText = '';
-      if (orPairs.length > 0) {
-        orText = `<li>Attempt ${orPairs.join(', ')}.</li>`;
+      const customInst = document.getElementById('cfg-custom-instructions')?.value;
+      if (customInst && customInst.trim()) {
+        const lines = customInst.split('\n').filter(l => l.trim().length > 0);
+        pvInstructions.innerHTML = lines.map(l => `<li>${l}</li>`).join('') + `
+          <li>Use of scientific non-programmable calculator is permitted.</li>
+        `;
       } else {
-        orText = `<li>All questions are compulsory.</li>`;
+        const baseRule = buildCandidateInstructionsText();
+        pvInstructions.innerHTML = `
+          <li>${baseRule}</li>
+          <li>Figures to the right indicate full marks.</li>
+          <li>Assume suitable data if necessary.</li>
+          <li>Use of scientific non-programmable calculator is permitted.</li>
+        `;
       }
-      pvInstructions.innerHTML = `
-        ${orText}
-        <li>Figures to the right indicate full marks.</li>
-        <li>Assume suitable data if necessary.</li>
-        <li>Use of scientific non-programmable calculator is permitted.</li>
-      `;
     }
 
     if (!pvSec) return;
-    pvSec.innerHTML = paper.sections.map(sec => `
+    pvSec.innerHTML = (paper.sections || []).map(sec => `
       <div style="margin-bottom:18px;">
         <div style="font-weight:700;border-bottom:1.5px solid #0F172A;padding-bottom:3px;margin-bottom:10px;font-size:13px;text-transform:uppercase;">
           ${sec.title}
@@ -669,136 +909,81 @@
   }
 
   /* ── Presets Handlers from Metadata Card ── */
-  function onExamCategoryChange() {
+  function onCategorySelectChange() {
     const val = document.getElementById('cfg-type').value;
-    const unitsSel = document.getElementById('cfg-units');
+    const titleIn = document.getElementById('cfg-title');
     const marksIn = document.getElementById('cfg-marks');
     const durIn = document.getElementById('cfg-duration');
 
-    if (val.includes('Mid Semester') || val.includes('MSE')) {
-      if (unitsSel) unitsSel.value = '1-2';
+    if (val === 'mse') {
+      blueprint.category = 'mse';
+      blueprint.units = [1, 2];
+      blueprint.marks = 50;
+      blueprint.duration = '2 Hours';
+      if (titleIn) titleIn.value = 'MID SEMESTER EXAMINATION (MSE)';
       if (marksIn) marksIn.value = '50';
       if (durIn) durIn.value = '2 Hours';
-    } else if (val.includes('IA-1')) {
-      if (unitsSel) unitsSel.value = '1-2';
+    } else if (val === 'ia1') {
+      blueprint.category = 'ia1';
+      blueprint.units = [1, 2];
+      blueprint.marks = 30;
+      blueprint.duration = '1 Hour';
+      if (titleIn) titleIn.value = 'INTERNAL ASSESSMENT - 1 (IA-1)';
       if (marksIn) marksIn.value = '30';
       if (durIn) durIn.value = '1 Hour';
-    } else if (val.includes('IA-2')) {
-      if (unitsSel) unitsSel.value = '1-3';
+    } else if (val === 'ia2') {
+      blueprint.category = 'ia2';
+      blueprint.units = [1, 2, 3];
+      blueprint.marks = 30;
+      blueprint.duration = '1 Hour';
+      if (titleIn) titleIn.value = 'INTERNAL ASSESSMENT - 2 (IA-2)';
       if (marksIn) marksIn.value = '30';
       if (durIn) durIn.value = '1 Hour';
-    } else if (val.includes('End Semester') || val.includes('ESE')) {
-      if (unitsSel) unitsSel.value = '1-6';
+    } else if (val === 'ca' || val === 'assignment') {
+      blueprint.category = val;
+      blueprint.units = [1, 2];
+      blueprint.marks = 25;
+      blueprint.duration = '1.5 Hours';
+      if (titleIn) titleIn.value = val === 'ca' ? 'CONTINUOUS ASSESSMENT (CA)' : 'WRITTEN ASSIGNMENT & EVALUATION';
+      if (marksIn) marksIn.value = '25';
+      if (durIn) durIn.value = '1.5 Hours';
+    } else if (val === 'unit-test') {
+      blueprint.category = 'unit-test';
+      blueprint.units = [1];
+      blueprint.marks = 20;
+      blueprint.duration = '45 Minutes';
+      if (titleIn) titleIn.value = 'UNIT TEST';
+      if (marksIn) marksIn.value = '20';
+      if (durIn) durIn.value = '45 Minutes';
+    } else if (val === 'ese') {
+      blueprint.category = 'ese';
+      blueprint.units = [1, 2, 3, 4, 5, 6];
+      blueprint.marks = 100;
+      blueprint.duration = '3 Hours';
+      if (titleIn) titleIn.value = 'END SEMESTER EXAMINATION (ESE)';
       if (marksIn) marksIn.value = '100';
       if (durIn) durIn.value = '3 Hours';
+    } else if (val === 'custom') {
+      blueprint.category = 'custom';
+      if (titleIn) titleIn.value = 'COURSE ASSESSMENT';
     }
+
+    renderActiveUnitsPills();
+    updateMarksTracker();
     refreshPreview();
   }
 
-  function onUnitsPresetChange() {
-    const val = document.getElementById('cfg-units').value;
-    if (val === 'custom') {
-      openBlueprintCustomizerModal();
-      return;
-    }
-    applyPresetBlueprint(val, document.getElementById('cfg-pattern').value);
-  }
-
-  function onPatternPresetChange() {
-    const val = document.getElementById('cfg-pattern').value;
-    applyPresetBlueprint(document.getElementById('cfg-units').value, val);
-  }
-
-  /* ── Apply Preset Blueprint Structure ── */
-  function applyPresetBlueprint(unitChoice = '1-2', patternChoice = '6-or') {
-    const cName = currentCourse ? currentCourse.name : 'Course';
-
-    if (unitChoice === '1-2' && patternChoice === '6-or') {
-      // 2 Units, 6 Questions with OR Choice (The User's Exact Requirement!)
-      paper.sections = [
-        {
-          num: 1,
-          title: 'Section I (Unit 1)',
-          questions: [
-            {
-              qNo: 1, isOR: false,
-              parts: [{ label: 'a', text: `Analyze foundational mathematical principles and core architectural formulations in ${cName}.`, marks: 8, co: 1, bl: 3 }]
-            },
-            {
-              qNo: 2, isOR: true,
-              parts: [{ label: 'a', text: `Compare alternative design paradigms in ${cName} and critically evaluate performance trade-offs.`, marks: 8, co: 1, bl: 3 }]
-            },
-            {
-              qNo: 3, isOR: false,
-              parts: [{ label: 'a', text: `Derive the underlying optimization formulation and step-by-step algorithmic pipeline for Unit 1.`, marks: 8, co: 1, bl: 4 }]
-            },
-            {
-              qNo: 4, isOR: true,
-              parts: [{ label: 'a', text: `Design an end-to-end operational pipeline to mitigate common computational bottlenecks and noise.`, marks: 8, co: 1, bl: 4 }]
-            }
-          ]
-        },
-        {
-          num: 2,
-          title: 'Section II (Unit 2)',
-          questions: [
-            {
-              qNo: 5, isOR: false,
-              parts: [{ label: 'a', text: `Formulate a robust evaluation framework for Unit 2 to test model stability and convergence.`, marks: 9, co: 2, bl: 4 }]
-            },
-            {
-              qNo: 6, isOR: true,
-              parts: [{ label: 'a', text: `Conduct a diagnostic error analysis and propose a systematic hyperparameter tuning strategy.`, marks: 9, co: 2, bl: 5 }]
-            }
-          ]
-        }
-      ];
-      Toast.success('Applied Blueprint: 2 Units with 6 Questions (Q1/Q2, Q3/Q4, Q5/Q6 OR choice)!');
-    } else if (patternChoice === '4-or') {
-      paper.sections = [
-        {
-          num: 1,
-          title: 'Section I (Unit 1)',
-          questions: [
-            { qNo: 1, isOR: false, parts: [{ label: 'a', text: `Foundational analysis and principle derivations in ${cName}.`, marks: 12, co: 1, bl: 3 }] },
-            { qNo: 2, isOR: true, parts: [{ label: 'a', text: `Comparative framework evaluation and operational trade-offs in ${cName}.`, marks: 12, co: 1, bl: 3 }] }
-          ]
-        },
-        {
-          num: 2,
-          title: 'Section II (Unit 2)',
-          questions: [
-            { qNo: 3, isOR: false, parts: [{ label: 'a', text: `Advanced architectural synthesis and pipeline implementation.`, marks: 13, co: 2, bl: 4 }] },
-            { qNo: 4, isOR: true, parts: [{ label: 'a', text: `System optimization, validation metrics, and performance tuning.`, marks: 13, co: 2, bl: 5 }] }
-          ]
-        }
-      ];
-      Toast.success('Applied Blueprint: 4 Questions with OR choice.');
-    } else if (patternChoice === '6-direct') {
-      paper.sections = [
-        {
-          num: 1,
-          title: 'Section I (Unit 1 & 2)',
-          questions: [1,2,3,4,5,6].map(i => ({
-            qNo: i, isOR: false,
-            parts: [{ label: 'a', text: `Analytical question covering Unit ${i <= 3 ? 1 : 2} problem formulations in ${cName}.`, marks: 8, co: i <= 3 ? 1 : 2, bl: (i % 3) + 2 }]
-          }))
-        }
-      ];
-      Toast.success('Applied Blueprint: 6 Compulsory Questions.');
-    }
-
-    renderEditor();
-    refreshPreview();
-  }
-
-  /* ── Interactive AI Blueprint Customizer Modal ── */
+  /* ═══════════════════════════════════════════════════════════════════════
+     THE FULLY CUSTOMIZABLE AI QUESTION PAPER BLUEPRINT MODAL
+     No rigid dropdown options — faculty can configure exact questions,
+     choice structures (OR pairs, attempt N of M, compulsory), custom topics!
+     ═══════════════════════════════════════════════════════════════════════ */
   function openBlueprintCustomizerModal() {
     if (!currentCourse) {
       currentCourse = DB.courses.all()[0] || { id: 'crs-dl', code: '2312312T', name: 'Deep Learning and Large Language Models (LLM)' };
     }
 
-    // Attempt to load course syllabus modules if available
+    // Syllabus modules
     let sModules = [];
     try {
       const s = DB.syllabus.byCourse(currentCourse.id);
@@ -816,6 +1001,13 @@
       'Contemporary Innovations, Case Studies & Emerging Frontiers'
     ];
 
+    const curUnits = blueprint.units || [1, 2];
+    const curTotalQ = blueprint.totalQ || 6;
+    const curAttempt = blueprint.attemptCount || 3;
+    const curMarks = parseInt(document.getElementById('cfg-marks')?.value) || blueprint.marks || 50;
+    const curDuration = document.getElementById('cfg-duration')?.value || blueprint.duration || '2 Hours';
+    const curTitle = document.getElementById('cfg-title')?.value || blueprint.title || 'MID SEMESTER EXAMINATION (MSE)';
+
     const modalHtml = `
       <div class="modal-header">
         <div>
@@ -829,91 +1021,178 @@
         <button class="btn btn-secondary btn-sm btn-icon" onclick="Modal.close()">&times;</button>
       </div>
 
-      <div class="modal-body" style="max-height:70vh;overflow-y:auto;padding:20px;">
-        <!-- Quick Scope Selector -->
-        <div style="margin-bottom:16px;">
-          <label class="form-label" style="font-weight:700;">1. Quick Examination Preset</label>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button type="button" class="btn btn-primary btn-xs" onclick="applyModalPreset('midsem-2units')">
-              ⚡ Mid Sem: 2 Units only (Unit 1 & 2)
-            </button>
-            <button type="button" class="btn btn-secondary btn-xs" onclick="applyModalPreset('midsem-3units')">
-              Mid Sem: 3 Units (Unit 1, 2, 3)
-            </button>
-            <button type="button" class="btn btn-secondary btn-xs" onclick="applyModalPreset('midsem-4units')">
-              Comprehensive: 4 Units (Unit 1 to 4)
-            </button>
-            <button type="button" class="btn btn-secondary btn-xs" onclick="applyModalPreset('endsem-6units')">
-              End Sem: All 6 Units
-            </button>
+      <div class="modal-body" style="max-height:75vh;overflow-y:auto;padding:20px;">
+
+        <!-- 1. Examination & Assessment Profile -->
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px;margin-bottom:16px;">
+          <div style="font-weight:700;font-size:13px;margin-bottom:10px;color:var(--text-primary);display:flex;align-items:center;gap:6px;">
+            <span>📋</span> 1. Examination & Assessment Profile
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:10px;">
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">Category</label>
+              <select class="form-select" id="bp-modal-cat" onchange="onModalCategoryChange(this.value)">
+                <option value="mse" ${blueprint.category==='mse'?'selected':''}>Mid Semester Exam (MSE)</option>
+                <option value="ia1" ${blueprint.category==='ia1'?'selected':''}>In-Sem Assessment (IA-1)</option>
+                <option value="ia2" ${blueprint.category==='ia2'?'selected':''}>In-Sem Assessment (IA-2)</option>
+                <option value="ca" ${blueprint.category==='ca'?'selected':''}>Continuous Assessment (CA)</option>
+                <option value="assignment" ${blueprint.category==='assignment'?'selected':''}>Written Assignment</option>
+                <option value="unit-test" ${blueprint.category==='unit-test'?'selected':''}>Unit Test / Quiz</option>
+                <option value="ese" ${blueprint.category==='ese'?'selected':''}>End Sem Exam (ESE)</option>
+                <option value="custom" ${blueprint.category==='custom'?'selected':''}>Custom Assessment</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">Assessment Title Header</label>
+              <input type="text" class="form-input" id="bp-modal-title" value="${curTitle}">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">Target Max Marks</label>
+              <input type="number" class="form-input" id="bp-modal-marks" value="${curMarks}" min="5" max="200" onchange="updateModalCalculations()">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">Duration</label>
+              <input type="text" class="form-input" id="bp-modal-duration" value="${curDuration}">
+            </div>
           </div>
         </div>
 
-        <!-- Syllabus Units Covered -->
-        <div style="margin-bottom:18px;">
-          <label class="form-label" style="font-weight:700;">2. Select Syllabus Units Covered in this Exam</label>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <!-- 2. Syllabus Scope Selection & Custom Topics -->
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px;margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+            <div style="font-weight:700;font-size:13px;color:var(--text-primary);display:flex;align-items:center;gap:6px;">
+              <span>📚</span> 2. Syllabus Units Covered in this Exam
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button type="button" class="btn btn-secondary btn-xs" onclick="setModalUnitsScope([1, 2])">Units 1 & 2 (Mid Sem)</button>
+              <button type="button" class="btn btn-secondary btn-xs" onclick="setModalUnitsScope([1, 2, 3])">Units 1 to 3</button>
+              <button type="button" class="btn btn-secondary btn-xs" onclick="setModalUnitsScope([1, 2, 3, 4])">Units 1 to 4</button>
+              <button type="button" class="btn btn-secondary btn-xs" onclick="setModalUnitsScope([1, 2, 3, 4, 5, 6])">All 6 Units</button>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
             ${[1, 2, 3, 4, 5, 6].map(uNum => {
               const uTitle = sModules[uNum - 1]?.title || defaultUnitNames[uNum - 1];
-              const isChecked = uNum <= 2 ? 'checked' : ''; // Default Units 1 & 2 for Mid Sem
+              const isChecked = curUnits.includes(uNum) ? 'checked' : '';
               return `
-                <label style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-sm);cursor:pointer;">
-                  <input type="checkbox" id="bp-unit-${uNum}" class="bp-unit-check" value="${uNum}" ${isChecked} style="margin-top:3px;">
+                <label style="display:flex;align-items:flex-start;gap:8px;padding:8px 10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);cursor:pointer;">
+                  <input type="checkbox" id="bp-unit-${uNum}" class="bp-unit-check" value="${uNum}" ${isChecked} style="margin-top:3px;" onchange="updateModalCalculations()">
                   <div>
-                    <div style="font-weight:700;font-size:12.5px;color:var(--text-primary);">Unit ${uNum}</div>
-                    <div style="font-size:11.5px;color:var(--text-secondary);line-height:1.4;">${uTitle}</div>
+                    <div style="font-weight:700;font-size:12px;color:var(--text-primary);">Unit ${uNum}</div>
+                    <div style="font-size:11px;color:var(--text-secondary);line-height:1.35;">${uTitle}</div>
                   </div>
                 </label>
               `;
             }).join('')}
           </div>
-        </div>
 
-        <!-- Question Pattern & OR Configuration -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;">
-          <div class="form-group">
-            <label class="form-label" style="font-weight:700;">3. Question Structure & OR Option</label>
-            <select class="form-select" id="bp-modal-pattern">
-              <option value="6-or" selected>6 Questions (Pairs with OR: Q1/Q2, Q3/Q4, Q5/Q6) [Standard]</option>
-              <option value="4-or">4 Questions (Pairs with OR: Q1/Q2, Q3/Q4)</option>
-              <option value="8-or">8 Questions (4 Pairs with OR Choice)</option>
-              <option value="6-direct">6 Questions (All Compulsory — No OR Choice)</option>
-              <option value="4-direct">4 Questions (All Compulsory — No OR Choice)</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label" style="font-weight:700;">4. Sections Organization</label>
-            <select class="form-select" id="bp-modal-layout">
-              <option value="by-unit" selected>Divide into Sections by Unit (e.g. Sec I: Unit 1, Sec II: Unit 2)</option>
-              <option value="single">Single Unified Section</option>
-            </select>
+          <!-- Free-form Topic Guidance -->
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" style="font-weight:700;font-size:12px;">Specific Topics, Problem Types, or Faculty Guidelines (Optional)</label>
+            <textarea class="form-input" id="bp-modal-prompt" rows="2" style="font-size:12px;resize:vertical;" placeholder="e.g., Emphasize CNN mathematical convolution, pooling arithmetic, backpropagation derivations, include 1 numerical problem on gradient descent, and compare LSTM vs GRU...">${blueprint.customPrompt || ''}</textarea>
+            <div style="font-size:11px;color:var(--text-secondary);margin-top:3px;">
+              The AI formulation engine will strictly respect your custom topic notes and criteria.
+            </div>
           </div>
         </div>
 
-        <!-- Total Marks & Cognitive Level -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-          <div class="form-group">
-            <label class="form-label" style="font-weight:700;">5. Total Marks</label>
-            <input type="number" class="form-input" id="bp-modal-marks" value="50">
+        <!-- 3. Question Structure & Choice Architecture (100% Free Customization) -->
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px;margin-bottom:16px;">
+          <div style="font-weight:700;font-size:13px;margin-bottom:10px;color:var(--text-primary);display:flex;align-items:center;gap:6px;">
+            <span>⚙️</span> 3. Question Structure & Choice Architecture
           </div>
-          <div class="form-group">
-            <label class="form-label" style="font-weight:700;">6. Cognitive Level Mix (Bloom's Taxonomy)</label>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;margin-bottom:12px;">
+            <!-- Total Questions Numerical Input -->
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" style="font-weight:700;">Total Questions to Formulate</label>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="adjustTotalQ(-1)">-</button>
+                <input type="number" class="form-input" id="bp-modal-total-q" value="${curTotalQ}" min="1" max="25" style="text-align:center;font-weight:700;font-size:14px;" onchange="updateModalCalculations()">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="adjustTotalQ(1)">+</button>
+              </div>
+              <div style="font-size:11px;color:var(--text-secondary);margin-top:3px;">Type any number of questions (e.g. 3, 5, 6, 8, 10...)</div>
+            </div>
+
+            <!-- Choice Model -->
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" style="font-weight:700;">Choice Architecture</label>
+              <select class="form-select" id="bp-modal-choice-type" onchange="onModalChoiceTypeChange(this.value)">
+                <option value="pairwise-or" ${blueprint.choiceModel==='pairwise-or'?'selected':''}>Pairwise Internal OR (Q1/Q2, Q3/Q4, Q5/Q6...)</option>
+                <option value="attempt-n-of-m" ${blueprint.choiceModel==='attempt-n-of-m'?'selected':''}>Attempt Any N out of Total (e.g. 3 of 5)</option>
+                <option value="compulsory" ${blueprint.choiceModel==='compulsory'?'selected':''}>All Compulsory (No Choice)</option>
+                <option value="custom" ${blueprint.choiceModel==='custom'?'selected':''}>Fully Custom (Set per Question in Editor)</option>
+              </select>
+            </div>
+
+            <!-- Attempt Count for 'attempt-n-of-m' -->
+            <div class="form-group" id="bp-attempt-n-group" style="margin-bottom:0;display:${blueprint.choiceModel==='attempt-n-of-m'?'block':'none'};">
+              <label class="form-label" style="font-weight:700;">Questions Candidates Must Attempt</label>
+              <input type="number" class="form-input" id="bp-modal-attempt-n" value="${curAttempt}" min="1" max="${curTotalQ}" onchange="updateModalCalculations()">
+              <div style="font-size:11px;color:var(--text-secondary);margin-top:3px;">e.g. Attempt any 3 out of 5 questions</div>
+            </div>
+
+            <!-- Sections Layout -->
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" style="font-weight:700;">Sections Organization</label>
+              <select class="form-select" id="bp-modal-sections-layout">
+                <option value="by-unit" selected>Divide into Sections by Unit (e.g. Sec I: Unit 1, Sec II: Unit 2)</option>
+                <option value="single">Single Unified Section</option>
+                <option value="two-equal">2 Equal Sections (Section A & Section B)</option>
+              </select>
+            </div>
+
+            <!-- Sub-parts per Question -->
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" style="font-weight:700;">Sub-parts per Question</label>
+              <select class="form-select" id="bp-modal-subparts">
+                <option value="1" ${blueprint.partsPerQ===1?'selected':''}>Single Question (1 Part: 'a' only)</option>
+                <option value="2" ${blueprint.partsPerQ===2?'selected':''}>2 Sub-parts ('a' & 'b')</option>
+                <option value="3" ${blueprint.partsPerQ===3?'selected':''}>3 Sub-parts ('a', 'b', 'c')</option>
+                <option value="custom">Custom / Variable in Editor</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Dynamic Live Calculation Banner -->
+          <div id="bp-modal-calc-banner" style="padding:8px 12px;background:var(--surface);border:1px dashed var(--border);border-radius:var(--r-sm);font-size:12px;color:var(--text-secondary);">
+            Loading calculation...
+          </div>
+        </div>
+
+        <!-- 4. Cognitive Rigor & Bloom's Taxonomy -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" style="font-weight:700;">4. Cognitive Mix (Bloom's Taxonomy)</label>
             <select class="form-select" id="bp-modal-blooms">
-              <option value="balanced" selected>Balanced Cognitive Mix (L2 to L5: Understand, Apply, Analyze, Evaluate)</option>
-              <option value="foundational">Foundational Focus (L1–L3: Remember, Understand, Apply)</option>
-              <option value="advanced">Advanced Analytical (L3–L6: Apply, Analyze, Evaluate, Create)</option>
+              <option value="balanced" ${blueprint.bloomsMix==='balanced'?'selected':''}>Balanced Cognitive Mix (L2 to L5: Understand, Apply, Analyze, Evaluate)</option>
+              <option value="foundational" ${blueprint.bloomsMix==='foundational'?'selected':''}>Foundational Focus (L1–L3: Remember, Understand, Apply)</option>
+              <option value="advanced" ${blueprint.bloomsMix==='advanced'?'selected':''}>Advanced Analytical (L3–L6: Apply, Analyze, Evaluate, Create)</option>
+              <option value="all">Comprehensive Across All Levels (L1 to L6)</option>
             </select>
           </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" style="font-weight:700;">Target Course Outcomes</label>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
+              ${[1, 2, 3, 4, 5, 6].map(coNum => `
+                <label style="display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:4px 8px;background:var(--surface);border:1px solid var(--border);border-radius:4px;cursor:pointer;">
+                  <input type="checkbox" id="bp-co-${coNum}" value="${coNum}" checked> CO${coNum}
+                </label>
+              `).join('')}
+            </div>
+          </div>
         </div>
+
       </div>
 
-      <div class="modal-footer" style="display:flex;justify-content:space-between;align-items:center;">
+      <div class="modal-footer" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
         <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
-        <div style="display:flex;gap:8px;">
-          <button class="btn btn-secondary" onclick="executeApplyBlankFromModal()">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-secondary" onclick="executeApplyBlankCustomBlueprint()">
             📋 Create Blank Blueprint Structure
           </button>
-          <button class="btn btn-primary" id="btn-execute-ai-paper" onclick="executeAIGenerationFromModal()">
+          <button class="btn btn-primary" id="btn-execute-ai-paper" onclick="executeAIGenerationCustomBlueprint()">
             <span data-icon="sparkles"></span><span>✨ Formulate AI Balanced Question Paper</span>
           </button>
         </div>
@@ -922,35 +1201,110 @@
 
     Modal.open(modalHtml, { wide: true });
     renderAllIcons(document.getElementById('modal-backdrop'));
+    updateModalCalculations();
   }
 
-  /* ── Modal Quick Preset Helper ── */
-  window.applyModalPreset = function(preset) {
-    const checks = [1, 2, 3, 4, 5, 6].map(i => document.getElementById(`bp-unit-${i}`));
-    checks.forEach(c => { if (c) c.checked = false; });
-
-    if (preset === 'midsem-2units') {
-      if (checks[0]) checks[0].checked = true;
-      if (checks[1]) checks[1].checked = true;
-      const pat = document.getElementById('bp-modal-pattern');
-      if (pat) pat.value = '6-or';
-      const m = document.getElementById('bp-modal-marks');
-      if (m) m.value = '50';
-    } else if (preset === 'midsem-3units') {
-      if (checks[0]) checks[0].checked = true;
-      if (checks[1]) checks[1].checked = true;
-      if (checks[2]) checks[2].checked = true;
-    } else if (preset === 'midsem-4units') {
-      for (let i = 0; i < 4; i++) if (checks[i]) checks[i].checked = true;
-    } else if (preset === 'endsem-6units') {
-      for (let i = 0; i < 6; i++) if (checks[i]) checks[i].checked = true;
-      const m = document.getElementById('bp-modal-marks');
-      if (m) m.value = '100';
-    }
+  /* ── Modal Step Handlers ── */
+  window.adjustTotalQ = function(delta) {
+    const input = document.getElementById('bp-modal-total-q');
+    if (!input) return;
+    let val = (parseInt(input.value) || 6) + delta;
+    if (val < 1) val = 1;
+    if (val > 30) val = 30;
+    input.value = val;
+    updateModalCalculations();
   };
 
-  /* ── Execute Blank Template From Modal ── */
-  window.executeApplyBlankFromModal = function() {
+  window.onModalCategoryChange = function(cat) {
+    const titleIn = document.getElementById('bp-modal-title');
+    const marksIn = document.getElementById('bp-modal-marks');
+    const durIn = document.getElementById('bp-modal-duration');
+
+    if (cat === 'mse') {
+      if (titleIn) titleIn.value = 'MID SEMESTER EXAMINATION (MSE)';
+      if (marksIn) marksIn.value = '50';
+      if (durIn) durIn.value = '2 Hours';
+      setModalUnitsScope([1, 2]);
+    } else if (cat === 'ia1') {
+      if (titleIn) titleIn.value = 'INTERNAL ASSESSMENT - 1 (IA-1)';
+      if (marksIn) marksIn.value = '30';
+      if (durIn) durIn.value = '1 Hour';
+      setModalUnitsScope([1, 2]);
+    } else if (cat === 'ia2') {
+      if (titleIn) titleIn.value = 'INTERNAL ASSESSMENT - 2 (IA-2)';
+      if (marksIn) marksIn.value = '30';
+      if (durIn) durIn.value = '1 Hour';
+      setModalUnitsScope([1, 2, 3]);
+    } else if (cat === 'ca' || cat === 'assignment') {
+      if (titleIn) titleIn.value = cat === 'ca' ? 'CONTINUOUS ASSESSMENT (CA)' : 'WRITTEN ASSIGNMENT';
+      if (marksIn) marksIn.value = '25';
+      if (durIn) durIn.value = '1.5 Hours';
+      setModalUnitsScope([1, 2]);
+    } else if (cat === 'unit-test') {
+      if (titleIn) titleIn.value = 'UNIT TEST';
+      if (marksIn) marksIn.value = '20';
+      if (durIn) durIn.value = '45 Minutes';
+      setModalUnitsScope([1]);
+    } else if (cat === 'ese') {
+      if (titleIn) titleIn.value = 'END SEMESTER EXAMINATION (ESE)';
+      if (marksIn) marksIn.value = '100';
+      if (durIn) durIn.value = '3 Hours';
+      setModalUnitsScope([1, 2, 3, 4, 5, 6]);
+    }
+    updateModalCalculations();
+  };
+
+  window.onModalChoiceTypeChange = function(choice) {
+    const attemptGroup = document.getElementById('bp-attempt-n-group');
+    if (attemptGroup) {
+      attemptGroup.style.display = choice === 'attempt-n-of-m' ? 'block' : 'none';
+    }
+    updateModalCalculations();
+  };
+
+  window.setModalUnitsScope = function(unitsArr) {
+    for (let i = 1; i <= 6; i++) {
+      const chk = document.getElementById(`bp-unit-${i}`);
+      if (chk) chk.checked = unitsArr.includes(i);
+    }
+    updateModalCalculations();
+  };
+
+  window.updateModalCalculations = function() {
+    const banner = document.getElementById('bp-modal-calc-banner');
+    if (!banner) return;
+
+    const totalQ = parseInt(document.getElementById('bp-modal-total-q')?.value) || 6;
+    const choiceType = document.getElementById('bp-modal-choice-type')?.value || 'pairwise-or';
+    const totalMarks = parseInt(document.getElementById('bp-modal-marks')?.value) || 50;
+    const attemptN = parseInt(document.getElementById('bp-modal-attempt-n')?.value) || Math.ceil(totalQ / 2);
+
+    const checkedUnits = [];
+    for (let i = 1; i <= 6; i++) {
+      const chk = document.getElementById(`bp-unit-${i}`);
+      if (chk && chk.checked) checkedUnits.push(i);
+    }
+
+    let summaryText = '';
+    if (choiceType === 'pairwise-or') {
+      const pairs = Math.floor(totalQ / 2);
+      const marksPerQ = Math.round(totalMarks / Math.max(1, pairs));
+      summaryText = `Structure: <strong>${totalQ} Questions</strong> (${pairs} Pairwise OR choices: Q1/Q2, Q3/Q4...). Candidates answer <strong>${pairs} questions</strong> (~${marksPerQ}M each = ${totalMarks}M total) across <strong>Units ${checkedUnits.join(', ')}</strong>.`;
+    } else if (choiceType === 'attempt-n-of-m') {
+      const marksPerQ = Math.round(totalMarks / Math.max(1, attemptN));
+      summaryText = `Structure: <strong>${totalQ} Questions</strong>. Candidates <strong>attempt any ${attemptN} of ${totalQ}</strong> (~${marksPerQ}M each = ${totalMarks}M total) across <strong>Units ${checkedUnits.join(', ')}</strong>.`;
+    } else if (choiceType === 'compulsory') {
+      const marksPerQ = Math.round(totalMarks / Math.max(1, totalQ));
+      summaryText = `Structure: <strong>${totalQ} Questions</strong> (All Compulsory). ~${marksPerQ}M each = ${totalMarks}M total across <strong>Units ${checkedUnits.join(', ')}</strong>.`;
+    } else {
+      summaryText = `Structure: <strong>${totalQ} Questions</strong> with fully custom choice distribution totaling <strong>${totalMarks} Marks</strong>.`;
+    }
+
+    banner.innerHTML = summaryText;
+  };
+
+  /* ── Read Values from Modal and Sync to State ── */
+  function extractModalState() {
     const selectedUnits = [];
     for (let i = 1; i <= 6; i++) {
       const chk = document.getElementById(`bp-unit-${i}`);
@@ -958,173 +1312,225 @@
     }
     if (selectedUnits.length === 0) selectedUnits.push(1, 2);
 
-    const pattern = document.getElementById('bp-modal-pattern')?.value || '6-or';
-    const totalMarks = parseInt(document.getElementById('bp-modal-marks')?.value) || 50;
+    const targetCOs = [];
+    for (let i = 1; i <= 6; i++) {
+      const coChk = document.getElementById(`bp-co-${i}`);
+      if (coChk && coChk.checked) targetCOs.push(i);
+    }
 
-    buildCustomPaperStructure(selectedUnits, pattern, totalMarks, null);
+    const cat = document.getElementById('bp-modal-cat')?.value || 'mse';
+    const title = document.getElementById('bp-modal-title')?.value || 'MID SEMESTER EXAMINATION (MSE)';
+    const totalMarks = parseInt(document.getElementById('bp-modal-marks')?.value) || 50;
+    const duration = document.getElementById('bp-modal-duration')?.value || '2 Hours';
+    const totalQ = parseInt(document.getElementById('bp-modal-total-q')?.value) || 6;
+    const choiceType = document.getElementById('bp-modal-choice-type')?.value || 'pairwise-or';
+    const attemptN = parseInt(document.getElementById('bp-modal-attempt-n')?.value) || Math.ceil(totalQ / 2);
+    const layout = document.getElementById('bp-modal-sections-layout')?.value || 'by-unit';
+    const subparts = parseInt(document.getElementById('bp-modal-subparts')?.value) || 1;
+    const bloomsMix = document.getElementById('bp-modal-blooms')?.value || 'balanced';
+    const promptNotes = document.getElementById('bp-modal-prompt')?.value || '';
+
+    blueprint.category = cat;
+    blueprint.title = title;
+    blueprint.marks = totalMarks;
+    blueprint.duration = duration;
+    blueprint.units = selectedUnits;
+    blueprint.choiceModel = choiceType;
+    blueprint.attemptCount = attemptN;
+    blueprint.totalQ = totalQ;
+    blueprint.partsPerQ = subparts;
+    blueprint.bloomsMix = bloomsMix;
+    blueprint.customPrompt = promptNotes;
+
+    // Update top configuration card
+    const cfgType = document.getElementById('cfg-type');
+    if (cfgType) cfgType.value = cat;
+    const cfgTitle = document.getElementById('cfg-title');
+    if (cfgTitle) cfgTitle.value = title;
+    const cfgMarks = document.getElementById('cfg-marks');
+    if (cfgMarks) cfgMarks.value = totalMarks;
+    const cfgDuration = document.getElementById('cfg-duration');
+    if (cfgDuration) cfgDuration.value = duration;
+
+    renderActiveUnitsPills();
+
+    return {
+      selectedUnits,
+      targetCOs,
+      cat,
+      title,
+      totalMarks,
+      duration,
+      totalQ,
+      choiceType,
+      attemptN,
+      layout,
+      subparts,
+      bloomsMix,
+      promptNotes
+    };
+  }
+
+  /* ── Execute Blank Structure From Modal ── */
+  window.executeApplyBlankCustomBlueprint = function() {
+    const opts = extractModalState();
+    buildAutonomousPaper(opts, null);
     Modal.close();
-    Toast.success(`Formulated blueprint for Units ${selectedUnits.join(', ')} with ${pattern === '6-or' ? '6 Questions (OR Choice)' : pattern}!`);
+    Toast.success(`Formulated blank blueprint structure with ${opts.totalQ} questions across Units ${opts.selectedUnits.join(', ')}!`);
   };
 
   /* ── Execute AI Formulation From Modal ── */
-  window.executeAIGenerationFromModal = async function() {
+  window.executeAIGenerationCustomBlueprint = async function() {
     const btn = document.getElementById('btn-execute-ai-paper');
     if (btn) {
       btn.disabled = true;
-      btn.innerHTML = `<span style="display:inline-block;animation:spin 1s linear infinite;">⏳</span> Formulating Balanced Exam Paper…`;
+      btn.innerHTML = `<span style="display:inline-block;animation:spin 1s linear infinite;">⏳</span> Formulating Customized Exam Paper…`;
     }
 
-    const selectedUnits = [];
-    for (let i = 1; i <= 6; i++) {
-      const chk = document.getElementById(`bp-unit-${i}`);
-      if (chk && chk.checked) selectedUnits.push(i);
-    }
-    if (selectedUnits.length === 0) selectedUnits.push(1, 2);
-
-    const pattern = document.getElementById('bp-modal-pattern')?.value || '6-or';
-    const totalMarks = parseInt(document.getElementById('bp-modal-marks')?.value) || 50;
-    const bloomsMix = document.getElementById('bp-modal-blooms')?.value || 'balanced';
-
-    const numQ = pattern.startsWith('6') ? 6 : (pattern.startsWith('4') ? 4 : 8);
+    const opts = extractModalState();
 
     try {
-      Toast.info(`AI is formulating questions strictly for Units ${selectedUnits.join(' & ')}…`);
+      Toast.info(`AI is formulating questions strictly for Units ${opts.selectedUnits.join(' & ')}…`);
 
-      const topicDesc = `Syllabus Units Covered: [${selectedUnits.map(u => 'Unit ' + u).join(', ')}] in ${currentCourse.name}. Focus solely on topics within these units.`;
+      let topicDesc = `Syllabus Units Covered: [${opts.selectedUnits.map(u => 'Unit ' + u).join(', ')}] in ${currentCourse.name}.`;
+      if (opts.promptNotes && opts.promptNotes.trim()) {
+        topicDesc += ` Faculty Specific Guidance: ${opts.promptNotes.trim()}`;
+      }
 
       const res = await AI.generateProfessionalAssessment({
         courseName: currentCourse.name,
-        assessmentType: 'mse',
+        assessmentType: opts.cat,
         topic: topicDesc,
-        level: bloomsMix === 'advanced' ? 'L4' : 'L3',
-        numQuestions: numQ,
-        maxMarks: totalMarks,
-        targetCOs: selectedUnits
+        level: opts.bloomsMix === 'advanced' ? 'L4' : (opts.bloomsMix === 'foundational' ? 'L2' : 'L3'),
+        numQuestions: opts.totalQ,
+        maxMarks: opts.totalMarks,
+        targetCOs: opts.targetCOs.length > 0 ? opts.targetCOs : opts.selectedUnits
       });
 
       const qList = res.questions || [];
-      buildCustomPaperStructure(selectedUnits, pattern, totalMarks, qList);
+      buildAutonomousPaper(opts, qList);
       Modal.close();
-      Toast.success(`Question Paper successfully generated for Units ${selectedUnits.join(', ')} with ${numQ} questions and OR choices!`);
+      Toast.success(`Exam paper formulated for Units ${opts.selectedUnits.join(', ')} with ${opts.totalQ} questions!`);
     } catch(err) {
       console.warn('AI formulation fallback to analytical blueprint:', err);
-      buildCustomPaperStructure(selectedUnits, pattern, totalMarks, null);
+      buildAutonomousPaper(opts, null);
       Modal.close();
-      Toast.success(`Formulated high-yield question paper for Units ${selectedUnits.join(', ')}!`);
+      Toast.success(`Formulated analytical question paper for Units ${opts.selectedUnits.join(', ')}!`);
     }
   };
 
-  /* ── Core Builder: Construct Paper for Any Units and OR Pattern ── */
-  function buildCustomPaperStructure(selectedUnits, pattern, totalMarks, aiQuestionsList = null) {
+  /* ═══════════════════════════════════════════════════════════════════════
+     AUTONOMOUS PAPER BUILDER
+     Builds ANY question structure, ANY count, ANY choice type, ANY units!
+     ═══════════════════════════════════════════════════════════════════════ */
+  function buildAutonomousPaper(opts, aiQuestionsList = null) {
+    const { selectedUnits, totalMarks, totalQ, choiceType, attemptN, layout, subparts, promptNotes } = opts;
     const cName = currentCourse ? currentCourse.name : 'Course';
-    const is6OR = pattern === '6-or';
-    const is4OR = pattern === '4-or';
-    const is8OR = pattern === '8-or';
-    const numQ = is8OR ? 8 : ((is6OR || pattern === '6-direct') ? 6 : 4);
+    const hasAI = aiQuestionsList && aiQuestionsList.length >= totalQ;
 
-    // Compute marks per question
-    const marksPerQ = Math.round(totalMarks / (is6OR ? 3 : (is4OR ? 2 : (is8OR ? 4 : numQ))));
+    // Marks calculation
+    let effectiveQuestionsCount = totalQ;
+    if (choiceType === 'pairwise-or') {
+      effectiveQuestionsCount = Math.max(1, Math.floor(totalQ / 2));
+    } else if (choiceType === 'attempt-n-of-m') {
+      effectiveQuestionsCount = Math.max(1, attemptN);
+    }
+    const marksPerQ = Math.max(1, Math.round(totalMarks / effectiveQuestionsCount));
 
-    const hasAIQuestions = aiQuestionsList && aiQuestionsList.length >= numQ;
-
-    // Check if we have 2 units and want 2 sections
-    if (selectedUnits.length === 2 && (is6OR || is4OR)) {
-      const u1 = selectedUnits[0];
-      const u2 = selectedUnits[1];
-
-      const u1QuestionsCount = is6OR ? 4 : 2;
-      const u2QuestionsCount = is6OR ? 2 : 2;
-
-      const sec1Questions = [];
-      for (let i = 1; i <= u1QuestionsCount; i++) {
-        const isOR = (i % 2 === 0);
-        const aiQ = hasAIQuestions ? aiQuestionsList[i - 1] : null;
-        sec1Questions.push({
-          qNo: i,
-          isOR: isOR,
-          parts: [{
-            label: 'a',
-            text: aiQ?.text || (isOR 
-              ? `Compare alternative paradigms in Unit ${u1} of ${cName} and critically evaluate performance trade-offs.`
-              : `Analyze foundational mathematical principles and core architectural formulations in Unit ${u1} of ${cName}.`),
-            marks: marksPerQ,
-            co: u1,
-            bl: aiQ?.rbt ? (parseInt(String(aiQ.rbt).replace('L','')) || 3) : (isOR ? 3 : 4)
-          }]
-        });
-      }
-
-      const sec2Questions = [];
-      for (let i = 1; i <= u2QuestionsCount; i++) {
-        const qNum = u1QuestionsCount + i;
-        const isOR = (i % 2 === 0);
-        const aiQ = hasAIQuestions ? aiQuestionsList[qNum - 1] : null;
-        sec2Questions.push({
-          qNo: qNum,
-          isOR: isOR,
-          parts: [{
-            label: 'a',
-            text: aiQ?.text || (isOR 
-              ? `Conduct diagnostic error analysis and outline a systematic tuning protocol for Unit ${u2}.`
-              : `Formulate a robust evaluation and algorithmic framework for Unit ${u2} of ${cName}.`),
-            marks: marksPerQ,
-            co: u2,
-            bl: aiQ?.rbt ? (parseInt(String(aiQ.rbt).replace('L','')) || 4) : (isOR ? 5 : 4)
-          }]
-        });
-      }
-
-      paper.sections = [
-        { num: 1, title: `Section I (Unit ${u1})`, questions: sec1Questions },
-        { num: 2, title: `Section II (Unit ${u2})`, questions: sec2Questions }
-      ];
-    } else {
-      // Single or multi-section unified structure
-      const questions = [];
-      for (let i = 1; i <= numQ; i++) {
-        const isOR = (is6OR || is4OR || is8OR) && (i % 2 === 0);
-        const targetCO = selectedUnits[(i - 1) % selectedUnits.length] || 1;
-        const aiQ = hasAIQuestions ? aiQuestionsList[i - 1] : null;
-
-        questions.push({
-          qNo: i,
-          isOR: isOR,
-          parts: [{
-            label: 'a',
-            text: aiQ?.text || (isOR
-              ? `Alternative formulation: Critically evaluate comparative methods and computational constraints in Unit ${targetCO}.`
-              : `Primary formulation: Derive mathematical foundations and algorithmic pipeline for Unit ${targetCO} in ${cName}.`),
-            marks: marksPerQ,
-            co: targetCO,
-            bl: aiQ?.rbt ? (parseInt(String(aiQ.rbt).replace('L','')) || 3) : ((i % 3) + 2)
-          }]
-        });
-      }
-
-      paper.sections = [
-        {
-          num: 1,
-          title: `Section I (Units ${selectedUnits.join(', ')})`,
-          questions: questions
-        }
-      ];
+    // Section distribution
+    let numSections = 1;
+    if (layout === 'by-unit' && selectedUnits.length > 1) {
+      numSections = Math.min(selectedUnits.length, totalQ);
+    } else if (layout === 'two-equal' && totalQ >= 2) {
+      numSections = 2;
     }
 
-    // Synchronize top metadata
-    const cfgType = document.getElementById('cfg-type');
-    if (cfgType) cfgType.value = 'Mid Semester Examination (MSE)';
-    const cfgMarks = document.getElementById('cfg-marks');
-    if (cfgMarks) cfgMarks.value = totalMarks;
+    const sections = [];
+    const qPerSec = Math.ceil(totalQ / numSections);
+    let qCounter = 1;
+
+    for (let s = 1; s <= numSections; s++) {
+      const uNum = selectedUnits[(s - 1) % selectedUnits.length] || s;
+      const sTitle = (numSections > 1 && layout === 'by-unit')
+        ? `Section ${s} (Unit ${uNum})`
+        : `Section ${s}`;
+
+      const secQuestions = [];
+      const questionsInThisSec = (s === numSections) ? (totalQ - qCounter + 1) : Math.min(qPerSec, totalQ - qCounter + 1);
+
+      for (let k = 0; k < questionsInThisSec; k++) {
+        const curQNo = qCounter++;
+        let isOR = false;
+        let cType = 'compulsory';
+
+        if (choiceType === 'pairwise-or') {
+          isOR = (curQNo % 2 === 0);
+          cType = isOR ? 'or' : 'compulsory';
+        } else if (choiceType === 'attempt-n-of-m') {
+          cType = 'optional';
+        }
+
+        const aiQ = hasAI ? aiQuestionsList[curQNo - 1] : null;
+        const targetCO = selectedUnits[(curQNo - 1) % selectedUnits.length] || uNum;
+
+        // Build parts for this question
+        const partsCount = Math.max(1, subparts || 1);
+        const marksPerPart = Math.max(1, Math.round(marksPerQ / partsCount));
+        const parts = [];
+
+        for (let p = 0; p < partsCount; p++) {
+          const partLabel = String.fromCharCode(97 + p);
+          let partText = '';
+
+          if (aiQ && p === 0) {
+            partText = aiQ.text || aiQ.question || '';
+          } else {
+            if (isOR) {
+              partText = `Alternative problem: Critically compare methodologies in Unit ${targetCO} and evaluate performance trade-offs under practical operational constraints.`;
+            } else if (p === 0) {
+              partText = `Analyze foundational principles, underlying mathematical formulations, and structural design mechanisms in Unit ${targetCO} of ${cName}.`;
+            } else {
+              partText = `Derive the computational framework and outline step-by-step verification methodology with illustrative schematic diagrams.`;
+            }
+          }
+
+          parts.push({
+            label: partLabel,
+            text: partText,
+            marks: marksPerPart,
+            co: targetCO,
+            bl: aiQ?.rbt ? (parseInt(String(aiQ.rbt).replace('L','')) || 3) : ((curQNo % 3) + 2)
+          });
+        }
+
+        secQuestions.push({
+          qNo: curQNo,
+          isOR: isOR,
+          choiceType: cType,
+          parts: parts
+        });
+      }
+
+      sections.push({
+        num: s,
+        title: sTitle,
+        questions: secQuestions
+      });
+    }
+
+    paper.sections = sections;
 
     renderEditor();
+    updateMarksTracker();
     refreshPreview();
   }
 
   /* ── Save As Assessment in Database & Ledger ── */
   async function saveAsAssessment() {
     if (!currentCourse) { Toast.warning('Select a course first.'); return; }
-    const examType = 'mse';
-    const totalMarks = parseInt(document.getElementById('cfg-marks')?.value) || 50;
+    const cat = document.getElementById('cfg-type')?.value || blueprint.category || 'mse';
+    const totalMarks = parseInt(document.getElementById('cfg-marks')?.value) || blueprint.marks || 50;
+    const titleVal = document.getElementById('cfg-title')?.value || `${currentCourse.code} Examination`;
     const questions = [];
 
     (paper.sections || []).forEach(sec => {
@@ -1136,7 +1542,8 @@
             bloomsLevel: 'L' + (p.bl || 3),
             coNo: p.co || 1,
             maxMarks: p.marks || 8,
-            isOR: q.isOR || false
+            isOR: q.isOR || false,
+            choiceType: q.choiceType || 'compulsory'
           });
         });
       });
@@ -1147,8 +1554,8 @@
       courseId: currentCourse.id,
       facultyId: user.id,
       createdBy: user.id,
-      type: examType,
-      title: `${currentCourse.code} Mid Semester Exam (MSE) Question Paper`,
+      type: cat,
+      title: titleVal,
       maxMarks: totalMarks,
       aiGenerated: true,
       questions: questions,
@@ -1157,7 +1564,7 @@
 
     try {
       DB.assessments.add(newAsgn);
-      Toast.success('Saved Question Paper as MSE Assessment in Assignments & Auto-Grading ledger!');
+      Toast.success(`Saved Question Paper as ${cat.toUpperCase()} Assessment in Assignments & Auto-Grading ledger!`);
     } catch(e) {
       console.warn('DB.assessments.add error:', e);
       Toast.success('Saved Question Paper blueprint locally.');
@@ -1174,9 +1581,10 @@
   window.toggleOR = toggleOR;
   window.addPart = addPart;
   window.removePart = removePart;
-  window.onExamCategoryChange = onExamCategoryChange;
-  window.onUnitsPresetChange = onUnitsPresetChange;
-  window.onPatternPresetChange = onPatternPresetChange;
+  window.autoRebalanceMarks = autoRebalanceMarks;
+  window.updateMarksTracker = updateMarksTracker;
+  window.toggleInstructionsEditor = toggleInstructionsEditor;
+  window.onCategorySelectChange = onCategorySelectChange;
   window.openBlueprintCustomizerModal = openBlueprintCustomizerModal;
   window.saveAsAssessment = saveAsAssessment;
 })();
