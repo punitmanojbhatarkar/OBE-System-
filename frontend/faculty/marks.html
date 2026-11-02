@@ -348,15 +348,30 @@
 <!-- ============================================================== -->
 <!-- SMART EXCEL / CSV UPLOAD MODAL -->
 <!-- ============================================================== -->
+<!-- SMART FORMAT-AGNOSTIC MARKS INGESTION MODAL -->
+<!-- ============================================================== -->
 <div id="upload-modal" class="modal-overlay">
-  <div class="modal-content" style="max-width:640px;">
-    <div class="modal-header">
-      <h3 class="modal-title">Upload Marks Spreadsheet</h3>
+  <div class="modal-content" style="max-width:840px;max-height:88vh;display:flex;flex-direction:column;">
+    <div class="modal-header" style="border-bottom:1px solid var(--border);padding:14px 20px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#4f46e5,#2563eb);display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 4px 12px rgba(79,70,229,0.3);">
+          <span data-icon="sparkles" data-icon-size="20"></span>
+        </div>
+        <div>
+          <h3 class="modal-title" style="margin:0;font-size:16px;">Intelligent Marks Ingestion Hub</h3>
+          <div style="font-size:11.5px;color:var(--text-secondary);margin-top:2px;">
+            Format-Unrestricted: Auto-detects PRN, Roll No, Student Name & Marks from ANY spreadsheet
+          </div>
+        </div>
+      </div>
       <button class="btn btn-secondary btn-sm btn-icon" onclick="closeUploadModal()"><span data-icon="close"></span></button>
     </div>
-    <div class="modal-body">
-      <div class="alert alert-info" style="font-size:12.5px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-        <span>Supports Excel (<strong>.xlsx, .xls</strong>) and <strong>.csv</strong> files. Automatically recognizes PRNs, Student Names, and CO/Question marks.</span>
+
+    <div class="modal-body" style="overflow-y:auto;padding:16px 20px;">
+      <div class="alert alert-info" style="font-size:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+        <div>
+          <strong>🤖 Intelligent Column & Student Matcher:</strong> Columns can be in <em>any order</em> with <em>any names</em> (PRN, Roll No, Seat No, Full Name, Question Marks, COs, or Total). The AI engine automatically links students even with name re-ordering or missing PRNs.
+        </div>
         <div style="display:flex;gap:6px;">
           <button type="button" class="btn btn-secondary btn-sm" style="font-size:11px;padding:4px 10px;font-weight:600;" onclick="downloadMarksTemplate('xlsx')" title="Download Excel template (.xlsx)">
             <span data-icon="download"></span> <span>Excel (.xlsx)</span>
@@ -369,32 +384,73 @@
 
       <!-- Dropzone -->
       <div class="smart-dropzone" id="marks-dropzone" onclick="document.getElementById('marks-file-input').click()">
-        <input type="file" id="marks-file-input" accept=".xlsx,.xls,.csv,.tsv" style="display:none" onchange="handleMarksFileSelect(event)">
+        <input type="file" id="marks-file-input" accept=".xlsx,.xls,.csv,.tsv,.txt" style="display:none" onchange="handleMarksFileSelect(event)">
         <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
           <span data-icon="upload" style="font-size:28px;color:var(--primary);"></span>
-          <div style="font-weight:700;font-size:14px;color:var(--text-primary);">Click or Drag & Drop Marks File Here</div>
-          <div style="font-size:12px;color:var(--text-secondary);">Works with Direct CO Columns (CO1, CO2...) or Question Columns (Q1, Q2...)</div>
+          <div style="font-weight:700;font-size:14px;color:var(--text-primary);">Click or Drag & Drop Any Marks Spreadsheet Here</div>
+          <div style="font-size:11.5px;color:var(--text-secondary);">Works with university ERP exports, Moodle gradebooks, Excel/CSV sheets, or handmade mark lists</div>
         </div>
       </div>
 
       <!-- Upload Preview Box -->
       <div id="upload-preview-box" style="display:none;margin-top:14px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-          <span class="badge badge-success" id="upload-status-badge">0 Records Detected</span>
-          <span id="upload-file-name" style="font-size:12px;color:var(--text-secondary);font-weight:600;">file.xlsx</span>
+        <!-- Analysis Summary Card -->
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-left:4px solid var(--primary);border-radius:var(--r-md);padding:10px 14px;margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+            <div>
+              <div style="font-weight:700;font-size:13px;color:var(--text-primary);display:flex;align-items:center;gap:6px;">
+                <span data-icon="file-text" style="color:var(--primary);"></span>
+                <span id="upload-file-name">file.xlsx</span>
+              </div>
+              <div style="font-size:11.5px;color:var(--text-secondary);margin-top:2px;" id="upload-analysis-summary">
+                Auto-analyzing spreadsheet contents...
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <button type="button" class="btn btn-secondary btn-sm" style="font-size:11px;padding:3px 9px;font-weight:600;" onclick="document.getElementById('marks-file-input').click()" title="Select another spreadsheet">
+                <span data-icon="refresh"></span> <span>Change File</span>
+              </button>
+              <div id="upload-status-badge-container">
+                <span class="badge badge-success" id="upload-status-badge">0 Students Matched</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="table-responsive" style="max-height:200px;border:1px solid var(--border);border-radius:var(--r-md);">
-          <table class="table" style="font-size:12px;" id="upload-preview-table">
-            <thead id="upload-preview-head"></thead>
-            <tbody id="upload-preview-body"></tbody>
-          </table>
+
+        <!-- Interactive Column Mapping Controls -->
+        <div id="upload-mapping-card" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:12px 14px;margin-bottom:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div style="font-weight:700;font-size:12.5px;color:var(--text-primary);display:flex;align-items:center;gap:6px;">
+              <span data-icon="sliders" style="color:var(--primary);"></span>
+              <span>Intelligent Column Mapping</span>
+            </div>
+            <span style="font-size:11px;color:var(--text-secondary);">Auto-detected from file headers & content &bull; Editable if needed</span>
+          </div>
+          <div id="upload-mapping-fields-container" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:10px;">
+            <!-- Populated dynamically with mapping selects -->
+          </div>
+        </div>
+
+        <!-- Live Preview Table -->
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span style="font-size:12px;font-weight:700;color:var(--text-primary);">Preview Matched Students & Marks (Top Sample Rows):</span>
+            <span style="font-size:11px;color:var(--text-secondary);" id="upload-preview-count-label">Showing first 8 records</span>
+          </div>
+          <div class="table-responsive" style="max-height:220px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);">
+            <table class="table" style="font-size:12px;margin-bottom:0;" id="upload-preview-table">
+              <thead id="upload-preview-head"></thead>
+              <tbody id="upload-preview-body"></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
-    <div class="modal-footer">
+
+    <div class="modal-footer" style="border-top:1px solid var(--border);padding:12px 20px;justify-content:space-between;">
       <button class="btn btn-secondary" onclick="closeUploadModal()">Cancel</button>
-      <button class="btn btn-primary" id="btn-apply-upload" onclick="applyUploadedMarks()" disabled>
-        <span data-icon="check"></span><span>Apply Marks to Sheet</span>
+      <button class="btn btn-primary" id="btn-apply-upload" onclick="applyUploadedMarks()" disabled style="background:linear-gradient(135deg,#059669,#10b981);border-color:#059669;box-shadow:0 4px 12px rgba(5,150,105,0.25);">
+        <span data-icon="check"></span> <span id="btn-apply-upload-label">Apply Marks to Sheet</span>
       </button>
     </div>
   </div>
@@ -558,6 +614,13 @@
     }
     renderAllIcons();
   }
+
+  window.loadCourse = loadCourse;
+  window.getEnrolledStudents = () => enrolledStudents;
+  window.getActiveCourse = () => activeCourse;
+  window.getCourseAssessments = () => courseAssessments;
+  window.getActiveAssessId = () => activeAssessId;
+
 
   /* ── Switch Main Tab (Marks vs Survey) ── */
   function switchMainTab(tab) {
@@ -1080,15 +1143,29 @@
     }, false);
   }
 
+  /* ============================================================== */
+  /* INTELLIGENT FORMAT-AGNOSTIC MARKS INGESTION ENGINE             */
+  /* ============================================================== */
+
+  let currentUploadState = null;
+
   window.openUploadModal = function() {
-    currentParsedUpload = null;
-    document.getElementById('upload-preview-box').style.display = 'none';
-    document.getElementById('btn-apply-upload').disabled = true;
-    document.getElementById('upload-modal').classList.add('open');
+    currentUploadState = null;
+    const dropzone = document.getElementById('marks-dropzone');
+    if (dropzone) dropzone.style.display = 'block';
+    const prevBox = document.getElementById('upload-preview-box');
+    if (prevBox) prevBox.style.display = 'none';
+    const btn = document.getElementById('btn-apply-upload');
+    if (btn) btn.disabled = true;
+    const fileInput = document.getElementById('marks-file-input');
+    if (fileInput) fileInput.value = '';
+    const modal = document.getElementById('upload-modal');
+    if (modal) modal.classList.add('open');
   };
 
   window.closeUploadModal = function() {
-    document.getElementById('upload-modal').classList.remove('open');
+    const modal = document.getElementById('upload-modal');
+    if (modal) modal.classList.remove('open');
   };
 
   window.handleMarksFileSelect = function(e) {
@@ -1103,16 +1180,17 @@
     reader.onload = (e) => {
       try {
         const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array', cellDates: true });
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '', raw: false });
-        parseUploadedRows(jsonRows, file.name);
+        const workbook = XLSX.read(data, { type: 'array', cellDates: false });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const jsonRows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: false });
+        IntelligentMarksIngestor.ingest(jsonRows, file.name);
       } catch (err) {
-        console.warn('XLSX failed, falling back to text:', err);
+        console.warn('XLSX parser fallback to text reader:', err);
         const textReader = new FileReader();
         textReader.onload = (ev) => {
-          const lines = ev.target.result.split('\n').map(l => l.split(/,|\t|;/).map(c => c.trim().replace(/^"|"$/g, '')));
-          parseUploadedRows(lines, file.name);
+          const rows = IntelligentMarksIngestor.parseCSV(ev.target.result);
+          IntelligentMarksIngestor.ingest(rows, file.name);
         };
         textReader.readAsText(file);
       }
@@ -1120,124 +1198,733 @@
     reader.readAsArrayBuffer(file);
   }
 
-  function parseUploadedRows(rows2d, fileName) {
-    const asgn = getActiveAssess();
-    const cleanRows = rows2d.filter(r => r.some(c => c !== ''));
-    if (!cleanRows.length) { Toast.error('Empty file.'); return; }
+  const IntelligentMarksIngestor = {
+    // Robust CSV parser supporting quotes, delimiters, newlines
+    parseCSV(text) {
+      if (!text) return [];
+      const lines = text.split(/\r\n|\n|\r/);
+      const sample = lines.slice(0, 10).join('\n');
+      const commaCount = (sample.match(/,/g) || []).length;
+      const tabCount = (sample.match(/\t/g) || []).length;
+      const semiCount = (sample.match(/;/g) || []).length;
+      const pipeCount = (sample.match(/\|/g) || []).length;
+      
+      let delim = ',';
+      if (tabCount > commaCount && tabCount > semiCount) delim = '\t';
+      else if (semiCount > commaCount && semiCount > tabCount) delim = ';';
+      else if (pipeCount > commaCount && pipeCount > tabCount) delim = '|';
 
-    // Locate Header Row
-    let headerIdx = -1, prnCol = -1, nameCol = -1;
-    const scoreCols = [];
+      const rows = [];
+      for (let line of lines) {
+        if (!line.trim()) continue;
+        const row = [];
+        let inQuotes = false;
+        let token = '';
+        for (let i = 0; i < line.length; i++) {
+          const ch = line[i];
+          if (ch === '"') {
+            if (inQuotes && line[i + 1] === '"') {
+              token += '"';
+              i++;
+            } else {
+              inQuotes = !inQuotes;
+            }
+          } else if (ch === delim && !inQuotes) {
+            row.push(token.trim());
+            token = '';
+          } else {
+            token += ch;
+          }
+        }
+        row.push(token.trim());
+        rows.push(row);
+      }
+      return rows;
+    },
 
-    for (let r = 0; r < Math.min(12, cleanRows.length); r++) {
-      const row = cleanRows[r];
-      let p = -1, n = -1;
-      row.forEach((cell, cIdx) => {
-        const str = String(cell).toLowerCase().replace(/[^a-z0-9]/g, '');
-        if (/prn|roll|id|registration|seat/i.test(str)) p = cIdx;
-        else if (/name|student|candidate|fullname/i.test(str)) n = cIdx;
+    // Cell value cleanser
+    cleanCell(val) {
+      if (val === null || val === undefined) return '';
+      let s = String(val).trim();
+      // Handle scientific notation e.g. 2.02201040012E+11 or 2.02201E+11
+      if (/^\d+\.?\d*e\+\d+$/i.test(s)) {
+        try {
+          const big = BigInt(Math.round(Number(s)));
+          s = String(big);
+        } catch (e) {
+          s = String(Math.round(Number(s)));
+        }
+      }
+      return s;
+    },
+
+    // Normalizers
+    normalizePrn(val) {
+      let s = this.cleanCell(val).toUpperCase();
+      // Remove prefixes like "PRN:", "PRN", "NO."
+      s = s.replace(/^(PRN\s*[:\-\.]?|REG\s*[:\-\.]?|UID\s*[:\-\.]?)/i, '').trim();
+      return s.replace(/[^A-Z0-9]/g, '');
+    },
+
+    normalizeRoll(val) {
+      let s = this.cleanCell(val);
+      const numMatch = s.match(/\d+/);
+      return numMatch ? parseInt(numMatch[0], 10) : null;
+    },
+
+    normalizeName(val) {
+      let s = this.cleanCell(val).toLowerCase();
+      s = s.replace(/\b(mr|mrs|ms|miss|dr|prof|shri|smt|kumar|kumari)\b\.?/gi, ' ');
+      s = s.replace(/[^a-z\s]/g, ' ');
+      return s.replace(/\s+/g, ' ').trim();
+    },
+
+    getNameTokens(nameStr) {
+      const norm = this.normalizeName(nameStr);
+      if (!norm) return [];
+      return norm.split(' ').filter(t => t.length >= 2);
+    },
+
+    // Token bag overlap similarity
+    nameTokenSimilarity(rowName, studentName) {
+      const t1 = this.getNameTokens(rowName);
+      const t2 = this.getNameTokens(studentName);
+      if (!t1.length || !t2.length) return 0;
+
+      const set2 = new Set(t2);
+      const intersection = t1.filter(t => set2.has(t));
+      if (!intersection.length) return 0;
+
+      const dice = (2 * intersection.length) / (t1.length + t2.length);
+      const containment = intersection.length / Math.min(t1.length, t2.length);
+      return Math.max(dice, containment);
+    },
+
+    // Levenshtein similarity for handling minor typos
+    levenshtein(a, b) {
+      const al = a.length, bl = b.length;
+      if (!al) return bl;
+      if (!bl) return al;
+      const matrix = [];
+      for (let i = 0; i <= al; i++) matrix[i] = [i];
+      for (let j = 0; j <= bl; j++) matrix[0][j] = j;
+
+      for (let i = 1; i <= al; i++) {
+        for (let j = 1; j <= bl; j++) {
+          const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j] + 1,
+            matrix[i][j - 1] + 1,
+            matrix[i - 1][j - 1] + cost
+          );
+        }
+      }
+      return matrix[al][bl];
+    },
+
+    stringSimilarity(a, b) {
+      const na = this.normalizeName(a);
+      const nb = this.normalizeName(b);
+      if (na === nb) return 1.0;
+      const maxLen = Math.max(na.length, nb.length);
+      if (maxLen === 0) return 1.0;
+      const dist = this.levenshtein(na, nb);
+      return 1 - (dist / maxLen);
+    },
+
+    // Multi-tier Student Matcher
+    matchStudent(rowPrn, rowRoll, rowName, enrolledList) {
+      const cleanPrn = this.normalizePrn(rowPrn);
+      const cleanRoll = this.normalizeRoll(rowRoll);
+      const rowTokens = this.getNameTokens(rowName);
+
+      // TIER 1: PRN Match
+      if (cleanPrn && cleanPrn.length >= 4) {
+        // 1A: Exact normalized PRN
+        const exact = enrolledList.find(s => this.normalizePrn(s.prn) === cleanPrn);
+        if (exact) {
+          return { student: exact, matchType: 'PRN', badge: '✓ PRN Match', confidence: 1.0 };
+        }
+        // 1B: Substring / Prefix / Suffix matching
+        const sub = enrolledList.find(s => {
+          const sp = this.normalizePrn(s.prn);
+          return (sp.length >= 6 && cleanPrn.length >= 6 && (sp.endsWith(cleanPrn) || cleanPrn.endsWith(sp)));
+        });
+        if (sub) {
+          return { student: sub, matchType: 'PRN', badge: '✓ PRN Match', confidence: 0.96 };
+        }
+      }
+
+      // TIER 2: Roll Number Match (verified with name token if available)
+      if (cleanRoll !== null && cleanRoll > 0) {
+        const rollCandidates = enrolledList.filter(s => {
+          if (s.rollNo !== undefined && parseInt(s.rollNo, 10) === cleanRoll) return true;
+          if (s.seatNo !== undefined && parseInt(s.seatNo, 10) === cleanRoll) return true;
+          const sp = this.normalizePrn(s.prn);
+          const rollStr = String(cleanRoll);
+          return sp.endsWith(rollStr) || sp.endsWith(rollStr.padStart(2, '0')) || sp.endsWith(rollStr.padStart(3, '0')) || sp.endsWith(rollStr.padStart(4, '0'));
+        });
+
+        if (rollCandidates.length === 1) {
+          const cand = rollCandidates[0];
+          if (rowTokens.length >= 1) {
+            const sim = this.nameTokenSimilarity(rowName, cand.name);
+            if (sim >= 0.3) {
+              return { student: cand, matchType: 'Roll+Name', badge: '✓ Roll+Name Match', confidence: 0.94 };
+            }
+          }
+          return { student: cand, matchType: 'Roll No', badge: '✓ Roll No Match', confidence: 0.88 };
+        } else if (rollCandidates.length > 1 && rowTokens.length >= 1) {
+          let bestMatch = null, maxSim = 0;
+          rollCandidates.forEach(cand => {
+            const sim = this.nameTokenSimilarity(rowName, cand.name);
+            if (sim > maxSim) { maxSim = sim; bestMatch = cand; }
+          });
+          if (bestMatch && maxSim >= 0.4) {
+            return { student: bestMatch, matchType: 'Roll+Name', badge: '✓ Roll+Name Match', confidence: 0.92 };
+          }
+        }
+      }
+
+      // TIER 3: Intelligent Fuzzy Name Match (handles Last-First-Middle vs First-Last)
+      if (rowTokens.length >= 1) {
+        let bestCandidate = null;
+        let highestScore = 0;
+
+        for (let s of enrolledList) {
+          const tokenSim = this.nameTokenSimilarity(rowName, s.name);
+          const strSim = this.stringSimilarity(rowName, s.name);
+          const combined = Math.max(tokenSim, strSim);
+
+          if (combined > highestScore) {
+            highestScore = combined;
+            bestCandidate = s;
+          }
+        }
+
+        // Require at least 0.65 similarity for safe matching
+        if (bestCandidate && highestScore >= 0.65) {
+          return {
+            student: bestCandidate,
+            matchType: 'Fuzzy Name',
+            badge: `✓ Name Match (${Math.round(highestScore * 100)}%)`,
+            confidence: highestScore
+          };
+        }
+      }
+
+      // Unmatched
+      return { student: null, matchType: 'Unmatched', badge: '⚠ Unmatched', confidence: 0 };
+    },
+
+    // Intelligent Header Row Finder (scans banner rows and scores header keyword presence)
+    findHeaderRow(cleanRows) {
+      let bestIdx = 0;
+      let maxScore = -999;
+
+      const scanLimit = Math.min(25, cleanRows.length);
+      for (let r = 0; r < scanLimit; r++) {
+        const row = cleanRows[r];
+        if (!row || !row.length) continue;
+
+        let score = 0;
+        let textCellCount = 0;
+        let numCellCount = 0;
+        let nonEmptyCount = 0;
+
+        row.forEach(cell => {
+          const s = String(cell).trim();
+          if (!s) return;
+          nonEmptyCount++;
+
+          const isNum = !isNaN(Number(s)) && s !== '';
+          if (isNum) numCellCount++;
+          else textCellCount++;
+
+          const cleanStr = s.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+          // Header Keyword Signals
+          if (/^(prn|univreg|enrollment|registration|uid|seatno|studentid)/i.test(cleanStr)) score += 15;
+          else if (/^(roll|rno|seat|srno|sno)/i.test(cleanStr)) score += 12;
+          else if (/^(name|studentname|candidatename|fullname|student)/i.test(cleanStr)) score += 15;
+          else if (/^(q\d+|question\d+|co\d+|courseoutcome\d+)/i.test(cleanStr)) score += 10;
+          else if (/^(marks|score|total|obtained|maxmarks|weightage|grade)/i.test(cleanStr)) score += 8;
+        });
+
+        if (nonEmptyCount >= 2) {
+          if (textCellCount >= numCellCount && textCellCount >= 2) score += 6;
+          if (numCellCount > textCellCount) score -= 15;
+        }
+
+        if (score > maxScore) {
+          maxScore = score;
+          bestIdx = r;
+        }
+      }
+
+      return maxScore >= 8 ? bestIdx : 0;
+    },
+
+    // Column classification & role auto-detection
+    analyzeColumns(cleanRows, headerIdx) {
+      const headerRow = cleanRows[headerIdx] || [];
+      const numCols = Math.max(...cleanRows.map(r => r.length));
+      const colStats = [];
+
+      for (let c = 0; c < numCols; c++) {
+        const rawHeader = String(headerRow[c] || '').trim();
+        const headerNorm = rawHeader.toLowerCase().replace(/[^a-z0-9]/g, '');
+        
+        // Sample non-empty values from data rows
+        const sampleValues = [];
+        for (let r = headerIdx + 1; r < Math.min(headerIdx + 15, cleanRows.length); r++) {
+          const val = this.cleanCell(cleanRows[r]?.[c]);
+          if (val) sampleValues.push(val);
+        }
+
+        let isNumericCol = sampleValues.length > 0 && sampleValues.every(v => !isNaN(parseFloat(v)));
+        let hasLargeDigits = sampleValues.some(v => /^\d{8,}$/.test(v));
+        let isSmallInt = sampleValues.length > 0 && sampleValues.every(v => {
+          const n = parseInt(v, 10);
+          return !isNaN(n) && n >= 1 && n <= 300;
+        });
+
+        let detectedRole = 'unknown';
+        let detectedTargetKey = null;
+
+        if (/prn|registration|regno|enrollment|uid|universityid/i.test(headerNorm) || (!headerNorm && hasLargeDigits)) {
+          detectedRole = 'prn';
+        } else if (/roll|seatno|srno|sno|rno/i.test(headerNorm) || (!headerNorm && isSmallInt && c === 0)) {
+          detectedRole = 'roll';
+        } else if (/name|student|candidate|fullname/i.test(headerNorm)) {
+          detectedRole = 'name';
+        } else if (/^(q\s*\d+|co\s*\d+|marks|score|total|obt)/i.test(headerNorm) || isNumericCol) {
+          detectedRole = 'marks';
+          const qM = headerNorm.match(/^q(\d+)/);
+          const coM = headerNorm.match(/^co(\d+)/);
+          if (qM) detectedTargetKey = `q_${qM[1]}`;
+          else if (coM) detectedTargetKey = `co_${coM[1]}`;
+          else if (/total|score|marks/i.test(headerNorm)) detectedTargetKey = 'total';
+        }
+
+        colStats.push({
+          colIdx: c,
+          rawHeader: rawHeader || `Column ${c + 1}`,
+          headerNorm,
+          detectedRole,
+          detectedTargetKey,
+          sampleValues
+        });
+      }
+
+      return colStats;
+    },
+
+    // Retrieve active assessment target columns (Questions or COs)
+    getAssessmentTargets() {
+      const asgn = getActiveAssess();
+      const targets = [];
+      if (!asgn) return targets;
+
+      if (currentEntryMode === 'co' || !asgn.questions || !asgn.questions.length) {
+        let targetCOs = activeCOs;
+        if (asgn.type === 'ia') {
+          if (asgn.no === 1) targetCOs = activeCOs.filter(c => c.no <= 2);
+          else if (asgn.no === 2) targetCOs = activeCOs.filter(c => c.no >= 3 && c.no <= 4);
+          else targetCOs = activeCOs.filter(c => c.no >= 5);
+          if (!targetCOs.length) targetCOs = activeCOs.slice(0, 2);
+        } else if (asgn.type === 'mse') {
+          targetCOs = activeCOs.filter(c => c.no <= 3);
+          if (!targetCOs.length) targetCOs = activeCOs.slice(0, 3);
+        }
+        const coMaxEach = Math.round((asgn.maxMarks || 100) / (targetCOs.length || 1));
+        targetCOs.forEach(co => {
+          targets.push({
+            key: `co_${co.no}`,
+            label: co.code,
+            subLabel: `Max: ${coMaxEach}M`,
+            qNo: co.no,
+            coNo: co.no,
+            maxMarks: coMaxEach
+          });
+        });
+      } else {
+        asgn.questions.forEach(q => {
+          const qm = q.marks || q.maxMarks || 10;
+          targets.push({
+            key: `q_${q.qNo}`,
+            label: `Q${q.qNo}`,
+            subLabel: `CO${q.coNo} (${qm}M)`,
+            qNo: q.qNo,
+            coNo: q.coNo,
+            maxMarks: qm
+          });
+        });
+      }
+      return targets;
+    },
+
+    // Master Ingestion Pipeline
+    ingest(rows2d, fileName) {
+      const cleanRows = (rows2d || []).filter(r => r && r.some(c => c !== null && c !== undefined && String(c).trim() !== ''));
+      if (!cleanRows.length) {
+        Toast.error('Uploaded file contains no readable data.');
+        return;
+      }
+
+      const headerIdx = this.findHeaderRow(cleanRows);
+      const colStats = this.analyzeColumns(cleanRows, headerIdx);
+      const targets = this.getAssessmentTargets();
+
+      let prnCol = -1, rollCol = -1, nameCol = -1;
+      const targetCols = {};
+
+      colStats.forEach(col => {
+        if (col.detectedRole === 'prn' && prnCol === -1) prnCol = col.colIdx;
+        else if (col.detectedRole === 'roll' && rollCol === -1) rollCol = col.colIdx;
+        else if (col.detectedRole === 'name' && nameCol === -1) nameCol = col.colIdx;
       });
-      if (p !== -1 || n !== -1) {
-        headerIdx = r; prnCol = p; nameCol = n; break;
+
+      if (prnCol === -1 && nameCol === -1) {
+        prnCol = 0;
+        if (colStats.length > 1) nameCol = 1;
       }
-    }
 
-    if (headerIdx === -1) {
-      prnCol = 0; nameCol = 1; headerIdx = -1;
-    }
+      const usedMarkCols = new Set();
+      targets.forEach(tgt => {
+        const exactCol = colStats.find(c => {
+          if (usedMarkCols.has(c.colIdx) || c.colIdx === prnCol || c.colIdx === rollCol || c.colIdx === nameCol) return false;
+          if (c.detectedTargetKey === tgt.key) return true;
+          // Intelligent cross-matching: match Q1/CO1 by number
+          if (tgt.qNo && (c.headerNorm === `q${tgt.qNo}` || c.headerNorm === `question${tgt.qNo}` || c.headerNorm === `co${tgt.qNo}`)) return true;
+          if (tgt.coNo && (c.headerNorm === `co${tgt.coNo}` || c.headerNorm === `q${tgt.coNo}`)) return true;
+          return false;
+        });
 
-    const headerRow = headerIdx >= 0 ? cleanRows[headerIdx] : [];
-    headerRow.forEach((cell, cIdx) => {
-      if (cIdx === prnCol || cIdx === nameCol) return;
-      const str = String(cell).trim();
-      const coMatch = str.match(/co\s*(\d+)/i);
-      const qMatch = str.match(/q\s*(\d+)/i);
-      if (coMatch) {
-        scoreCols.push({ colIdx: cIdx, label: `CO${coMatch[1]}`, coNo: parseInt(coMatch[1]), qNo: parseInt(coMatch[1]) });
-      } else if (qMatch) {
-        scoreCols.push({ colIdx: cIdx, label: `Q${qMatch[1]}`, qNo: parseInt(qMatch[1]), coNo: parseInt(qMatch[1]) });
-      } else if (/score|marks|total|grade/i.test(str)) {
-        scoreCols.push({ colIdx: cIdx, label: str, qNo: 1, coNo: 1 });
-      }
-    });
-
-    if (!scoreCols.length) {
-      const firstDataRow = cleanRows[headerIdx >= 0 ? headerIdx + 1 : 0] || [];
-      firstDataRow.forEach((cell, cIdx) => {
-        if (cIdx !== prnCol && cIdx !== nameCol) {
-          scoreCols.push({ colIdx: cIdx, label: `Marks ${cIdx}`, qNo: scoreCols.length + 1, coNo: scoreCols.length + 1 });
+        if (exactCol) {
+          targetCols[tgt.key] = exactCol.colIdx;
+          usedMarkCols.add(exactCol.colIdx);
         }
       });
-    }
 
-    const startRow = headerIdx >= 0 ? headerIdx + 1 : 0;
-    const parsedStudents = [];
+      const availableMarkCols = colStats.filter(c => 
+        !usedMarkCols.has(c.colIdx) && 
+        c.colIdx !== prnCol && 
+        c.colIdx !== rollCol && 
+        c.colIdx !== nameCol && 
+        (c.detectedRole === 'marks' || c.detectedRole === 'unknown')
+      );
 
-    for (let r = startRow; r < cleanRows.length; r++) {
-      const row = cleanRows[r];
-      let prn = String(row[prnCol] || '').replace(/['"]/g, '').trim();
-      let name = String(row[nameCol] || '').replace(/['"]/g, '').trim();
-
-      if (/^\d+\.?\d*e\+\d+$/i.test(prn)) {
-        try { prn = String(BigInt(Math.round(Number(prn)))); } catch(e) {}
-      }
-
-      if (!prn && !name) continue;
-      if (/^(prn|student|roll|no|sr)$/i.test(prn)) continue;
-
-      const marksObj = {};
-      scoreCols.forEach(sc => {
-        const val = row[sc.colIdx];
-        if (val !== undefined && val !== '') {
-          const num = parseFloat(String(val).replace(/[^0-9.]/g, ''));
-          if (!isNaN(num)) marksObj[sc.qNo] = num;
+      targets.forEach(tgt => {
+        if (targetCols[tgt.key] === undefined && availableMarkCols.length > 0) {
+          const col = availableMarkCols.shift();
+          targetCols[tgt.key] = col.colIdx;
+          usedMarkCols.add(col.colIdx);
         }
       });
 
-      parsedStudents.push({ prn: prn || name, name: name || prn, marks: marksObj });
+      currentUploadState = {
+        fileName,
+        cleanRows,
+        headerIdx,
+        colStats,
+        targets,
+        mapping: {
+          prnCol,
+          rollCol,
+          nameCol,
+          targetCols
+        },
+        resolvedStudents: []
+      };
+
+      this.renderMappingControls();
+      this.resolveAndPreview();
+
+      const dropzone = document.getElementById('marks-dropzone');
+      if (dropzone) dropzone.style.display = 'none';
+      const prevBox = document.getElementById('upload-preview-box');
+      if (prevBox) prevBox.style.display = 'block';
+      const fNameEl = document.getElementById('upload-file-name');
+      if (fNameEl) fNameEl.textContent = fileName;
+      renderAllIcons(document.getElementById('upload-preview-box'));
+
+      Toast.success(`Uploaded "${fileName}"! Header identified at row ${headerIdx + 1}. Review column mapping below.`);
+    },
+
+    // Render interactive Mapping Controls with dropdowns
+    renderMappingControls() {
+      const container = document.getElementById('upload-mapping-fields-container');
+      if (!container || !currentUploadState) return;
+
+      const { colStats, targets, mapping } = currentUploadState;
+
+      const buildOptions = (selectedIdx, allowNone = true) => {
+        let opts = allowNone ? `<option value="-1" ${selectedIdx === -1 ? 'selected' : ''}>-- (None / Not in File) --</option>` : '';
+        colStats.forEach(c => {
+          opts += `<option value="${c.colIdx}" ${selectedIdx === c.colIdx ? 'selected' : ''}>
+            Col ${c.colIdx + 1}: ${c.rawHeader}
+          </option>`;
+        });
+        return opts;
+      };
+
+      let html = `
+        <div style="background:var(--surface-2);padding:8px 10px;border-radius:var(--r-sm);border:1px solid var(--border);">
+          <label style="font-size:11px;font-weight:700;color:var(--text-secondary);display:block;margin-bottom:4px;">
+            🆔 PRN / Enrollment ID Column:
+          </label>
+          <select class="form-select" style="font-size:11.5px;padding:4px 8px;width:100%;" onchange="window.recomputeIngestMapping('prn', parseInt(this.value))">
+            ${buildOptions(mapping.prnCol, true)}
+          </select>
+        </div>
+
+        <div style="background:var(--surface-2);padding:8px 10px;border-radius:var(--r-sm);border:1px solid var(--border);">
+          <label style="font-size:11px;font-weight:700;color:var(--text-secondary);display:block;margin-bottom:4px;">
+            🔢 Roll No / Seat No Column:
+          </label>
+          <select class="form-select" style="font-size:11.5px;padding:4px 8px;width:100%;" onchange="window.recomputeIngestMapping('roll', parseInt(this.value))">
+            ${buildOptions(mapping.rollCol, true)}
+          </select>
+        </div>
+
+        <div style="background:var(--surface-2);padding:8px 10px;border-radius:var(--r-sm);border:1px solid var(--border);">
+          <label style="font-size:11px;font-weight:700;color:var(--text-secondary);display:block;margin-bottom:4px;">
+            👤 Student Name Column:
+          </label>
+          <select class="form-select" style="font-size:11.5px;padding:4px 8px;width:100%;" onchange="window.recomputeIngestMapping('name', parseInt(this.value))">
+            ${buildOptions(mapping.nameCol, true)}
+          </select>
+        </div>
+      `;
+
+      targets.forEach(tgt => {
+        const curCol = mapping.targetCols[tgt.key] ?? -1;
+        html += `
+          <div style="background:var(--surface-2);padding:8px 10px;border-radius:var(--r-sm);border:1px solid var(--border);">
+            <label style="font-size:11px;font-weight:700;color:var(--primary);display:block;margin-bottom:4px;">
+              🎯 Marks: <strong>${tgt.label}</strong> <span style="font-size:10px;color:var(--text-secondary);">(${tgt.subLabel})</span>:
+            </label>
+            <select class="form-select" style="font-size:11.5px;padding:4px 8px;width:100%;" onchange="window.recomputeIngestMapping('target_${tgt.key}', parseInt(this.value))">
+              ${buildOptions(curCol, true)}
+            </select>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    },
+
+    // Resolve students & scores against enrolled course list
+    resolveAndPreview() {
+      if (!currentUploadState) return;
+
+      const { cleanRows, headerIdx, mapping, targets } = currentUploadState;
+      const enrolledList = (enrolledStudents && enrolledStudents.length) 
+        ? enrolledStudents 
+        : (CID ? DB.students.byCourse(CID) : []);
+
+      const resolved = [];
+      const startRow = headerIdx + 1;
+
+      for (let r = startRow; r < cleanRows.length; r++) {
+        const row = cleanRows[r];
+        const rawPrn = mapping.prnCol >= 0 ? this.cleanCell(row[mapping.prnCol]) : '';
+        const rawRoll = mapping.rollCol >= 0 ? this.cleanCell(row[mapping.rollCol]) : '';
+        const rawName = mapping.nameCol >= 0 ? this.cleanCell(row[mapping.nameCol]) : '';
+
+        if (!rawPrn && !rawRoll && !rawName) continue;
+        if (/^(prn|student|roll|no|sr|srno|rollno|name)$/i.test(rawPrn) && /^(name|student|candidate)$/i.test(rawName)) continue;
+
+        const matchResult = this.matchStudent(rawPrn, rawRoll, rawName, enrolledList);
+
+        const marks = {};
+        targets.forEach(tgt => {
+          const colIdx = mapping.targetCols[tgt.key];
+          if (colIdx !== undefined && colIdx >= 0) {
+            const rawVal = row[colIdx];
+            if (rawVal !== undefined && rawVal !== null && String(rawVal).trim() !== '') {
+              const num = parseFloat(String(rawVal).replace(/[^0-9.]/g, ''));
+              if (!isNaN(num)) marks[tgt.key] = Math.min(tgt.maxMarks, Math.max(0, num));
+            }
+          }
+        });
+
+        resolved.push({
+          rowIdx: r,
+          rawPrn,
+          rawRoll,
+          rawName,
+          student: matchResult.student,
+          matchType: matchResult.matchType,
+          badge: matchResult.badge,
+          confidence: matchResult.confidence,
+          marks
+        });
+      }
+
+      currentUploadState.resolvedStudents = resolved;
+
+      const matchedCount = resolved.filter(x => x.student !== null).length;
+      const totalCount = resolved.length;
+      const pctMatched = totalCount > 0 ? Math.round((matchedCount / totalCount) * 100) : 0;
+
+      const badgeEl = document.getElementById('upload-status-badge');
+      if (badgeEl) {
+        badgeEl.textContent = `${matchedCount} / ${totalCount} Students Matched (${pctMatched}%)`;
+        badgeEl.className = pctMatched >= 80 ? 'badge badge-success' : (pctMatched >= 50 ? 'badge badge-warning' : 'badge badge-danger');
+      }
+
+      const summaryEl = document.getElementById('upload-analysis-summary');
+      if (summaryEl) {
+        summaryEl.innerHTML = `
+          Detected table header at <strong>Row ${headerIdx + 1}</strong> &bull; 
+          <strong>${matchedCount}</strong> of <strong>${totalCount}</strong> students matched to enrolled class list &bull; 
+          <strong>${targets.length}</strong> assessment target(s) configured.
+        `;
+      }
+
+      const btnApply = document.getElementById('btn-apply-upload');
+      if (btnApply) {
+        btnApply.disabled = matchedCount === 0;
+      }
+
+      const btnLabel = document.getElementById('btn-apply-upload-label');
+      if (btnLabel) {
+        btnLabel.textContent = `Apply Marks for ${matchedCount} Matched Student(s)`;
+      }
+
+      this.renderPreviewTable();
+    },
+
+    // Render Preview Table showing top sample rows
+    renderPreviewTable() {
+      const pHead = document.getElementById('upload-preview-head');
+      const pBody = document.getElementById('upload-preview-body');
+      if (!pHead || !pBody || !currentUploadState) return;
+
+      const { targets, resolvedStudents } = currentUploadState;
+
+      let headHtml = `
+        <tr>
+          <th style="width:40px;">#</th>
+          <th>Uploaded In File</th>
+          <th>Matched Enrolled Student</th>
+          <th class="center" style="width:140px;">Match Status</th>
+      `;
+      targets.forEach(tgt => {
+        headHtml += `<th class="center">${tgt.label} (${tgt.maxMarks}M)</th>`;
+      });
+      headHtml += `</tr>`;
+      pHead.innerHTML = headHtml;
+
+      const previewRows = resolvedStudents.slice(0, 8);
+      if (!previewRows.length) {
+        pBody.innerHTML = `<tr><td colspan="${4 + targets.length}" style="text-align:center;padding:20px;color:var(--text-muted);">No student rows could be parsed from file.</td></tr>`;
+        return;
+      }
+
+      let bodyHtml = '';
+      previewRows.forEach((item, idx) => {
+        const s = item.student;
+        const statusBadgeStyle = item.student
+          ? (item.matchType === 'PRN' ? 'background:rgba(16,185,129,0.15);color:#059669;border:1px solid rgba(16,185,129,0.3);' : 'background:rgba(79,70,229,0.12);color:#4338ca;border:1px solid rgba(79,70,229,0.3);')
+          : 'background:rgba(239,68,68,0.15);color:#dc2626;border:1px solid rgba(239,68,68,0.3);';
+
+        bodyHtml += `
+          <tr style="${item.student ? '' : 'background:rgba(239,68,68,0.03);'}">
+            <td>${idx + 1}</td>
+            <td>
+              <div style="font-weight:600;color:var(--text-primary);">${item.rawName || '—'}</div>
+              <div style="font-size:10.5px;color:var(--text-secondary);font-family:monospace;">
+                ${item.rawPrn ? `PRN: ${item.rawPrn}` : ''} ${item.rawRoll ? `Roll: ${item.rawRoll}` : ''}
+              </div>
+            </td>
+            <td>
+              ${s ? `
+                <div style="font-weight:700;color:var(--text-primary);">${s.name}</div>
+                <div style="font-size:10.5px;color:var(--text-secondary);font-family:monospace;">PRN: ${s.prn}</div>
+              ` : `
+                <span style="color:var(--text-muted);font-style:italic;">No enrolled student matched</span>
+              `}
+            </td>
+            <td class="center">
+              <span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:10.5px;font-weight:700;${statusBadgeStyle}">
+                ${item.badge}
+              </span>
+            </td>
+        `;
+
+        targets.forEach(tgt => {
+          const val = item.marks[tgt.key];
+          bodyHtml += `
+            <td class="center" style="font-weight:800;color:var(--text-primary);">
+              ${val !== undefined ? val : '—'}
+            </td>
+          `;
+        });
+
+        bodyHtml += `</tr>`;
+      });
+
+      pBody.innerHTML = bodyHtml;
+
+      const countLabel = document.getElementById('upload-preview-count-label');
+      if (countLabel) {
+        countLabel.textContent = `Showing ${Math.min(8, resolvedStudents.length)} of ${resolvedStudents.length} records`;
+      }
+    }
+  };
+
+  window.IntelligentMarksIngestor = IntelligentMarksIngestor;
+
+  // Interactive mapping change listener
+  window.recomputeIngestMapping = function(field, val) {
+    if (!currentUploadState) return;
+
+    if (field === 'prn') currentUploadState.mapping.prnCol = val;
+    else if (field === 'roll') currentUploadState.mapping.rollCol = val;
+    else if (field === 'name') currentUploadState.mapping.nameCol = val;
+    else if (field.startsWith('target_')) {
+      const tgtKey = field.replace('target_', '');
+      currentUploadState.mapping.targetCols[tgtKey] = val;
     }
 
-    currentParsedUpload = { scoreCols, students: parsedStudents };
+    IntelligentMarksIngestor.resolveAndPreview();
+  };
 
-    document.getElementById('upload-preview-box').style.display = 'block';
-    document.getElementById('upload-file-name').textContent = fileName;
-    document.getElementById('upload-status-badge').textContent = `${parsedStudents.length} Student Rows Detected`;
-    document.getElementById('btn-apply-upload').disabled = false;
-
-    const pHead = document.getElementById('upload-preview-head');
-    const pBody = document.getElementById('upload-preview-body');
-
-    pHead.innerHTML = `<tr><th>#</th><th>PRN</th><th>Name</th>${scoreCols.map(c => `<th>${c.label}</th>`).join('')}</tr>`;
-    pBody.innerHTML = parsedStudents.slice(0, 5).map((s, idx) => `
-      <tr>
-        <td>${idx + 1}</td>
-        <td><span class="font-mono">${s.prn}</span></td>
-        <td>${s.name}</td>
-        ${scoreCols.map(c => `<td><strong>${s.marks[c.qNo] ?? '—'}</strong></td>`).join('')}
-      </tr>
-    `).join('');
-
-    Toast.success(`Spreadsheet parsed: ${parsedStudents.length} students matched.`);
-  }
-
+  // Apply resolved marks to DOM and handleMarkInput
   window.applyUploadedMarks = function() {
-    if (!currentParsedUpload || !currentParsedUpload.students.length) return;
+    if (!currentUploadState || !currentUploadState.resolvedStudents.length) return;
 
-    let appliedCount = 0;
-    currentParsedUpload.students.forEach(uploaded => {
-      const prn = String(uploaded.prn).trim();
-      Object.entries(uploaded.marks).forEach(([qNo, score]) => {
-        const input = document.querySelector(`#marks-sheet-body input.marks-input[data-prn="${prn}"][data-qno="${qNo}"]`);
-        if (input) {
-          input.value = score;
-          handleMarkInput(input);
-          appliedCount++;
+    const { resolvedStudents, targets } = currentUploadState;
+    let appliedEntries = 0;
+    let appliedStudents = 0;
+
+    resolvedStudents.forEach(item => {
+      if (!item.student || !item.student.prn) return;
+      const prn = item.student.prn;
+      let studentHasMarks = false;
+
+      targets.forEach(tgt => {
+        const markVal = item.marks[tgt.key];
+        if (markVal !== undefined && markVal !== null) {
+          const input = document.querySelector(`#marks-sheet-body input.marks-input[data-prn="${prn}"][data-qno="${tgt.qNo}"]`);
+          if (input) {
+            input.value = markVal;
+            input.setAttribute('value', markVal);
+            handleMarkInput(input);
+            appliedEntries++;
+            studentHasMarks = true;
+          }
         }
       });
+
+      if (studentHasMarks) appliedStudents++;
     });
 
     closeUploadModal();
-    Toast.success(`Applied spreadsheet scores to ${appliedCount} marks inputs! Click "Save Marks" to persist.`);
+    Toast.success(`Successfully applied marks for ${appliedStudents} student(s) (${appliedEntries} score entries)! Click "Save Marks" to persist.`);
   };
 
   /* ── Download Pre-Formatted Marks Template (Excel & CSV) ── */
