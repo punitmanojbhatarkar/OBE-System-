@@ -1278,6 +1278,12 @@ def generate_professional_assessment(
     }
     suggested_title = type_titles.get(assess_type.lower(), f"Assessment – {clean_topic[:30]}")
 
+    parsed_curriculum = _parse_curriculum_units_and_topics(clean_topic, course_name)
+    unit_constraint_note = ""
+    if parsed_curriculum.get("is_unit_query"):
+        u_labels = " & ".join(f"UNIT {u}" for u in parsed_curriculum["matched_units"])
+        unit_constraint_note = f"\nCRITICAL SYLLABUS DIRECTIVE: The faculty has explicitly targeted {u_labels}. All formulated questions and scenarios must strictly evaluate topics and analytical problems from {u_labels}."
+
     try:
         llm = get_llm(temperature=0.4).with_structured_output(ProfessionalAssessmentResponse)
         template = """You are a senior engineering professor, Board of Studies member, and NBA Accreditation evaluator at a premier autonomous engineering college.
@@ -1291,6 +1297,7 @@ SPECIFICATIONS:
 - Primary Bloom's Cognitive Level: {level}
 - Total Questions Required: {num_q}
 - Total Marks: {total_m} (~{marks_per_q} marks per question)
+{unit_constraint_note}
 
 ACADEMIC RIGOR GUIDELINES (NBA / SPPU Autonomous Standard):
 1. Question Formulation & Action Verbs:
@@ -1303,6 +1310,7 @@ ACADEMIC RIGOR GUIDELINES (NBA / SPPU Autonomous Standard):
      * L6 (Create): Design, Formulate, Propose, Synthesize, Architect
 2. Professional Question Design:
    - Make questions realistic, scenario-based, and analytical with engineering problems, real-world datasets, architecture diagrams, or mathematical formulations.
+   - If units are specified, allocate questions strictly across those units with realistic engineering case studies.
    - Avoid trivial 1-line definition questions. Provide clear numerical or architectural constraints.
    - Assign exact marks to each question such that the sum equals {total_m}.
    - Distribute target COs {target_cos} across the questions systematically.
@@ -1323,7 +1331,8 @@ ACADEMIC RIGOR GUIDELINES (NBA / SPPU Autonomous Standard):
             "level": level,
             "num_q": num_q,
             "total_m": total_m,
-            "marks_per_q": marks_per_q
+            "marks_per_q": marks_per_q,
+            "unit_constraint_note": unit_constraint_note
         })
         data = res.dict()
         # Verify mark sum matches total_m
@@ -1338,94 +1347,198 @@ ACADEMIC RIGOR GUIDELINES (NBA / SPPU Autonomous Standard):
         return _heuristic_professional_assessment(course_name, assess_type, clean_topic, level, num_q, total_m, target_cos, suggested_title, question_blueprint=question_blueprint)
 
 
+def _parse_curriculum_units_and_topics(topic: str, course_name: str) -> dict:
+    """Parses topic strings for UNIT 1, UNIT 1 & 2, Module 3, multi-topic, and case studies."""
+    import re
+    raw = (topic or "").strip()
+    roman = {'I': 1, 'II': 2, 'III': 3, 'IV': 4, 'V': 5, 'VI': 6, 'VII': 7, 'VIII': 8}
+    is_case_study = bool(re.search(r'(?:case\s*study|real[- ]world|scenario|industry|practical|application)', raw, re.I))
+    matched_units = set()
+
+    # Range: Unit 1-3 or Units 1 to 3
+    range_match = re.search(r'(?:units?|modules?|chapters?)\s*([0-9ivx]+)\s*(?:-|to)\s*([0-9ivx]+)', raw, re.I)
+    if range_match:
+        try:
+            s_str = range_match.group(1).upper()
+            e_str = range_match.group(2).upper()
+            start = int(s_str) if s_str.isdigit() else roman.get(s_str, 1)
+            end = int(e_str) if e_str.isdigit() else roman.get(e_str, start)
+            for u in range(min(start, end), max(start, end) + 1):
+                if 1 <= u <= 8:
+                    matched_units.add(u)
+        except Exception:
+            pass
+
+    # Multi: Unit 1 & 2, Unit 1, 2, Unit 1 and 2
+    if not matched_units:
+        multi_match = re.search(r'(?:units?|modules?|chapters?)\s*([0-9ivx]+(?:\s*(?:,|&|and)\s*[0-9ivx]+)+)', raw, re.I)
+        if multi_match:
+            parts = re.split(r'[,&]|and', multi_match.group(1), flags=re.I)
+            for p in parts:
+                clean = p.strip().upper()
+                num = int(clean) if clean.isdigit() else roman.get(clean)
+                if num and 1 <= num <= 8:
+                    matched_units.add(num)
+
+    # Single: Unit 1, Module 2, Unit IV
+    if not matched_units:
+        single_match = re.search(r'(?:unit|module|chapter|mod)\s*([0-9ivx]+)', raw, re.I)
+        if single_match:
+            clean = single_match.group(1).upper()
+            num = int(clean) if clean.isdigit() else roman.get(clean)
+            if num and 1 <= num <= 8:
+                matched_units.add(num)
+
+    # Prefix: u1, u1&u2
+    if not matched_units:
+        u_prefixes = re.findall(r'\bu([1-6])\b', raw, re.I)
+        for u in u_prefixes:
+            matched_units.add(int(u))
+
+    units_list = sorted(list(matched_units))
+    topics_list = [t.strip() for t in re.split(r'[,;+]', raw) if len(t.strip()) > 1] if (',' in raw or ';' in raw) else [raw]
+
+    return {
+        "raw": raw,
+        "is_unit_query": len(units_list) > 0,
+        "matched_units": units_list,
+        "is_case_study": is_case_study,
+        "topics_list": topics_list
+    }
+
+
 def _heuristic_professional_assessment(course_name: str, assess_type: str, topic: str, level: str, num_q: int, total_m: int, target_cos: list, title: str, question_blueprint: list = None) -> dict:
-    """Domain-curated engineering question generator matching NBA/Bloom's standards."""
+    """Domain-curated autonomous college engineering question generator matching NBA/Bloom's standards."""
     c_lower = (course_name or "").lower()
-    t_lower = (topic or "").lower()
+    parsed = _parse_curriculum_units_and_topics(topic, course_name)
 
-    # Pre-formulated high-quality engineering question bank
-    dl_questions = [
-        ("Derive the mathematical formulation of Scaled Dot-Product Attention in the Transformer architecture. Analyze why the scaling factor sqrt(d_k) is required to prevent gradient saturation in the softmax operation.", "L4", 1),
-        ("Compare Parameter-Efficient Fine-Tuning (PEFT/LoRA) with Full Parameter Fine-Tuning for a 7B parameter LLM. Calculate the reduction in GPU VRAM required during backpropagation assuming 16-bit precision.", "L3", 2),
-        ("Design an end-to-end Retrieval-Augmented Generation (RAG) pipeline for domain-specific engineering documentation. Formulate the chunking strategy, dense vector embedding selection, and hallucination reduction mechanism.", "L6", 3),
-        ("Analyze the gradient vanishing and exploding problem in deep feedforward neural networks. Evaluate how Residual Connections (ResNets) and Layer Normalization mathematically mitigate this degradation.", "L5", 2),
-        ("Implement a custom loss function combining Cross-Entropy Loss with Focal Loss for an imbalanced classification problem. Explain the role of the focusing parameter gamma.", "L3", 1),
-        ("Critique the trade-offs between Autoregressive models (GPT), Autoencoding models (BERT), and Sequence-to-Sequence models (T5) across zero-shot text summarization and code generation tasks.", "L5", 4)
-    ]
+    # Deep Learning & LLMs Unit-specific repository
+    dl_unit_banks = {
+        1: [
+            ("[Unit 1: Foundations & Loss Optimization] A deep feedforward neural network training on high-dimensional tabular data experiences severe vanishing gradients and oscillating loss. Derive the mathematical formulation of backpropagation for a 3-layer MLP with cross-entropy loss. Analyze how replacing Sigmoid activations with LeakyReLU and applying the AdamW optimizer with cosine learning rate scheduling mathematically stabilizes weight updates.", "L4", 1),
+            ("[Unit 1: Numerical Gradient & Loss Formulation] Consider a medical diagnosis classification scenario with a severe 95:5 class imbalance ratio. Formulate the mathematical equation of Focal Loss with focusing parameter gamma and balancing factor alpha. Given a sample prediction probability p_t = 0.85 for easy samples and p_t = 0.15 for hard anomalies, compute the respective loss contributions and explain how this formulation prevents easy negatives from dominating gradient updates.", "L3", 1),
+            ("[Unit 1: Vanishing Gradients & Weight Initialization Case Study] An autonomous robotics system requires training a 16-layer fully connected network. Analyze why standard random Gaussian initialization causes activation variance to collapse or explode exponentially. Derive the mathematical basis of He (Kaiming) and Xavier (Glorot) initialization, demonstrating how each preserves signal variance across forward passes and backward error flows.", "L4", 1),
+            ("[Unit 1: Non-Convex Optimization & Generalization Critique] Critique the convergence dynamics of Stochastic Gradient Descent (SGD with Nesterov Momentum) versus Adaptive Moment Estimation (Adam) when traversing non-convex loss surfaces with sharp saddle points. Justify which optimizer guarantees superior out-of-distribution generalization in mission-critical deployments.", "L5", 1)
+        ],
+        2: [
+            ("[Unit 2: Spatial Feature Maps & Parameter Calculation] An image of spatial dimensions 224x224x3 is fed into a convolutional layer with 64 filters of kernel size 7x7, stride 2, and padding 3, followed by a 3x3 max-pooling layer with stride 2. Compute the exact output feature map dimensions, the effective receptive field of the resulting units, and the total trainable parameters including bias terms.", "L4", 2),
+            ("[Unit 2: Deep Residual Architectures & Industrial Case Study] Design an industrial vision inspection system for detecting micro-fractures in aerospace alloy manufacturing. Formulate the mathematical formulation of the ResNet residual block H(x) = F(x) + x. Prove mathematically why identity shortcut connections allow gradient backpropagation without degradation even as network depth exceeds 100 layers.", "L6", 2),
+            ("[Unit 2: Transfer Learning & Domain Adaptation] A healthcare startup has only 1,500 labeled retinal fundus scans. Formulate an end-to-end transfer learning strategy using a pre-trained ResNet-50 backbone. Specify the layer freezing methodology, discriminative learning rates, and data augmentation pipeline required to avoid catastrophic forgetting and severe overfitting.", "L3", 2),
+            ("[Unit 2: Efficient Convolutions for Edge Deployment] Compare Depthwise Separable Convolutions (MobileNet) with standard 2D convolutions. Derive the theoretical reduction in floating-point operations (FLOPs) and parameter count. Evaluate the operational latency and memory trade-offs when deploying onto edge IoT devices.", "L5", 2)
+        ],
+        3: [
+            ("[Unit 3: Recurrent Cell Gating & Vanishing Gradient Analysis] Diagram the internal architecture of a Long Short-Term Memory (LSTM) cell. Write the mathematical equations governing the Forget Gate, Input Gate, Candidate Memory, Cell State update, and Output Gate. Analyze how the constant error carousel mathematically eliminates vanishing gradients over 100+ time steps compared to Vanilla RNNs.", "L4", 3),
+            ("[Unit 3: Sequence-to-Sequence Machine Translation Case Study] Design a real-time Seq2Seq translation pipeline for translating high-throughput technical documents. Formulate the Bahdanau Additive Attention mechanism, showing how alignment scores, attention weights, and context vectors are computed at each decoder step. Contrast its computational complexity with Luong Multiplicative Attention.", "L6", 3),
+            ("[Unit 3: Gated Recurrent Unit vs LSTM Empirical Trade-offs] Differentiate the structural differences between Gated Recurrent Units (GRU) and standard LSTMs. Given a real-time speech transcription constraint of <50ms inference latency, evaluate which architecture provides the optimal trade-off between memory footprint and sequence modeling fidelity.", "L5", 3)
+        ],
+        4: [
+            ("[Unit 4: Scaled Dot-Product & Multi-Head Attention Derivation] Derive the mathematical formula for Scaled Dot-Product Attention: Attention(Q, K, V) = softmax(Q K^T / sqrt(d_k)) V. Prove why the scaling factor 1/sqrt(d_k) is mandatory for large projection dimensions to prevent gradient saturation in the softmax operator. Contrast Multi-Head Attention with single-head attention in terms of representation subspaces.", "L4", 4),
+            ("[Unit 4: Positional Encodings & Attention Linearity Critique] Formulate the mathematical basis of Sinusoidal Positional Embeddings and Rotary Position Embedding (RoPE). Analyze how RoPE enables relative position modeling through complex multiplication. Critique the quadratic computational and memory complexity O(N^2) of standard self-attention for sequence lengths exceeding 32k tokens.", "L5", 4),
+            ("[Unit 4: Paradigm Comparison Case Study] Evaluate the fundamental architectural differences between Autoencoding (BERT), Autoregressive (GPT), and Sequence-to-Sequence (T5) architectures. Formulate an engineering rubric to select the optimal model family for: (a) Automated code vulnerability discovery, (b) Zero-shot dialogue generation, and (c) Multilingual summarization.", "L5", 4)
+        ],
+        5: [
+            ("[Unit 5: Enterprise Retrieval-Augmented Generation (RAG) Architecture] Design an enterprise-grade Retrieval-Augmented Generation (RAG) system capable of indexing 1,000,000 confidential internal engineering blueprints. Detail the hierarchical document chunking strategy, dense bi-encoder vs cross-encoder reranking, vector indexing (HNSW), and automated semantic hallucination guardrails.", "L6", 5),
+            ("[Unit 5: Prompt Engineering & Autonomous Agent Formulation] Formulate advanced prompt pipelines integrating Chain-of-Thought (CoT), Tree-of-Thoughts (ToT), and the ReAct framework for an autonomous software bug resolution agent. Provide concrete system prompts, tool-calling execution loops, and schema validation fallbacks.", "L4", 5),
+            ("[Unit 5: Tokenization Dynamics & Out-of-Vocabulary Analysis] Explain the Byte-Pair Encoding (BPE) tokenization algorithm with a step-by-step example on a domain corpus. Analyze how tokenization artifacts introduce vulnerabilities such as prompt injection susceptibility and computational inefficiencies in mathematical calculation.", "L3", 5)
+        ],
+        6: [
+            ("[Unit 6: LoRA Rank-Decomposition & Memory Calculations] A 7B parameter LLM (hidden dimension d=4096) must be fine-tuned on a single consumer GPU with 16GB VRAM. Formulate the Low-Rank Adaptation (LoRA) weight update W = W_0 + (alpha/r) * B * A with rank r=16 applied to query and value projection matrices. Calculate the exact parameter reduction ratio and explain how QLoRA 4-bit NormalFloat (NF4) quantization enables this workload.", "L3", 6),
+            ("[Unit 6: Alignment Dynamics & Direct Preference Optimization (DPO)] Contrast Reinforcement Learning from Human Feedback (RLHF with PPO) with Direct Preference Optimization (DPO). Derive the closed-form DPO objective from the Bradley-Terry preference model, proving why DPO eliminates the instability of training a separate reward model.", "L5", 6),
+            ("[Unit 6: High-Throughput Inference Engineering Case Study] Design a scalable low-latency LLM serving cluster serving 500 concurrent requests/second. Architect the integration of PagedAttention (vLLM), continuous batching, Key-Value (KV) cache quantization, and speculative decoding. Quantify the throughput increase and latency reduction.", "L6", 6)
+        ]
+    }
 
-    eda_questions = [
-        ("Formulate a complete data quality assessment and preprocessing pipeline for a high-frequency sensor dataset containing missing values, multicollinearity, and extreme outliers. Justify why robust scalers are preferred over standard min-max scaling.", "L4", 1),
-        ("Design a hypothesis testing experiment using Two-Sample t-test and Chi-Square test of independence to determine whether user interaction patterns differ significantly before and after a system upgrade. State null and alternate hypotheses with confidence level 95%.", "L4", 2),
-        ("Analyze a skewed multivariate distribution using Principal Component Analysis (PCA) and t-SNE. Compare how linear dimensionality reduction compares with manifold learning in preserving local vs global cluster structures.", "L4", 3),
-        ("Implement an outlier detection pipeline using Interquartile Range (IQR) and Isolation Forest. Calculate the upper and lower fences given a sample quartiles vector and explain boundary anomalies.", "L3", 1),
-        ("Evaluate the performance of linear regression under violations of homoscedasticity and normality of residuals. Propose variance-stabilizing transformations (Box-Cox / Log).", "L5", 2),
-        ("Formulate a feature selection framework combining mutual information gain, recursive feature elimination (RFE), and LASSO regularization. Explain feature sparsity in high dimensions.", "L6", 4)
-    ]
+    # EDA Unit-specific repository
+    eda_unit_banks = {
+        1: [
+            ("[Unit 1: Data Cleansing & Robust Imputation Case Study] A smart IoT energy grid streaming dataset contains 15% missing sensor telemetry, high kurtosis, and extreme voltage spikes. Formulate a complete preprocessing pipeline. Compare Robust Scaling with Min-Max normalization in the presence of heavy-tailed distributions and justify your imputation choices.", "L4", 1),
+            ("[Unit 1: Outlier Detection Mathematical Formulation] Given an empirical financial transactions dataset, derive the mathematical boundary conditions for Interquartile Range (IQR) outlier fences and Isolation Forest path length anomaly scoring. Calculate upper and lower thresholds for a sample series and identify anomalous transactions.", "L3", 1)
+        ],
+        2: [
+            ("[Unit 2: Statistical Hypothesis Testing Experiment Design] Formulate an A/B testing experiment to validate whether an algorithmic search redesign yields statistically significant conversion improvement. Specify null and alternate hypotheses, perform Two-Sample t-test and Chi-Square independence test, and interpret Type I vs Type II error trade-offs at alpha = 0.01.", "L4", 2),
+            ("[Unit 2: Multivariate Correlation Analysis & Multi-collinearity] Analyze an industrial dataset exhibiting severe multi-collinearity among predictor variables. Compute Pearson and Spearman rank correlation coefficients. Evaluate the Variance Inflation Factor (VIF) and outline remedial strategies.", "L4", 2)
+        ],
+        3: [
+            ("[Unit 3: Principal Component Analysis Mathematical Derivation] Derive the mathematical steps of Principal Component Analysis (PCA) starting from the data covariance matrix. Prove that the first principal component aligns with the eigenvector possessing the largest eigenvalue. Calculate the cumulative explained variance for a given 4x4 covariance matrix.", "L4", 3),
+            ("[Unit 3: Non-Linear Dimensionality Reduction Critique] Contrast linear PCA with non-linear manifold projection techniques (t-SNE and UMAP). Critically evaluate how each method preserves local neighborhood topologies versus global manifold geometry when visualizing high-dimensional single-cell genomic data.", "L5", 3)
+        ],
+        4: [
+            ("[Unit 4: Visual Analytics & Multi-Attribute Dashboard Architecture] Design an executive monitoring dashboard for tracking real-time hospital patient admissions, resource utilization, and mortality indicators. Specify the visual encoding channels (color, position, size, shape), chart choices (KDE, violin, faceted scatter), and interactive filtering mechanisms adhering to Shneiderman's Information Seeking Mantra.", "L6", 4)
+        ],
+        5: [
+            ("[Unit 5: Time Series Decomposition & Stationarity Validation] Formulate a time-series exploration framework for e-commerce traffic with seasonal demand shocks. Apply additive vs multiplicative decomposition. State the Augmented Dickey-Fuller (ADF) test equations and interpret ACF/PACF correlograms to determine optimal lag parameters.", "L4", 5)
+        ],
+        6: [
+            ("[Unit 6: End-to-End Enterprise Fraud Detection Case Study] Develop a comprehensive exploratory analytics report investigating anomalous credit card transactions. Synthesize feature engineering, unsupervised clustering, and class-imbalance remedies into an actionable risk assessment framework for regulatory compliance.", "L6", 6)
+        ]
+    }
 
-    gen_questions = [
-        (f"Analyze the fundamental theoretical principles and engineering constraints underlying {topic}. Differentiate the primary approaches used in industry.", "L4", 1),
-        (f"Formulate a computational model or mathematical framework to solve an optimization problem involving {topic}. Compute the theoretical time and space complexity.", "L3", 2),
-        (f"Design an architectural blueprint and operational workflow integrating {topic} into a fault-tolerant software system. Justify your design choices.", "L6", 3),
-        (f"Evaluate the performance, scalability, and security bottlenecks when deploying {topic} in production environments. Propose concrete mitigation strategies.", "L5", 4),
-        (f"Explain the end-to-end operational lifecycle of {topic}. Illustrate key components, data flow, and state transitions with an engineering schematic.", "L2", 1)
-    ]
-
-    # Select domain pool
-    if "deep learning" in c_lower or "llm" in c_lower or "transformer" in t_lower or "neural" in t_lower:
-        pool = dl_questions
-    elif "data" in c_lower or "exploratory" in c_lower or "statistics" in t_lower or "analytics" in c_lower:
-        pool = eda_questions
-    else:
-        pool = gen_questions
+    is_dl = ("deep learning" in c_lower or "llm" in c_lower or "transformer" in (topic or "").lower() or "neural" in (topic or "").lower())
+    is_eda = ("data" in c_lower or "exploratory" in c_lower or "statistic" in (topic or "").lower() or "analytics" in c_lower)
 
     questions = []
     rubrics = []
+    base_m = total_m // num_q if num_q > 0 else total_m
+    rem_m = total_m % num_q if num_q > 0 else 0
 
-    if question_blueprint and len(question_blueprint) > 0:
-        for idx, q_spec in enumerate(question_blueprint):
+    units = parsed.get("matched_units", [])
+
+    for idx in range(num_q):
+        q_no = idx + 1
+        q_spec = (question_blueprint[idx] if (question_blueprint and idx < len(question_blueprint)) else {})
+        co_no = q_spec.get("coNo")
+        q_marks = float(q_spec.get("marks", base_m + (rem_m if idx == num_q - 1 else 0)))
+        q_rbt = str(q_spec.get("rbt", level or "L3"))
+
+        # Determine target unit
+        target_unit = 1
+        if units:
+            if len(units) == 1:
+                target_unit = units[0]
+            elif len(units) == 2:
+                target_unit = units[0] if (idx < (num_q + 1) // 2) else units[1]
+            else:
+                target_unit = units[idx % len(units)]
+        else:
+            target_unit = (idx % 6) + 1
+
+        if not co_no:
+            co_no = target_unit if units else (target_cos[idx % len(target_cos)] if target_cos else target_unit)
+
+        # Select question text
+        if is_dl and target_unit in dl_unit_banks:
+            pool = dl_unit_banks[target_unit]
             sample = pool[idx % len(pool)]
-            q_no = int(q_spec.get("qNo", idx + 1))
-            co_no = int(q_spec.get("coNo", (target_cos[idx % len(target_cos)] if target_cos else 1)))
-            q_marks = float(q_spec.get("marks", round(total_m / len(question_blueprint))))
-            q_rbt = str(q_spec.get("rbt", level or "L3"))
-            
-            questions.append({
-                "qNo": q_no,
-                "text": sample[0],
-                "marks": int(q_marks) if q_marks.is_integer() else q_marks,
-                "coNo": co_no,
-                "rbt": q_rbt
-            })
-            rubrics.append({
-                "criterion": f"Q{q_no}: Mastery of {topic[:25]} (CO{co_no}, {q_rbt})",
-                "exceptional": f"90-100%: Comprehensive, mathematically and technically rigorous answer with complete derivation/design, precise notation, and critical analysis.",
-                "best": f"70-89%: Mostly accurate response covering core concepts with minor omissions in edge cases or secondary derivations.",
-                "average": f"50-69%: Partial understanding demonstrated; conceptual grasp present but lacks quantitative depth, correct equations, or thorough explanation.",
-                "low": f"<50%: Superficial or incomplete attempt with fundamental conceptual inaccuracies and absent technical justification."
-            })
-    else:
-        base_m = total_m // num_q
-        rem_m = total_m % num_q
-        for i in range(num_q):
-            sample = pool[i % len(pool)]
-            co_idx = target_cos[i % len(target_cos)] if target_cos else (i + 1)
-            q_marks = base_m + (rem_m if i == num_q - 1 else 0)
-            q_rbt = level if i == 0 else sample[1]
-            
-            questions.append({
-                "qNo": i + 1,
-                "text": sample[0],
-                "marks": q_marks,
-                "coNo": co_idx,
-                "rbt": q_rbt
-            })
-            rubrics.append({
-                "criterion": f"Q{i+1}: Mastery of {topic[:25]} (CO{co_idx}, {q_rbt})",
-                "exceptional": f"90-100%: Comprehensive, mathematically and technically rigorous answer with complete derivation/design, precise notation, and critical analysis.",
-                "best": f"70-89%: Mostly accurate response covering core concepts with minor omissions in edge cases or secondary derivations.",
-                "average": f"50-69%: Partial understanding demonstrated; conceptual grasp present but lacks quantitative depth, correct equations, or thorough explanation.",
-                "low": f"<50%: Superficial or incomplete attempt with fundamental conceptual inaccuracies and absent technical justification."
-            })
+            q_text = sample[0]
+            if not q_spec.get("rbt"):
+                q_rbt = sample[1]
+        elif is_eda and target_unit in eda_unit_banks:
+            pool = eda_unit_banks[target_unit]
+            sample = pool[idx % len(pool)]
+            q_text = sample[0]
+            if not q_spec.get("rbt"):
+                q_rbt = sample[1]
+        elif parsed.get("topics_list") and len(parsed["topics_list"]) > 1:
+            t_spec = parsed["topics_list"][idx % len(parsed["topics_list"])]
+            q_text = f"[Focus Topic: {t_spec}] Analyze the theoretical foundations and engineering constraints underlying {t_spec}. Derive the mathematical formulations, compare architectural trade-offs, and design a scalable fault-tolerant implementation."
+        else:
+            q_text = f"[Curriculum Module: {topic[:28]}] Formulate a comprehensive engineering analysis and computational framework for {topic}. Compute theoretical time-space complexity and critique edge-case bottlenecks."
+
+        questions.append({
+            "qNo": q_no,
+            "text": q_text,
+            "marks": int(q_marks) if q_marks.is_integer() else q_marks,
+            "coNo": int(co_no),
+            "rbt": q_rbt
+        })
+
+        rubrics.append({
+            "criterion": f"Q{q_no}: Technical Rigor & Engineering Competence (CO{co_no}, {q_rbt})",
+            "exceptional": "90-100%: Comprehensive, mathematically and technically rigorous answer with complete derivation/design, precise notation, and critical analysis.",
+            "best": "70-89%: Mostly accurate response covering core concepts with minor omissions in edge cases or secondary derivations.",
+            "average": "50-69%: Partial understanding demonstrated; conceptual grasp present but lacks quantitative depth, correct equations, or thorough explanation.",
+            "low": "<50%: Superficial or incomplete attempt with fundamental conceptual inaccuracies and absent technical justification."
+        })
 
     instructions = [
         "1. All questions are compulsory. Figures to the right indicate full marks allocated.",
