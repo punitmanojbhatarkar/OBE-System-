@@ -9,6 +9,93 @@
   <link rel="stylesheet" href="../styles/main.css">
   <link rel="stylesheet" href="../styles/components.css">
   <style>
+    /* Robust Topbar Layout - Overlap Prevention */
+    .topbar {
+      min-height: 64px !important;
+      height: auto !important;
+      padding: 10px 28px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      gap: 16px !important;
+      background: var(--surface) !important;
+      border-bottom: 1px solid var(--border) !important;
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 100 !important;
+    }
+    .topbar-left {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 2px;
+      min-width: 220px;
+      flex-shrink: 0;
+    }
+    .topbar-title {
+      font-size: 16.5px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.2px;
+      margin: 0;
+      line-height: 1.25;
+    }
+    .topbar-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-left: auto;
+      flex-wrap: wrap;
+    }
+
+    /* Page Content Structure */
+    .page-content {
+      padding: 22px 28px 60px !important;
+      background: var(--page-bg);
+      position: relative;
+      z-index: 1;
+    }
+
+    .tab-list {
+      display: flex;
+      gap: 4px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+
+    /* Clean Form Grid Layout */
+    .blueprint-grid-row-1 {
+      display: grid;
+      grid-template-columns: 240px 1fr 140px;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .blueprint-grid-row-2 {
+      display: grid;
+      grid-template-columns: 160px 160px 180px 1fr;
+      gap: 14px;
+      align-items: flex-end;
+    }
+
+    @media (max-width: 1024px) {
+      .blueprint-grid-row-1, .blueprint-grid-row-2 {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    @media (max-width: 768px) {
+      .blueprint-grid-row-1, .blueprint-grid-row-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
     /* Question Paper Preview (Clean Printable Autonomous University Format) */
     .qp-preview {
       background: #FFFFFF; color: #0F172A; padding: 40px; border-radius: var(--r-md);
@@ -25,7 +112,7 @@
     .qp-instructions { border: 1px solid #CBD5E1; padding: 8px 12px; margin-bottom: 12px; font-size: 11.5px; }
 
     /* Workbench Editors */
-    .q-editor { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-md); padding: 16px; margin-bottom: 16px; }
+    .q-editor { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-md); padding: 18px; margin-bottom: 18px; }
     .q-box { margin-bottom: 12px; padding: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); transition: border-color 0.2s ease; }
     .q-box:hover { border-color: var(--primary); }
     .q-box.is-or-choice { border-left: 4px solid #F59E0B; }
@@ -42,8 +129,8 @@
     /* Blueprint Stats Banner */
     .stats-bar {
       display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
-      padding: 10px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-sm);
-      margin-top: 12px; font-size: 12px;
+      padding: 12px 18px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-sm);
+      margin-top: 14px; font-size: 12px;
     }
 
     .badge-choice-or { background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; }
@@ -98,23 +185,21 @@
     </div>
   </aside>
 
-  <!-- MAIN -->
+  <!-- MAIN CONTENT -->
   <main class="main-content">
+    <!-- Topbar: Lean, Non-Overlapping Header -->
     <header class="topbar">
       <div class="topbar-left">
-        <h1 class="topbar-title">University Question Paper & Assessment Formulation</h1>
-        <div class="topbar-breadcrumb">Assessment <span>›</span> Institutional Blueprint & Question Authoring</div>
+        <h1 class="topbar-title">Question Paper Generator</h1>
+        <div class="topbar-breadcrumb">Assessment <span>›</span> Institutional Blueprint & Formulation</div>
       </div>
-      <div class="topbar-right" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <select class="form-select" id="course-select" style="min-width:240px;font-size:12.5px;"></select>
+      <div class="topbar-right">
+        <select class="form-select" id="course-select" style="min-width:240px;max-width:280px;font-size:12.5px;"></select>
         <button class="btn btn-primary btn-sm" onclick="openBlueprintCustomizerModal()">
-          <span data-icon="sparkles"></span><span>⚙️ Customize & Generate Blueprint</span>
+          <span data-icon="sparkles"></span><span>⚙️ Customize Blueprint</span>
         </button>
-        <button class="btn btn-secondary btn-sm" onclick="autoRebalanceMarks()">
-          <span>⚖️ Auto-Rebalance Marks</span>
-        </button>
-        <button class="btn btn-secondary btn-sm" id="saveAssessBtn" onclick="saveAsAssessment()">
-          <span data-icon="check"></span><span>Save as Assessment</span>
+        <button class="btn btn-secondary btn-sm" id="saveAssessTopBtn" onclick="saveAsAssessment()">
+          <span data-icon="check"></span><span>Save Assessment</span>
         </button>
         <button class="btn btn-secondary btn-sm" onclick="window.print()">
           <span data-icon="download"></span><span>Print / PDF</span>
@@ -133,63 +218,79 @@
       <!-- Editor Tab -->
       <div id="tab-editor" class="tab-content active">
         <!-- Configuration Card -->
-        <div class="card" style="margin-bottom:16px;">
-          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <div class="card" style="margin-bottom:18px;">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
             <div>
               <div class="card-title">Exam Blueprint Metadata & Parameters</div>
               <div class="card-subtitle">Full institutional freedom: configure any exam category, custom title, marks, and units</div>
             </div>
-            <div style="display:flex;gap:8px;">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
               <button class="btn btn-secondary btn-sm" onclick="openBlueprintCustomizerModal()">
-                <span data-icon="sparkles"></span><span>Open Full Blueprint Customizer...</span>
+                <span data-icon="sparkles"></span><span>Open Blueprint Customizer...</span>
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="autoRebalanceMarks()">
+                <span>⚖️ Auto-Rebalance Marks</span>
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="saveAsAssessment()">
+                <span data-icon="check"></span><span>Save as Assessment</span>
               </button>
             </div>
           </div>
 
-          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));gap:12px;">
-            <div class="form-group">
-              <label class="form-label">Assessment Category</label>
+          <!-- Form Fields Row 1 -->
+          <div class="blueprint-grid-row-1">
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" style="font-weight:700;">Assessment Category</label>
               <select class="form-select" id="cfg-type" onchange="onCategorySelectChange()">
-                <option value="mse" selected>Mid Semester Examination (MSE)</option>
-                <option value="ia1">Internal Assessment 1 (IA-1)</option>
-                <option value="ia2">Internal Assessment 2 (IA-2)</option>
+                <option value="mse" selected>Mid Semester Exam (MSE)</option>
+                <option value="ia1">In-Sem Assessment 1 (IA-1)</option>
+                <option value="ia2">In-Sem Assessment 2 (IA-2)</option>
                 <option value="ca">Continuous Assessment (CA)</option>
-                <option value="assignment">Written Assignment / Tutorial</option>
+                <option value="assignment">Written Assignment</option>
                 <option value="unit-test">Unit Test / Class Test</option>
-                <option value="ese">End Semester Examination (ESE)</option>
+                <option value="ese">End Semester Exam (ESE)</option>
                 <option value="custom">Custom Examination...</option>
               </select>
             </div>
-            <div class="form-group">
-              <label class="form-label">Examination Title / Subject Header</label>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" style="font-weight:700;">Examination Title / Subject Header</label>
               <input type="text" class="form-input" id="cfg-title" value="MID SEMESTER EXAMINATION (MSE)" onchange="refreshPreview()">
             </div>
-            <div class="form-group">
-              <label class="form-label">Question Set</label>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" style="font-weight:700;">Question Set</label>
               <select class="form-select" id="cfg-set" onchange="refreshPreview()">
                 <option value="Set A">Set A</option>
                 <option value="Set B">Set B</option>
                 <option value="Set C">Set C</option>
                 <option value="Set D">Set D</option>
-                <option value="">No Set Specified</option>
+                <option value="">No Set</option>
               </select>
             </div>
-            <div class="form-group">
-              <label class="form-label">Target Maximum Marks</label>
+          </div>
+
+          <!-- Form Fields Row 2 -->
+          <div class="blueprint-grid-row-2">
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" style="font-weight:700;">Target Max Marks</label>
               <input type="number" class="form-input" id="cfg-marks" value="50" min="5" max="200" onchange="updateMarksTracker(); refreshPreview();">
             </div>
-            <div class="form-group">
-              <label class="form-label">Duration</label>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" style="font-weight:700;">Duration</label>
               <input type="text" class="form-input" id="cfg-duration" value="2 Hours" onchange="refreshPreview()">
             </div>
-            <div class="form-group">
-              <label class="form-label">Examination Date</label>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" style="font-weight:700;">Examination Date</label>
               <input type="date" class="form-input" id="cfg-date" onchange="refreshPreview()">
+            </div>
+            <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;">
+              <button class="btn btn-secondary btn-sm" onclick="toggleInstructionsEditor()">
+                <span>📝 Edit Candidate Instructions</span>
+              </button>
             </div>
           </div>
 
           <!-- Active Units & Choice Structure Bar -->
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
               <span style="font-size:12px;font-weight:700;color:var(--text-secondary);">Syllabus Units Covered:</span>
               <div id="active-units-pills" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
@@ -205,7 +306,7 @@
 
           <!-- Live Marks & Cognitive Balance Tracker -->
           <div class="stats-bar" id="blueprint-stats-bar">
-            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
               <div>
                 <strong>Questions:</strong> <span id="stat-q-count">6</span>
               </div>
@@ -221,25 +322,22 @@
               <button class="btn btn-secondary btn-xs" onclick="autoRebalanceMarks()">
                 <span>⚖️ Auto-Rebalance Marks</span>
               </button>
-              <button class="btn btn-secondary btn-xs" onclick="toggleInstructionsEditor()">
-                <span>📝 Edit Candidate Instructions</span>
-              </button>
             </div>
           </div>
 
           <!-- Collapsible Candidate Instructions Editor -->
-          <div id="instructions-editor-panel" style="display:none;margin-top:12px;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);">
+          <div id="instructions-editor-panel" style="display:none;margin-top:14px;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);">
             <label class="form-label" style="font-weight:700;">Instructions to Candidates (Printable Header)</label>
             <textarea class="form-input" id="cfg-custom-instructions" rows="3" style="font-size:12.5px;resize:vertical;" onchange="refreshPreview()"></textarea>
             <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">
-              Tip: Standard instructions are dynamically formulated from your choice model. You can add or revise any rules here.
+              Standard instructions are automatically formulated from your choice model. You can add or edit institutional instructions here.
             </div>
           </div>
         </div>
 
         <!-- Sections & Questions Builder -->
         <div class="card">
-          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
             <div>
               <div class="card-title">Sections & Question Structures</div>
               <div class="card-subtitle">Complete in-place authoring: add/delete questions, sub-parts, toggle OR choices, and map COs/Bloom's</div>
@@ -247,6 +345,9 @@
             <div style="display:flex;gap:8px;">
               <button class="btn btn-secondary btn-sm" onclick="addSection()">
                 <span data-icon="plus"></span><span>Add Section</span>
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="saveAsAssessment()">
+                <span data-icon="check"></span><span>Save Assessment</span>
               </button>
             </div>
           </div>
@@ -308,9 +409,9 @@
     set: 'Set A',
     units: [1, 2], // Default 2 units for Mid Sem
     choiceModel: 'pairwise-or', // 'pairwise-or', 'attempt-n-of-m', 'compulsory', 'custom'
-    attemptCount: 3, // For 'attempt-n-of-m'
+    attemptCount: 3,
     totalQ: 6,
-    partsPerQ: 1, // 1, 2, or 3
+    partsPerQ: 1,
     bloomsMix: 'balanced',
     customPrompt: '',
     customInstructions: ''
@@ -520,7 +621,6 @@
 
     if (allParts.length === 0) return;
 
-    // Distribute target marks evenly across sub-parts
     const baseMark = Math.floor(targetMarks / allParts.length);
     let remainder = targetMarks % allParts.length;
 
@@ -975,8 +1075,6 @@
 
   /* ═══════════════════════════════════════════════════════════════════════
      THE FULLY CUSTOMIZABLE AI QUESTION PAPER BLUEPRINT MODAL
-     No rigid dropdown options — faculty can configure exact questions,
-     choice structures (OR pairs, attempt N of M, compulsory), custom topics!
      ═══════════════════════════════════════════════════════════════════════ */
   function openBlueprintCustomizerModal() {
     if (!currentCourse) {
@@ -1097,7 +1195,7 @@
           </div>
         </div>
 
-        <!-- 3. Question Structure & Choice Architecture (100% Free Customization) -->
+        <!-- 3. Question Structure & Choice Architecture -->
         <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px;margin-bottom:16px;">
           <div style="font-weight:700;font-size:13px;margin-bottom:10px;color:var(--text-primary);display:flex;align-items:center;gap:6px;">
             <span>⚙️</span> 3. Question Structure & Choice Architecture
@@ -1421,7 +1519,6 @@
 
   /* ═══════════════════════════════════════════════════════════════════════
      AUTONOMOUS PAPER BUILDER
-     Builds ANY question structure, ANY count, ANY choice type, ANY units!
      ═══════════════════════════════════════════════════════════════════════ */
   function buildAutonomousPaper(opts, aiQuestionsList = null) {
     const { selectedUnits, totalMarks, totalQ, choiceType, attemptN, layout, subparts, promptNotes } = opts;
