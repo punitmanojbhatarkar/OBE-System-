@@ -1834,7 +1834,19 @@ def grade_submission(text: str, rubrics: list, maxMarks: int, question: str = ""
             "gradingMode": "single_pass_empty"
         }
 
-    rubrics_clean = [r.strip() for r in rubrics if r.strip()]
+    rubrics_clean = []
+    for r in (rubrics or []):
+        if isinstance(r, dict):
+            criterion = r.get("criterion") or r.get("name") or r.get("text") or r.get("rubric") or ""
+            desc = r.get("description") or ""
+            weight = r.get("weight") or r.get("marks") or ""
+            entry = f"{criterion}: {desc}" if desc and criterion else (criterion or desc)
+            if weight:
+                entry += f" [Weight: {weight}]"
+            if entry.strip():
+                rubrics_clean.append(entry.strip())
+        elif isinstance(r, str) and r.strip():
+            rubrics_clean.append(r.strip())
     if not rubrics_clean:
         rubrics_clean = [
             "Correctness and accuracy of all answers and calculations",
