@@ -19,9 +19,15 @@
       <div><div class="logo-text">Student Portal</div><div class="logo-sub">MITAOE</div></div>
     </div>
     <nav class="sidebar-nav">
-      <p class="nav-section-label">My Learning</p>
-      <a class="nav-item" href="dashboard.html"><span class="nav-icon" data-icon="dashboard"></span><span>Learning Analytics</span></a>
+      <p class="nav-section-label">Academic Hub</p>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon" data-icon="dashboard"></span><span>Home & Dashboard</span></a>
+      <a class="nav-item" href="dashboard.html#timetable-section"><span class="nav-icon" data-icon="calendar"></span><span>Academic Timetable</span></a>
       <a class="nav-item active" href="assignments.html"><span class="nav-icon" data-icon="assignments"></span><span>My Assignments</span></a>
+      <a class="nav-item" href="dashboard.html#subjects-section"><span class="nav-icon" data-icon="courses"></span><span>Enrolled Subjects</span></a>
+      <a class="nav-item" href="dashboard.html#tasks-section"><span class="nav-icon" data-icon="check"></span><span>Tasks & To-Do</span></a>
+      
+      <p class="nav-section-label">Assessments & Feedback</p>
+      <a class="nav-item" href="dashboard.html#analytics-section"><span class="nav-icon" data-icon="chart"></span><span>Outcome Attainment</span></a>
       <a class="nav-item" href="feedback.html"><span class="nav-icon" data-icon="feedback"></span><span>Course Exit Surveys</span></a>
     </nav>
     <div class="sidebar-footer">
@@ -83,8 +89,13 @@
   const user = Auth.requireAuth(['student']);
   if (!user) throw new Error('Not authorized');
 
-  const myEnrollments = DB.students.all().filter(s => s.prn === user.prn);
-  const myCourseIds = [...new Set(myEnrollments.map(s => s.courseId))];
+  const prn = user.prn || '2023010101';
+  let myEnrollments = DB.students.all().filter(s => s.prn === prn);
+  let myCourseIds = [...new Set(myEnrollments.map(s => s.courseId))];
+  if (!myCourseIds.length) {
+    const allC = DB.courses.all().filter(c => c.status === 'active' || !c.status);
+    myCourseIds = allC.length ? allC.map(c => c.id) : ['crs-dl', 'crs-eda', 'crs-ml', 'crs-dw'];
+  }
   const sel = document.getElementById('course-select');
 
   myCourseIds.forEach(cid => {
@@ -97,7 +108,12 @@
     }
   });
 
-  if (myCourseIds.length) {
+  const urlParams = new URLSearchParams(window.location.search);
+  const reqCourse = urlParams.get('course');
+  if (reqCourse && myCourseIds.includes(reqCourse)) {
+    sel.value = reqCourse;
+    loadAssignments(reqCourse);
+  } else if (myCourseIds.length) {
     sel.value = myCourseIds[0];
     loadAssignments(myCourseIds[0]);
   }

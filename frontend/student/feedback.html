@@ -32,9 +32,15 @@
       <div><div class="logo-text">Student Portal</div><div class="logo-sub">MITAOE</div></div>
     </div>
     <nav class="sidebar-nav">
-      <p class="nav-section-label">My Learning</p>
-      <a class="nav-item" href="dashboard.html"><span class="nav-icon" data-icon="dashboard"></span><span>Learning Analytics</span></a>
+      <p class="nav-section-label">Academic Hub</p>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon" data-icon="dashboard"></span><span>Home & Dashboard</span></a>
+      <a class="nav-item" href="dashboard.html#timetable-section"><span class="nav-icon" data-icon="calendar"></span><span>Academic Timetable</span></a>
       <a class="nav-item" href="assignments.html"><span class="nav-icon" data-icon="assignments"></span><span>My Assignments</span></a>
+      <a class="nav-item" href="dashboard.html#subjects-section"><span class="nav-icon" data-icon="courses"></span><span>Enrolled Subjects</span></a>
+      <a class="nav-item" href="dashboard.html#tasks-section"><span class="nav-icon" data-icon="check"></span><span>Tasks & To-Do</span></a>
+      
+      <p class="nav-section-label">Assessments & Feedback</p>
+      <a class="nav-item" href="dashboard.html#analytics-section"><span class="nav-icon" data-icon="chart"></span><span>Outcome Attainment</span></a>
       <a class="nav-item active" href="feedback.html"><span class="nav-icon" data-icon="feedback"></span><span>Course Exit Surveys</span></a>
     </nav>
     <div class="sidebar-footer">
@@ -105,8 +111,13 @@
   const user = Auth.requireAuth(['student']);
   if (!user) throw new Error('Not authorized');
 
-  const myEnrollments = DB.students.all().filter(s => s.prn === user.prn);
-  const myCourseIds = [...new Set(myEnrollments.map(s => s.courseId))];
+  const prn = user.prn || '2023010101';
+  let myEnrollments = DB.students.all().filter(s => s.prn === prn);
+  let myCourseIds = [...new Set(myEnrollments.map(s => s.courseId))];
+  if (!myCourseIds.length) {
+    const allC = DB.courses.all().filter(c => c.status === 'active' || !c.status);
+    myCourseIds = allC.length ? allC.map(c => c.id) : ['crs-dl', 'crs-eda', 'crs-ml', 'crs-dw'];
+  }
   const sel = document.getElementById('course-select');
 
   myCourseIds.forEach(cid => {
@@ -119,6 +130,8 @@
     }
   });
 
+  let selectedScores = {};
+
   if (myCourseIds.length) {
     sel.value = myCourseIds[0];
     loadFeedback(myCourseIds[0]);
@@ -129,7 +142,6 @@
   });
   renderAllIcons();
 
-  let selectedScores = {};
 
   function loadFeedback(cid) {
     const course = DB.courses.byId(cid);
@@ -142,7 +154,7 @@
     document.getElementById('crs-name').textContent = `${course.code} – ${course.name}`;
     document.getElementById('crs-meta').textContent = `Instructor: ${faculty ? faculty.name : 'Faculty'} | Semester ${course.semester}`;
 
-    const existingSurveys = DB.surveys.get(cid).filter(s => s.prn === user.prn);
+    const existingSurveys = (DB.surveys || DB.survey).get(cid).filter(s => s.prn === user.prn);
     selectedScores = {};
     existingSurveys.forEach(s => selectedScores[s.coNo] = s.score);
 
@@ -187,13 +199,13 @@
     if (!cid) return;
     const cos = DB.cos.byCourse(cid).filter(c => c.text);
 
-    const allSurveys = DB.surveys.get(cid).filter(s => s.prn !== user.prn);
+    const allSurveys = (DB.surveys || DB.survey).get(cid).filter(s => s.prn !== user.prn);
     cos.forEach(co => {
       const score = selectedScores[co.no] || 4;
       allSurveys.push({ courseId: cid, prn: user.prn, coNo: co.no, score: score });
     });
 
-    DB.surveys.save(cid, allSurveys);
+    (DB.surveys || DB.survey).save(cid, allSurveys);
     Toast.success('Thank you! Your outcome feedback has been submitted.');
     loadFeedback(cid);
   }

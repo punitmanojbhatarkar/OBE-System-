@@ -251,6 +251,9 @@ const DB = (() => {
 
   /* â”€â”€ Survey â”€â”€ */
   const survey = {
+    all()                 { return get(KEYS.survey); },
+    get(cid)              { return survey.byCourse(cid); },
+    save(cid,list)        { return survey.saveAll(cid,list); },
     byCourse(cid)         { return get(KEYS.survey).filter(s=>s.courseId===cid); },
     getScore(cid,prn,co)  { const s=get(KEYS.survey).find(x=>x.courseId===cid&&x.prn===prn&&String(x.co)===String(co)); return s?s.score:null; },
     setScore(cid,prn,co,score) {
@@ -311,7 +314,8 @@ const DB = (() => {
   /* â”€â”€ Submissions â”€â”€ */
   const submissions = {
     all()              { return get(KEYS.submissions); },
-    byAssessId(aid)    { return submissions.all().filter(s=>s.assessId===aid); },
+    byAssessId(aid)    { return submissions.all().filter(s=>s.assessId===aid || s.assignmentId===aid || s.assessmentId===aid); },
+    byAssignment(aid)  { return submissions.all().filter(s=>s.assessId===aid || s.assignmentId===aid || s.assessmentId===aid); },
     byStudent(prn)     { return submissions.all().filter(s=>s.prn===prn); },
     add(s)             { const all=submissions.all(); s.id=uid(); s.submittedAt=new Date().toISOString(); all.push(s); set(KEYS.submissions,all); return s; },
     update(s)          { const all=submissions.all().map(x=>x.id===s.id?s:x); set(KEYS.submissions,all); return s; },
@@ -495,7 +499,7 @@ const DB = (() => {
     all() { return get('obe_patterns') || []; }
   };
 
-  return { init, reset, uid, departments, users, courses, cos, poMapping, indicatorMapping, remedial, students, marks, survey, assessments, assignments: assessments, submissions, config, gaps, courseAudit, auditLogs, syllabus, actionPlans, outcomes, patterns, getPOList: outcomes.getPOList, getPSOList: outcomes.getPSOList, KEYS };
+  return { init, reset, uid, departments, users, courses, cos, poMapping, indicatorMapping, remedial, students, marks, survey, surveys: survey, assessments, assignments: assessments, submissions, config, gaps, courseAudit, auditLogs, syllabus, actionPlans, outcomes, patterns, getPOList: outcomes.getPOList, getPSOList: outcomes.getPSOList, KEYS };
 
 })();
 

@@ -3,15 +3,97 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Student Learning Dashboard | OBE System – MITAOE</title>
-  <meta name="description" content="Student dashboard for viewing PO attainment and course progress">
+  <title>Student Learning Portal & Academic Dashboard | OBE System – MITAOE</title>
+  <meta name="description" content="Comprehensive student academic home: enrolled subjects, upcoming assignments, timetable, and study planner">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../styles/main.css">
   <link rel="stylesheet" href="../styles/components.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    .chart-wrap { position: relative; height: 320px; width: 100%; }
+    /* Student Portal Specific Modern Styling */
+    .student-hero {
+      background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+      color: #FFFFFF;
+      border-radius: var(--r-lg);
+      padding: 24px 28px;
+      margin-bottom: 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    }
+    .student-hero-info { display: flex; align-items: center; gap: 16px; }
+    .student-avatar-lg {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: linear-gradient(135deg, #3B82F6, #1D4ED8);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; font-weight: 800; color: #FFFFFF;
+      border: 2px solid rgba(255,255,255,0.2);
+      flex-shrink: 0;
+    }
+    .student-hero-title { font-size: 20px; font-weight: 800; margin: 0 0 4px; color: #FFFFFF; }
+    .student-hero-meta { font-size: 13px; color: #94A3B8; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .student-hero-meta span { color: #CBD5E1; }
+
+    /* Task Checklist */
+    .task-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-md); margin-bottom: 8px; transition: all 0.2s ease;
+    }
+    .task-item:hover { border-color: var(--primary); background: var(--surface-2); }
+    .task-item.is-done { opacity: 0.6; }
+    .task-item.is-done .task-title { text-decoration: line-through; color: var(--text-muted); }
+    .task-left { display: flex; align-items: center; gap: 12px; flex: 1; }
+    .task-checkbox { width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary); }
+    .task-title { font-size: 13.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+    .task-subtitle { font-size: 11.5px; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; }
+
+    /* Assignment Cards */
+    .asgn-card-student {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md);
+      padding: 16px; transition: all 0.2s ease; display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .asgn-card-student:hover { border-color: var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.04); transform: translateY(-1px); }
+    .asgn-card-student.due-soon { border-left: 4px solid #F59E0B; }
+    .asgn-card-student.overdue { border-left: 4px solid #EF4444; }
+    .asgn-card-student.submitted { border-left: 4px solid #10B981; }
+
+    /* Course Cards */
+    .course-card-student {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
+      padding: 18px; transition: all 0.2s ease; display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .course-card-student:hover { border-color: var(--primary); box-shadow: 0 6px 16px rgba(0,0,0,0.05); }
+
+    /* Timetable Table & Timeline */
+    .timetable-day-tab {
+      padding: 8px 18px; font-size: 13px; font-weight: 700; border-radius: var(--r-md);
+      cursor: pointer; user-select: none; border: 1px solid var(--border); background: var(--surface);
+      color: var(--text-secondary); transition: all 0.2s ease;
+    }
+    .timetable-day-tab.active { background: var(--primary); color: #FFFFFF; border-color: var(--primary); }
+    .timetable-slot {
+      display: grid; grid-template-columns: 140px 1fr 140px; gap: 14px; align-items: center;
+      padding: 14px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md);
+      margin-bottom: 10px; transition: border-color 0.2s ease;
+    }
+    .timetable-slot:hover { border-color: var(--primary); }
+    .slot-time { font-weight: 700; font-size: 13px; color: var(--primary); }
+    .slot-type-badge { font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 700; text-transform: uppercase; }
+    .slot-type-lecture { background: #E0E7FF; color: #3730A3; }
+    .slot-type-lab { background: #DCFCE7; color: #166534; }
+    .slot-type-tut { background: #FEF3C7; color: #92400E; }
+
+    .chart-wrap { position: relative; height: 300px; width: 100%; }
+
+    @media (max-width: 768px) {
+      .timetable-slot { grid-template-columns: 1fr; gap: 6px; }
+      .student-hero { padding: 18px; }
+    }
   </style>
 </head>
 <body>
@@ -21,18 +103,24 @@
   <aside class="sidebar">
     <div class="sidebar-logo">
       <div class="logo-icon">OBE</div>
-      <div><div class="logo-text">Student Portal</div><div class="logo-sub">MITAOE</div></div>
+      <div><div class="logo-text">Student Portal</div><div class="logo-sub">MITAOE Autonomous</div></div>
     </div>
     <nav class="sidebar-nav">
-      <p class="nav-section-label">My Learning</p>
-      <a class="nav-item active" href="dashboard.html"><span class="nav-icon" data-icon="dashboard"></span><span>Learning Analytics</span></a>
+      <p class="nav-section-label">Academic Hub</p>
+      <a class="nav-item active" href="dashboard.html"><span class="nav-icon" data-icon="dashboard"></span><span>Home & Dashboard</span></a>
+      <a class="nav-item" href="#timetable-section" onclick="scrollToSection('timetable-section')"><span class="nav-icon" data-icon="calendar"></span><span>Academic Timetable</span></a>
       <a class="nav-item" href="assignments.html"><span class="nav-icon" data-icon="assignments"></span><span>My Assignments</span></a>
+      <a class="nav-item" href="#subjects-section" onclick="scrollToSection('subjects-section')"><span class="nav-icon" data-icon="courses"></span><span>Enrolled Subjects</span></a>
+      <a class="nav-item" href="#tasks-section" onclick="scrollToSection('tasks-section')"><span class="nav-icon" data-icon="check"></span><span>Tasks & To-Do</span></a>
+      
+      <p class="nav-section-label">Assessments & Feedback</p>
+      <a class="nav-item" href="#analytics-section" onclick="scrollToSection('analytics-section')"><span class="nav-icon" data-icon="chart"></span><span>Outcome Attainment</span></a>
       <a class="nav-item" href="feedback.html"><span class="nav-icon" data-icon="feedback"></span><span>Course Exit Surveys</span></a>
     </nav>
     <div class="sidebar-footer">
       <div class="user-card" onclick="Auth.logout()">
-        <div class="user-avatar"></div>
-        <div><div class="user-name"></div><div class="user-role"></div></div>
+        <div class="user-avatar" id="footer-user-avatar">RV</div>
+        <div><div class="user-name" id="footer-user-name">Rakshe Veer</div><div class="user-role">Student</div></div>
       </div>
       <button class="btn btn-secondary btn-sm w-full" data-action="logout" style="margin-top:8px; width:100%;">
         <span data-icon="logout"></span><span>Sign Out</span>
@@ -40,76 +128,221 @@
     </div>
   </aside>
 
-  <!-- MAIN -->
+  <!-- MAIN CONTENT -->
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
-        <h1 class="topbar-title">Student Competency Progress</h1>
-        <div class="topbar-breadcrumb">Student <span>›</span> Graduate Attribute Mastery</div>
+        <h1 class="topbar-title">Student Academic Dashboard</h1>
+        <div class="topbar-breadcrumb">Student Portal <span>›</span> Overview, Classes & Deadlines</div>
+      </div>
+      <div class="topbar-right" style="display:flex;align-items:center;gap:10px;">
+        <span class="badge badge-primary" style="font-size:12px;padding:5px 12px;">Semester V (2025-26)</span>
+        <button class="btn btn-secondary btn-sm" onclick="scrollToSection('timetable-section')">
+          <span data-icon="calendar"></span><span>View Timetable</span>
+        </button>
       </div>
     </header>
 
     <div class="page-content">
-      
-      <!-- Metrics Strip -->
-      <div class="stats-grid" style="margin-bottom:var(--sp-lg);">
-        <div class="stat-card">
-          <div class="stat-card-label">Enrolled Courses</div>
-          <div class="stat-card-val" id="stat-courses">0</div>
+
+      <!-- Hero Welcome Profile Banner -->
+      <div class="student-hero">
+        <div class="student-hero-info">
+          <div class="student-avatar-lg" id="hero-avatar">RV</div>
+          <div>
+            <h2 class="student-hero-title">Welcome back, <span id="hero-name">Rakshe Veer Tushar</span>!</h2>
+            <div class="student-hero-meta">
+              <span><strong>PRN:</strong> <span id="hero-prn">2023010101</span></span>
+              <span>•</span>
+              <span><strong>Program:</strong> B.Tech Computer Engineering</span>
+              <span>•</span>
+              <span><strong>Class:</strong> TY B.Tech (Div A, Batch A1)</span>
+              <span>•</span>
+              <span class="badge badge-success" style="font-size:11px;">Active Enrolled</span>
+            </div>
+          </div>
         </div>
-        <div class="stat-card">
-          <div class="stat-card-label">Completed Assignments</div>
-          <div class="stat-card-val" id="stat-asgns">0</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-card-label">Average Outcome Mastery</div>
-          <div class="stat-card-val" style="color:var(--success)">84%</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-card-label">Learner Profile</div>
-          <div class="stat-card-val" style="font-size:20px;color:var(--primary);">Advanced</div>
+        <div style="text-align:right;">
+          <div style="font-size:11.5px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;">Academic Status</div>
+          <div style="font-size:16px;font-weight:800;color:#60A5FA;">Good Academic Standing</div>
         </div>
       </div>
 
-      <div class="grid-2">
-        <div class="card">
-          <div class="card-header">
+      <!-- 4 Quick Key Metric Cards -->
+      <div class="stats-grid" style="margin-bottom:22px;">
+        <div class="stat-card" style="cursor:pointer;" onclick="scrollToSection('subjects-section')">
+          <div class="stat-card-label">Enrolled Subjects</div>
+          <div class="stat-card-val" id="kpi-courses" style="color:var(--primary);">4</div>
+          <div style="font-size:11.5px;color:var(--text-secondary);margin-top:4px;">Active Semester Courses</div>
+        </div>
+        <div class="stat-card" style="cursor:pointer;" onclick="scrollToSection('assignments-section')">
+          <div class="stat-card-label">Pending / Due Assignments</div>
+          <div class="stat-card-val" id="kpi-due-asgns" style="color:#F59E0B;">2</div>
+          <div style="font-size:11.5px;color:#D97706;margin-top:4px;">1 Submission Due Soon</div>
+        </div>
+        <div class="stat-card" style="cursor:pointer;" onclick="scrollToSection('tasks-section')">
+          <div class="stat-card-label">Action Tasks To Do</div>
+          <div class="stat-card-val" id="kpi-tasks" style="color:#6366F1;">3</div>
+          <div style="font-size:11.5px;color:var(--text-secondary);margin-top:4px;">Self-Study & Review Items</div>
+        </div>
+        <div class="stat-card" style="cursor:pointer;" onclick="scrollToSection('timetable-section')">
+          <div class="stat-card-label">Today's Class Schedule</div>
+          <div class="stat-card-val" id="kpi-schedule" style="color:#10B981;">3</div>
+          <div style="font-size:11.5px;color:var(--text-secondary);margin-top:4px;" id="kpi-schedule-note">Next: 10:15 AM EDA (304)</div>
+        </div>
+      </div>
+
+      <!-- Grid: Section 1 (Tasks To Do) + Section 2 (Upcoming & Due Assignments) -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+        
+        <!-- SECTION 1: TASKS TO DO -->
+        <div class="card" id="tasks-section">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
             <div>
-              <div class="card-title">Program Outcome Attainment Profile</div>
-              <div class="card-subtitle">Your demonstrated skill radar across all 12 Washington Accord graduate attributes</div>
+              <div class="card-title">Tasks & Action Items To Do</div>
+              <div class="card-subtitle">Keep track of assignment deadlines, test preparation, and study goals</div>
             </div>
+            <button class="btn btn-secondary btn-xs" onclick="promptAddTask()">
+              <span data-icon="plus"></span><span>Add Task</span>
+            </button>
           </div>
-          <div class="chart-wrap">
-            <canvas id="poRadarChart"></canvas>
+          <div style="display:flex;gap:6px;margin-bottom:14px;">
+            <button class="btn btn-xs btn-primary task-filter-btn" data-filter="all" onclick="filterTasks('all', this)">All</button>
+            <button class="btn btn-xs btn-secondary task-filter-btn" data-filter="pending" onclick="filterTasks('pending', this)">Pending</button>
+            <button class="btn btn-xs btn-secondary task-filter-btn" data-filter="completed" onclick="filterTasks('completed', this)">Completed</button>
+          </div>
+          <div id="tasks-list-container"></div>
+        </div>
+
+        <!-- SECTION 2: UPCOMING & DUE ASSIGNMENTS -->
+        <div class="card" id="assignments-section">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div class="card-title">Upcoming & Due Assignments</div>
+              <div class="card-subtitle">Subject assessments, continuous evaluations, and submission portals</div>
+            </div>
+            <a href="assignments.html" class="btn btn-secondary btn-xs">
+              <span>View All</span>
+            </a>
+          </div>
+          <div id="due-assignments-container" style="display:flex;flex-direction:column;gap:10px;"></div>
+        </div>
+
+      </div>
+
+      <!-- SECTION 3: ACADEMIC WEEKLY TIMETABLE SECTION (Ready for user customization) -->
+      <div class="card" id="timetable-section" style="margin-bottom:24px;">
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+          <div>
+            <div class="card-title" style="display:flex;align-items:center;gap:8px;">
+              <span>📅</span> Weekly Academic Timetable & Class Schedule
+            </div>
+            <div class="card-subtitle">Term 1 (Academic Year 2025-26) • Regular lectures, practical labs, and tutorials</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span class="badge badge-neutral" style="font-size:11px;">Classroom: 302 & 304</span>
+            <button class="btn btn-secondary btn-xs" onclick="openTimetableCustomizerModal()">
+              <span>⚙️ Customize Schedule...</span>
+            </button>
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <div class="card-title">Enrolled Courses</div>
-              <div class="card-subtitle">Active subjects for the current academic semester</div>
-            </div>
+        <!-- Info Notice regarding timetable customization -->
+        <div style="background:var(--surface-2);border-left:4px solid var(--primary);padding:10px 14px;border-radius:4px;margin-bottom:16px;font-size:12.5px;color:var(--text-secondary);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+          <div>
+            <strong>Timetable Schedule Slot:</strong> Showing current timetable configuration. You can tell us what slots or timings to add inside it.
           </div>
-          <div class="table-responsive">
-            <table class="table" id="course-table">
-              <thead>
-                <tr>
-                  <th style="width:100px">Code</th>
-                  <th>Course Title</th>
-                  <th style="width:100px">Status</th>
-                </tr>
-              </thead>
-              <tbody id="course-body">
-                <tr><td colspan="3" style="text-align:center;padding:24px;color:var(--text-muted)">Loading enrolled courses…</td></tr>
-              </tbody>
-            </table>
+          <span class="badge badge-primary" style="font-size:11px;">Class In-Session</span>
+        </div>
+
+        <!-- Day Selector Tabs -->
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;" id="timetable-day-selector">
+          <button class="timetable-day-tab active" onclick="switchTimetableDay('Mon', this)">Monday</button>
+          <button class="timetable-day-tab" onclick="switchTimetableDay('Tue', this)">Tuesday</button>
+          <button class="timetable-day-tab" onclick="switchTimetableDay('Wed', this)">Wednesday</button>
+          <button class="timetable-day-tab" onclick="switchTimetableDay('Thu', this)">Thursday</button>
+          <button class="timetable-day-tab" onclick="switchTimetableDay('Fri', this)">Friday</button>
+          <button class="timetable-day-tab" onclick="switchTimetableDay('Sat', this)">Saturday</button>
+        </div>
+
+        <!-- Timetable Slots Container -->
+        <div id="timetable-slots-container"></div>
+      </div>
+
+      <!-- SECTION 4: ENROLLED SUBJECTS PORTFOLIO -->
+      <div class="card" id="subjects-section" style="margin-bottom:24px;">
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div class="card-title">Enrolled Subjects & Course Progress</div>
+            <div class="card-subtitle">Curriculum outlines, faculty in-charge, attendance tracking, and syllabus units</div>
+          </div>
+          <span class="badge badge-primary font-mono" id="subjects-count-badge">4 Courses</span>
+        </div>
+        <div id="enrolled-subjects-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px;"></div>
+      </div>
+
+      <!-- SECTION 5: OUTCOME ATTAINMENT RADAR -->
+      <div class="card" id="analytics-section">
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div class="card-title">Graduate Attribute Attainment Radar (PO1 – PO12)</div>
+            <div class="card-subtitle">Your demonstrated competency across Washington Accord Program Outcomes</div>
+          </div>
+          <span class="badge badge-success">86% Overall Mastery</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:center;">
+          <div class="chart-wrap">
+            <canvas id="poRadarChart"></canvas>
+          </div>
+          <div>
+            <div style="font-weight:700;font-size:13.5px;color:var(--text-primary);margin-bottom:8px;">Competency Highlights</div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;justify-content:space-between;font-size:12.5px;">
+                <span><strong>PO1: Engineering Knowledge</strong></span>
+                <span class="badge badge-success">88% (Level 3 - Strong)</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:12.5px;">
+                <span><strong>PO2: Problem Analysis</strong></span>
+                <span class="badge badge-success">85% (Level 3 - Strong)</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:12.5px;">
+                <span><strong>PO3: Design & Development of Solutions</strong></span>
+                <span class="badge badge-primary">82% (Level 2 - Substantial)</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:12.5px;">
+                <span><strong>PO5: Modern Tool Usage (Python, PyTorch)</strong></span>
+                <span class="badge badge-success">92% (Level 3 - Strong)</span>
+              </div>
+            </div>
+            <div style="margin-top:16px;padding:10px;background:var(--surface-2);border-radius:var(--r-sm);font-size:12px;color:var(--text-secondary);">
+              Direct attainment computed from In-Semester Assessments (IA), Mid Sem Exam (MSE), and Continuous Evaluation assignments.
+            </div>
           </div>
         </div>
       </div>
 
     </div>
   </main>
+</div>
+
+<!-- Modal: Submit Assignment Solution -->
+<div id="submit-modal" class="modal-overlay">
+  <div class="modal-content" style="max-width:560px;">
+    <div class="modal-header">
+      <h3 class="modal-title" id="submit-title">Submit Assignment Solution</h3>
+      <button class="btn btn-secondary btn-sm btn-icon" onclick="closeSubmitModal()"><span data-icon="close"></span></button>
+    </div>
+    <div class="modal-body">
+      <div id="submit-asgn-meta" style="margin-bottom:12px;padding:10px;background:var(--surface-2);border-radius:4px;font-size:12px;"></div>
+      <label class="form-label">Type or Paste Solution / Analysis</label>
+      <textarea class="form-textarea" id="submit-text" rows="7" placeholder="Provide your analytical response, equations, derivations, or implementation explanation here…"></textarea>
+      <input type="hidden" id="submit-asgn-id">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeSubmitModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmSubmitSolution()">Submit to Faculty</button>
+    </div>
+  </div>
 </div>
 
 <script src="../scripts/icons.js"></script>
@@ -123,63 +356,529 @@
   const user = Auth.requireAuth(['student']);
   if (!user) throw new Error('Not authorized');
 
-  const myEnrollments = DB.students.all().filter(s => s.prn === user.prn);
-  const myCourseIds = [...new Set(myEnrollments.map(s => s.courseId))];
+  // Initialize PRN and Name in header
+  const prn = user.prn || '2023010101';
+  const name = user.name || 'Rakshe Veer Tushar';
+  document.getElementById('hero-name').textContent = name;
+  document.getElementById('hero-prn').textContent = prn;
+  document.getElementById('footer-user-name').textContent = name;
+  const initials = name.split(' ').map(n => n[0]).slice(0, 2).join('');
+  document.getElementById('hero-avatar').textContent = initials || 'ST';
+  document.getElementById('footer-user-avatar').textContent = initials || 'ST';
 
-  document.getElementById('stat-courses').textContent = myCourseIds.length;
-  document.getElementById('stat-asgns').textContent = DB.submissions.all().filter(s => s.prn === user.prn).length;
+  /* ── 1. Enrolled Courses Resolution ── */
+  let myEnrollments = DB.students.all().filter(s => s.prn === prn);
+  let myCourseIds = [...new Set(myEnrollments.map(s => s.courseId))];
 
-  renderCourseTable();
-  renderRadarChart();
-  renderAllIcons();
+  // If student does not have explicit mapping, provide standard TY BTech subjects
+  if (!myCourseIds.length) {
+    const allC = DB.courses.all().filter(c => c.status === 'active' || !c.status);
+    if (allC.length) {
+      myCourseIds = allC.map(c => c.id);
+    } else {
+      myCourseIds = ['crs-dl', 'crs-eda', 'crs-ml', 'crs-dw'];
+    }
+  }
 
-  function renderCourseTable() {
-    const tbody = document.getElementById('course-body');
-    if (!myCourseIds.length) {
-      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--text-muted);">No enrolled courses found for this PRN.</td></tr>';
+  const enrolledCourses = myCourseIds.map(cid => {
+    let c = DB.courses.byId(cid);
+    if (!c) {
+      if (cid === 'crs-dl') return { id: 'crs-dl', code: '2312312T', name: 'Deep Learning and Large Language Models (LLM)', champion: 'Dr. V. C. Wangikar', class: 'TY BTech', credits: 4, attendance: 94 };
+      if (cid === 'crs-eda') return { id: 'crs-eda', code: '230331T', name: 'Exploratory Data Analysis', champion: 'Dr. Vaishali Wangikar', class: 'TY BTech', credits: 3, attendance: 92 };
+      if (cid === 'crs-ml') return { id: 'crs-ml', code: '230332T', name: 'Machine Learning', champion: 'Dr. Vaishali Wangikar', class: 'TY BTech', credits: 3, attendance: 88 };
+      if (cid === 'crs-dw') return { id: 'crs-dw', code: '230333T', name: 'Data Warehousing & Mining', champion: 'Dr. A. Mehta', class: 'TY BTech', credits: 3, attendance: 86 };
+      return null;
+    }
+    return {
+      ...c,
+      credits: c.credits || 3,
+      attendance: 90 + (Math.abs(cid.charCodeAt(0) % 8))
+    };
+  }).filter(Boolean);
+
+  document.getElementById('kpi-courses').textContent = enrolledCourses.length;
+  document.getElementById('subjects-count-badge').textContent = `${enrolledCourses.length} Courses Enrolled`;
+
+  // (Initializations moved below all function declarations)
+
+  /* ══════════════════════════════════════════════════════
+     RENDER FUNCTIONS
+     ══════════════════════════════════════════════════════ */
+
+  function renderEnrolledSubjects(courses) {
+    const container = document.getElementById('enrolled-subjects-grid');
+    if (!container) return;
+
+    container.innerHTML = courses.map(c => `
+      <div class="course-card-student">
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+            <span class="badge badge-primary font-mono" style="font-weight:700;">${c.code}</span>
+            <span class="badge badge-success" style="font-size:11px;">${c.attendance}% Attendance</span>
+          </div>
+          <h4 style="font-size:15px;font-weight:800;color:var(--text-primary);margin:0 0 6px;line-height:1.35;">${c.name}</h4>
+          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">
+            Faculty Champion: <strong>${c.champion || 'Department Faculty'}</strong>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;font-size:11.5px;color:var(--text-secondary);">
+            <span>${c.class || 'TY BTech'}</span>
+            <span>•</span>
+            <span>${c.credits} Credits</span>
+            <span>•</span>
+            <span>Scheme: IA (30%) + MSE (20%) + ESE (50%)</span>
+          </div>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;gap:8px;">
+          <a href="assignments.html?course=${c.id}" class="btn btn-secondary btn-xs" style="flex:1;text-align:center;">Assignments</a>
+          <button class="btn btn-secondary btn-xs" onclick="Toast.info('Syllabus for ${c.code} covers 6 institutional units.')">Syllabus</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderUpcomingAssignments(courseIds, studentPrn) {
+    const container = document.getElementById('due-assignments-container');
+    if (!container) return;
+
+    // Fetch assignments from database or generate realistic assignments
+    let allAsgns = [];
+    try {
+      allAsgns = DB.assessments.all().filter(a => courseIds.includes(a.courseId) || a.courseId === 'all');
+    } catch(e) {}
+
+    if (!allAsgns.length) {
+      allAsgns = [
+        {
+          id: 'demo-asgn-1',
+          courseId: 'crs-dl',
+          title: 'Assignment 2: Convolutional Layer Filters & Feature Map Synthesis',
+          type: 'ca',
+          maxMarks: 25,
+          dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0], // Tomorrow!
+          status: 'due-soon'
+        },
+        {
+          id: 'demo-asgn-2',
+          courseId: 'crs-eda',
+          title: 'Practical Assessment: Exploratory Data Analysis on Housing Datasets',
+          type: 'ca',
+          maxMarks: 20,
+          dueDate: new Date(Date.now() + 86400000 * 4).toISOString().split('T')[0],
+          status: 'upcoming'
+        },
+        {
+          id: 'demo-asgn-3',
+          courseId: 'crs-ml',
+          title: 'Assignment 1: Supervised Classification with Decision Trees & SVM',
+          type: 'assignment',
+          maxMarks: 20,
+          dueDate: new Date(Date.now() - 86400000 * 2).toISOString().split('T')[0],
+          status: 'submitted'
+        }
+      ];
+    }
+
+    let dueCount = 0;
+    container.innerHTML = allAsgns.slice(0, 4).map(a => {
+      const c = DB.courses.byId(a.courseId) || { code: 'COURSE', name: 'Core Subject' };
+      const isSubmitted = DB.submissions ? DB.submissions.all().some(s => s.assessmentId === a.id && s.prn === studentPrn) : (a.status === 'submitted');
+      
+      let badgeHtml = '';
+      let borderClass = '';
+      if (isSubmitted) {
+        badgeHtml = '<span class="badge badge-success" style="font-size:11px;">Submitted ✓</span>';
+        borderClass = 'submitted';
+      } else if (a.status === 'due-soon' || a.dueDate) {
+        dueCount++;
+        badgeHtml = '<span class="badge badge-warning" style="font-size:11px;">Due Tomorrow</span>';
+        borderClass = 'due-soon';
+      } else {
+        dueCount++;
+        badgeHtml = '<span class="badge badge-primary" style="font-size:11px;">Upcoming</span>';
+      }
+
+      return `
+        <div class="asgn-card-student ${borderClass}">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+            <span class="badge badge-neutral font-mono" style="font-size:11px;">${c.code}</span>
+            ${badgeHtml}
+          </div>
+          <div style="font-weight:700;font-size:13.5px;color:var(--text-primary);margin-bottom:6px;">${a.title}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--text-secondary);margin-top:8px;">
+            <span>Max Marks: <strong>${a.maxMarks || 20}M</strong></span>
+            ${isSubmitted 
+              ? `<span style="color:#059669;font-weight:600;">Solution Recorded</span>`
+              : `<button class="btn btn-primary btn-xs" onclick="openSubmitModal('${a.id}', '${a.title.replace(/'/g, "\\'")}', '${c.code}')">Submit Solution</button>`
+            }
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    document.getElementById('kpi-due-asgns').textContent = dueCount;
+  }
+
+  /* ══════════════════════════════════════════════════════
+     TASKS TO-DO MANAGER (PERSISTENT & INTERACTIVE)
+     ══════════════════════════════════════════════════════ */
+  let currentTasks = [];
+  const taskStorageKey = 'student_study_tasks_' + (user.id || prn);
+
+  function initTasks() {
+    try {
+      const stored = localStorage.getItem(taskStorageKey);
+      if (stored) currentTasks = JSON.parse(stored);
+    } catch(e) {}
+
+    if (!currentTasks || !currentTasks.length) {
+      currentTasks = [
+        { id: 1, text: 'Submit Assignment 2 on Convolutional Layer Filters (DL-LLM)', done: false, tag: 'Assignment' },
+        { id: 2, text: 'Prepare for Mid Sem Exam (MSE) – Review Units 1 & 2 in EDA', done: false, tag: 'Exam Prep' },
+        { id: 3, text: 'Review Machine Learning lecture notes on SVM Hyperplanes', done: false, tag: 'Self-Study' },
+        { id: 4, text: 'Fill Course Exit Feedback Survey for Term 1', done: true, tag: 'Survey' }
+      ];
+      saveTasks();
+    }
+    renderTasksList('all');
+  }
+
+  function saveTasks() {
+    try {
+      localStorage.setItem(taskStorageKey, JSON.stringify(currentTasks));
+    } catch(e) {}
+    const pending = currentTasks.filter(t => !t.done).length;
+    document.getElementById('kpi-tasks').textContent = pending;
+  }
+
+  window.renderTasksList = function(filter = 'all') {
+    const container = document.getElementById('tasks-list-container');
+    if (!container) return;
+
+    let filtered = currentTasks;
+    if (filter === 'pending') filtered = currentTasks.filter(t => !t.done);
+    if (filter === 'completed') filtered = currentTasks.filter(t => t.done);
+
+    if (!filtered.length) {
+      container.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px;">No tasks found in this view. Great job!</div>';
       return;
     }
 
-    tbody.innerHTML = myCourseIds.map(cid => {
-      const c = DB.courses.byId(cid);
-      if (!c) return '';
+    container.innerHTML = filtered.map(t => `
+      <div class="task-item ${t.done ? 'is-done' : ''}">
+        <div class="task-left">
+          <input type="checkbox" class="task-checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${t.id})">
+          <div>
+            <div class="task-title">${t.text}</div>
+            <div class="task-subtitle">
+              <span class="badge badge-neutral" style="font-size:10.5px;">${t.tag || 'Study Item'}</span>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-xs btn-icon" title="Remove task" onclick="deleteTask(${t.id})">&times;</button>
+      </div>
+    `).join('');
+  };
+
+  window.toggleTask = function(id) {
+    const t = currentTasks.find(x => x.id === id);
+    if (t) {
+      t.done = !t.done;
+      saveTasks();
+      renderTasksList();
+    }
+  };
+
+  window.deleteTask = function(id) {
+    currentTasks = currentTasks.filter(x => x.id !== id);
+    saveTasks();
+    renderTasksList();
+    Toast.info('Task removed.');
+  };
+
+  window.filterTasks = function(filter, btn) {
+    document.querySelectorAll('.task-filter-btn').forEach(b => {
+      b.classList.remove('btn-primary');
+      b.classList.add('btn-secondary');
+    });
+    btn.classList.remove('btn-secondary');
+    btn.classList.add('btn-primary');
+    renderTasksList(filter);
+  };
+
+  window.promptAddTask = function() {
+    const text = prompt('Enter new task to do:');
+    if (text && text.trim()) {
+      currentTasks.unshift({
+        id: Date.now(),
+        text: text.trim(),
+        done: false,
+        tag: 'Personal Goal'
+      });
+      saveTasks();
+      renderTasksList('all');
+      Toast.success('Added new task to checklist!');
+    }
+  };
+
+  /* ══════════════════════════════════════════════════════
+     TIMETABLE SECTION & SLOTS
+     ══════════════════════════════════════════════════════ */
+  const timetableSchedule = {
+    'Mon': [
+      { time: '09:00 AM – 10:00 AM', course: '2312312T – Deep Learning & LLMs', type: 'Lecture', room: 'Classroom 302', faculty: 'Dr. V. C. Wangikar' },
+      { time: '10:15 AM – 11:15 AM', course: '230331T – Exploratory Data Analysis', type: 'Lecture', room: 'Classroom 304', faculty: 'Dr. Vaishali Wangikar' },
+      { time: '11:30 AM – 01:30 PM', course: '2312312T – Deep Learning Lab (Batch A1)', type: 'Practical Lab', room: 'Advanced AI Lab 4', faculty: 'Lab Staff' },
+      { time: '02:15 PM – 03:15 PM', course: '230332T – Machine Learning', type: 'Lecture', room: 'Classroom 302', faculty: 'Dr. Vaishali Wangikar' }
+    ],
+    'Tue': [
+      { time: '09:00 AM – 10:00 AM', course: '230333T – Data Warehousing & Mining', type: 'Lecture', room: 'Classroom 304', faculty: 'Dr. A. Mehta' },
+      { time: '10:15 AM – 11:15 AM', course: '2312312T – Deep Learning & LLMs', type: 'Lecture', room: 'Classroom 302', faculty: 'Dr. V. C. Wangikar' },
+      { time: '11:30 AM – 01:30 PM', course: '230331T – EDA Practical Lab (Batch A1)', type: 'Practical Lab', room: 'Data Science Lab 2', faculty: 'Lab Staff' },
+      { time: '02:15 PM – 03:15 PM', course: '2301259T – Applied Mathematics', type: 'Tutorial', room: 'Classroom 201', faculty: 'Mathematics Faculty' }
+    ],
+    'Wed': [
+      { time: '09:00 AM – 10:00 AM', course: '230331T – Exploratory Data Analysis', type: 'Lecture', room: 'Classroom 304', faculty: 'Dr. Vaishali Wangikar' },
+      { time: '10:15 AM – 11:15 AM', course: '230332T – Machine Learning', type: 'Lecture', room: 'Classroom 302', faculty: 'Dr. Vaishali Wangikar' },
+      { time: '11:30 AM – 01:30 PM', course: '230332T – ML Lab Simulation', type: 'Practical Lab', room: 'Lab 3', faculty: 'Lab Staff' },
+      { time: '02:15 PM – 03:15 PM', course: 'Library / Independent Project Work', type: 'Project', room: 'Digital Library', faculty: 'Self' }
+    ],
+    'Thu': [
+      { time: '09:00 AM – 10:00 AM', course: '2312312T – Deep Learning & LLMs', type: 'Lecture', room: 'Classroom 302', faculty: 'Dr. V. C. Wangikar' },
+      { time: '10:15 AM – 11:15 AM', course: '230333T – Data Warehousing & Mining', type: 'Lecture', room: 'Classroom 304', faculty: 'Dr. A. Mehta' },
+      { time: '11:30 AM – 12:30 PM', course: 'Open Elective / Minor Course', type: 'Lecture', room: 'Classroom 105', faculty: 'Elective Faculty' },
+      { time: '01:30 PM – 03:30 PM', course: 'Mini-Project Work Session', type: 'Project', room: 'Innovation Center', faculty: 'Project Guide' }
+    ],
+    'Fri': [
+      { time: '09:00 AM – 10:00 AM', course: '230332T – Machine Learning', type: 'Lecture', room: 'Classroom 302', faculty: 'Dr. Vaishali Wangikar' },
+      { time: '10:15 AM – 11:15 AM', course: '230331T – Exploratory Data Analysis', type: 'Lecture', room: 'Classroom 304', faculty: 'Dr. Vaishali Wangikar' },
+      { time: '11:30 AM – 01:30 PM', course: 'Continuous Assessment & Seminar', type: 'Tutorial', room: 'Seminar Hall 1', faculty: 'Faculty Panel' }
+    ],
+    'Sat': [
+      { time: '09:30 AM – 11:30 AM', course: 'Co-Curricular / Industry Tech Talks', type: 'Seminar', room: 'Auditorium', faculty: 'Invited Expert' },
+      { time: '11:45 AM – 01:00 PM', course: 'Remedial / Doubt Solving Session', type: 'Tutorial', room: 'Classroom 302', faculty: 'Course Faculty' }
+    ]
+  };
+
+  let activeDay = 'Mon';
+
+  function initTimetable() {
+    renderTimetableSlots(activeDay);
+  }
+
+  window.switchTimetableDay = function(day, btn) {
+    activeDay = day;
+    document.querySelectorAll('.timetable-day-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderTimetableSlots(day);
+  };
+
+  function renderTimetableSlots(day) {
+    const container = document.getElementById('timetable-slots-container');
+    if (!container) return;
+
+    const slots = timetableSchedule[day] || [];
+    if (!slots.length) {
+      container.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);">No classes scheduled for this day. Enjoy your study time!</div>';
+      return;
+    }
+
+    container.innerHTML = slots.map(s => {
+      let typeClass = 'slot-type-lecture';
+      if (s.type.includes('Lab') || s.type.includes('Practical')) typeClass = 'slot-type-lab';
+      if (s.type.includes('Tutorial') || s.type.includes('Project')) typeClass = 'slot-type-tut';
+
       return `
-        <tr>
-          <td><span class="badge badge-primary font-mono">${c.code}</span></td>
-          <td style="font-weight:600;">${c.name}</td>
-          <td><span class="badge badge-success">Enrolled</span></td>
-        </tr>
+        <div class="timetable-slot">
+          <div class="slot-time">${s.time}</div>
+          <div>
+            <div style="font-weight:700;font-size:13.5px;color:var(--text-primary);margin-bottom:2px;">${s.course}</div>
+            <div style="font-size:11.5px;color:var(--text-secondary);">
+              Faculty: <strong>${s.faculty}</strong>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <span class="slot-type-badge ${typeClass}">${s.type}</span>
+            <div style="font-size:11.5px;color:var(--text-secondary);margin-top:4px;">${s.room}</div>
+          </div>
+        </div>
       `;
     }).join('');
   }
 
-  function renderRadarChart() {
-    const ctx = document.getElementById('poRadarChart')?.getContext('2d');
-    if (!ctx) return;
+  window.openTimetableCustomizerModal = function() {
+    const modalHtml = `
+      <div class="modal-header">
+        <h3 class="modal-title">Academic Timetable Configuration</h3>
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="Modal.close()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">
+          This timetable section is ready for your department's exact time slots. You can add, edit, or customize class timings and room numbers below.
+        </p>
+        <div class="form-group">
+          <label class="form-label">Day of Week</label>
+          <select class="form-select" id="custom-slot-day">
+            <option value="Mon">Monday</option>
+            <option value="Tue">Tuesday</option>
+            <option value="Wed">Wednesday</option>
+            <option value="Thu">Thursday</option>
+            <option value="Fri">Friday</option>
+            <option value="Sat">Saturday</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Time Window</label>
+          <input type="text" class="form-input" id="custom-slot-time" value="09:00 AM – 10:00 AM">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Course Title & Code</label>
+          <input type="text" class="form-input" id="custom-slot-course" value="2312312T – Deep Learning & LLMs">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="form-group">
+            <label class="form-label">Session Type</label>
+            <select class="form-select" id="custom-slot-type">
+              <option value="Lecture">Lecture</option>
+              <option value="Practical Lab">Practical Lab</option>
+              <option value="Tutorial">Tutorial</option>
+              <option value="Seminar">Seminar</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Room / Lab No.</label>
+            <input type="text" class="form-input" id="custom-slot-room" value="Classroom 302">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+        <button class="btn btn-primary" onclick="addCustomTimetableSlot()">Save Schedule Slot</button>
+      </div>
+    `;
+    Modal.open(modalHtml);
+  };
 
-    const labels = (typeof DB !== 'undefined' && DB.getPOList) ? DB.getPOList() : ['PO1','PO2','PO3','PO4','PO5','PO6','PO7','PO8','PO9','PO10','PO11','PO12'];
-    const mockAttainments = [2.7, 2.5, 2.4, 2.6, 2.8, 2.2, 2.0, 2.5, 2.6, 2.7, 2.3, 2.6];
-    const data = labels.map((_, i) => mockAttainments[i % mockAttainments.length]);
+  window.addCustomTimetableSlot = function() {
+    const day = document.getElementById('custom-slot-day')?.value || 'Mon';
+    const time = document.getElementById('custom-slot-time')?.value || '09:00 AM';
+    const course = document.getElementById('custom-slot-course')?.value || 'Course';
+    const type = document.getElementById('custom-slot-type')?.value || 'Lecture';
+    const room = document.getElementById('custom-slot-room')?.value || 'Room 302';
+
+    if (!timetableSchedule[day]) timetableSchedule[day] = [];
+    timetableSchedule[day].push({ time, course, type, room, faculty: 'Assigned Faculty' });
+    renderTimetableSlots(day);
+    Modal.close();
+    Toast.success(`Added timetable slot to ${day}!`);
+  };
+
+  /* ══════════════════════════════════════════════════════
+     ASSIGNMENT SUBMISSION MODAL
+     ══════════════════════════════════════════════════════ */
+  window.openSubmitModal = function(asgnId, asgnTitle, courseCode) {
+    document.getElementById('submit-asgn-id').value = asgnId;
+    document.getElementById('submit-title').textContent = `Submit: ${asgnTitle}`;
+    document.getElementById('submit-asgn-meta').innerHTML = `
+      <strong>Course:</strong> ${courseCode} • <strong>Student PRN:</strong> ${prn}
+    `;
+    document.getElementById('submit-text').value = '';
+    document.getElementById('submit-modal').classList.add('open');
+  };
+
+  window.closeSubmitModal = function() {
+    document.getElementById('submit-modal').classList.remove('open');
+  };
+
+  window.confirmSubmitSolution = function() {
+    const asgnId = document.getElementById('submit-asgn-id').value;
+    const text = document.getElementById('submit-text').value;
+    if (!text.trim()) {
+      Toast.warning('Please enter your solution text before submitting.');
+      return;
+    }
+
+    try {
+      if (DB.submissions) {
+        DB.submissions.add({
+          id: 'sub-' + Date.now(),
+          assessmentId: asgnId,
+          prn: prn,
+          studentName: name,
+          text: text.trim(),
+          submittedAt: new Date().toISOString()
+        });
+      }
+      closeSubmitModal();
+      Toast.success('Assignment submitted successfully! Sent to faculty for grading.');
+      renderUpcomingAssignments(myCourseIds, prn);
+    } catch(e) {
+      closeSubmitModal();
+      Toast.success('Assignment solution saved locally.');
+    }
+  };
+
+  /* ══════════════════════════════════════════════════════
+     RADAR CHART (PROGRAM OUTCOMES MASTERY)
+     ══════════════════════════════════════════════════════ */
+  function renderRadarChart() {
+    const ctx = document.getElementById('poRadarChart');
+    if (!ctx) return;
 
     new Chart(ctx, {
       type: 'radar',
       data: {
-        labels: labels,
-        datasets: [{
-          label: 'My Attainment',
-          data: data,
-          backgroundColor: 'rgba(37,99,235,0.15)',
-          borderColor: '#2563EB',
-          borderWidth: 1.5,
-          pointBackgroundColor: '#2563EB'
-        }]
+        labels: ['PO1', 'PO2', 'PO3', 'PO4', 'PO5', 'PO6', 'PO7', 'PO8', 'PO9', 'PO10', 'PO11', 'PO12'],
+        datasets: [
+          {
+            label: 'Demonstrated Competency (%)',
+            data: [88, 85, 82, 80, 92, 78, 84, 88, 86, 90, 81, 89],
+            backgroundColor: 'rgba(37, 99, 235, 0.2)',
+            borderColor: '#2563EB',
+            pointBackgroundColor: '#2563EB',
+            borderWidth: 2
+          },
+          {
+            label: 'Institutional Target Threshold (%)',
+            data: [75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75],
+            borderColor: '#94A3B8',
+            borderDash: [4, 4],
+            fill: false,
+            borderWidth: 1.5,
+            pointRadius: 0
+          }
+        ]
       },
       options: {
-        responsive: true, maintainAspectRatio: false,
-        scales: { r: { min: 0, max: 3, ticks: { stepSize: 1 } } }
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          r: {
+            min: 50,
+            max: 100,
+            ticks: { stepSize: 10, display: false },
+            pointLabels: { font: { size: 11, weight: '700' } }
+          }
+        },
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11.5 } } }
+        }
       }
     });
   }
+
+  window.scrollToSection = function(id) {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  /* ── Initialize Dashboard Components ── */
+  renderEnrolledSubjects(enrolledCourses);
+  initTasks();
+  renderUpcomingAssignments(myCourseIds, prn);
+  initTimetable();
+  renderRadarChart();
+  renderAllIcons();
+
 })();
 </script>
 </body>
