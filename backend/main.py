@@ -11,6 +11,7 @@ if sys.version_info[:3] <= (3, 10, 1):
         typing.ForwardRef.__init__ = _patched_forward_ref_init
 
 import json
+import re
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -808,6 +809,179 @@ def delete_student(student_id: str, db: Session = Depends(get_db)):
     s = db.query(models.Student).filter(models.Student.id == student_id).first()
     if s: db.delete(s); db.commit()
     return {"success": True}
+
+class StudentExtractRequest(BaseModel):
+    text: str
+    courseId: Optional[str] = None
+    useAi: Optional[bool] = False
+
+def extract_students_heuristically(text: str) -> list:
+    lines = [l.strip() for l in text.splitlines() if l.strip()]
+    results = []
+    seen_prns = set()
+
+    status_words = {'present', 'absent', 'pass', 'fail', 'eligible', 'detained', 'yes', 'no', 'active', 'inactive',
+                    'slow', 'average', 'advanced', 'learner', 'fast', 'total'}
+    noise_headers = {'sr', 'sr.', 'no', 'no.', 'roll', 'rollno', 'prn', 'id', 'student', 'name', 
+                     'fullname', 'studentname', 'score', 'marks', 'survey', 'pretest', 'presurvey',
+                     'learner', 'type', 'classification', 'category', 'remarks', 'status',
+                     'slow', 'average', 'advanced'}
+
+    for line in lines:
+        lower_line = line.lower()
+        if re.search(r'^(page\s*\d+|sr\s*no|academic\s*year|department\s*of|mit\s*academy|course:|subject:)', lower_line):
+            continue
+        words_in_line = set(re.findall(r'[a-zA-Z]+', lower_line))
+        if words_in_line and words_in_line.issubset(noise_headers):
+            continue
+
+        prn = None
+        name = None
+        score = None
+        lt = 'average'
+
+        # Delimited check
+        delim = None
+        if '\t' in line: delim = '\t'
+        elif ',' in line and line.count(',') >= 1 and not re.search(r'\b(?:jr|sr|dr)\b,\s', line, re.I): delim = ','
+        elif '|' in line: delim = '|'
+        elif re.search(r'\s{2,}', line): delim = r'\s{2,}'
+
+        if delim:
+            raw_parts = [p.strip().strip('\'"') for p in (re.split(delim, line) if delim != r'\s{2,}' else re.split(r'\s{2,}', line)) if p.strip()]
+            parts = [re.sub(r'^\d+[\.\)\-:]\s*', '', p).strip() for p in raw_parts if not re.match(r'^\d{1,3}[\.\)]?$', p)]
+            parts = [p for p in parts if p]
+
+            prn_idx = -1
+            for idx, p in enumerate(parts):
+                clean_p = re.sub(r'[^A-Za-z0-9]', '', p)
+                if re.match(r'^(?:20\d{8,14}|\d{5,16}|[A-Z]{2,6}\d{4,10}|[A-Za-z0-9]+-[A-Za-z0-9]+-\d+)$', clean_p) or re.match(r'^\d{6,14}$', clean_p):
+                    if prn_idx == -1 or len(clean_p) > len(re.sub(r'[^A-Za-z0-9]', '', parts[prn_idx])):
+                        prn_idx = idx
+
+            if prn_idx != -1:
+                prn = parts[prn_idx]
+                for idx, p in enumerate(parts):
+                    if idx == prn_idx: continue
+                    clean_text = re.sub(r'[^A-Za-z\s\'.]', '', p).strip()
+                    lower_p = clean_text.lower()
+                    if lower_p in status_words or lower_p in noise_headers: continue
+                    valid_words = [w for w in clean_text.split() if w.lower() not in status_words and w.lower() not in noise_headers]
+                    if valid_words and len(' '.join(valid_words)) >= 3:
+                        name = ' '.join(w.capitalize() for w in valid_words)
+                        break
+
+                # Look for score
+                for idx, p in enumerate(parts):
+                    if idx == prn_idx: continue
+                    m_exp = re.search(r'\b(?:score|marks|survey|test|pre-?test|pre-?survey)[:\s]*(\d+(?:\.\d+)?)\b', p, re.I) or \
+                            re.search(r'\b(\d+(?:\.\d+)?)\s*/\s*10\b', p)
+                    if m_exp:
+                        v = float(m_exp.group(1))
+                        if 0 <= v <= 100:
+                            score = round(v / 10) if v > 10 else round(v)
+                            break
+                    elif not re.match(r'^\d{1,2}$', p): # avoid bare roll numbers
+                        m_num = re.search(r'\b(\d+(?:\.\d+)?)\b', p)
+                        if m_num:
+                            v = float(m_num.group(1))
+                            if 0 <= v <= 100 and p != name:
+                                score = round(v / 10) if v > 10 else round(v)
+                                break
+
+        # Strategy B: Free text / Regex Fallback
+        if not prn or not name:
+            prn_match = re.search(r'\b(20\d{8,14}|\d{6,16}|[A-Z]{2,6}\d{4,10})\b', line)
+            if prn_match:
+                prn = prn_match.group(0).strip()
+                rem = line.replace(prn, ' ')
+                rem = re.sub(r'\b[A-Za-z0-9]+-[A-Za-z0-9]+-[A-Za-z0-9]+\b', ' ', rem)
+                rem = re.sub(r'\b[A-Za-z0-9]+-[A-Za-z0-9]+\b', ' ', rem)
+                rem = re.sub(r'\(.*?\)', ' ', rem)
+                rem = re.sub(r'\[.*?\]', ' ', rem)
+                rem = re.sub(r'\b\d+(?:\.\d+)?\s*/\s*10\b', ' ', rem)
+                rem = re.sub(r'\b(?:score|marks|survey|test|pre-?test|pre-?survey)[:\s]*\d+(?:\.\d+)?\b', ' ', rem, flags=re.I)
+                rem = re.sub(r'^\s*\d+[\.\)\-:]\s*', '', rem)
+                rem = re.sub(r'\b\d+(?:\.\d+)?\b', ' ', rem)
+                rem = re.sub(r'[|,\-_:;]', ' ', rem)
+
+                tokens = [w for w in rem.split() if w.lower() not in status_words and w.lower() not in noise_headers and len(w) > 1 and re.match(r'^[A-Za-z\'.]+$', w)]
+                if tokens:
+                    name = ' '.join(w.capitalize() for w in tokens)
+
+        if prn and name and prn not in seen_prns:
+            seen_prns.add(prn)
+            if score is None:
+                clean_sc = re.sub(r'^\s*\d+[\.\)\-:]\s*', '', line)
+                clean_sc = clean_sc.replace(prn, ' ')
+                if name: clean_sc = clean_sc.replace(name, ' ')
+                m_exp = re.search(r'\b(?:score|marks|survey|test|pre-?test|pre-?survey)[:\s]*(\d+(?:\.\d+)?)\b', clean_sc, re.I) or \
+                        re.search(r'\b(\d+(?:\.\d+)?)\s*/\s*10\b', clean_sc)
+                if m_exp:
+                    num = float(m_exp.group(1))
+                    if 0 <= num <= 100:
+                        score = round(num / 10) if num > 10 else round(num)
+                else:
+                    m_trail = re.search(r'\b(\d+(?:\.\d+)?)\s*(?:/\s*10)?(?:\s+(?:slow|average|advanced|learner|present|absent))?\s*$', clean_sc, re.I)
+                    if m_trail:
+                        num = float(m_trail.group(1))
+                        if 0 <= num <= 100:
+                            score = round(num / 10) if num > 10 else round(num)
+
+            if re.search(r'\bslow\b', line, re.I): lt = 'slow'
+            elif re.search(r'\badv(?:anced)?\b', line, re.I): lt = 'advanced'
+            elif score is not None:
+                if score <= 4: lt = 'slow'
+                elif score >= 8: lt = 'advanced'
+                else: lt = 'average'
+            else:
+                score = 6
+
+            results.append({
+                "prn": prn,
+                "name": name,
+                "preSurveyScore": score,
+                "learnerType": lt
+            })
+
+    return results
+
+@app.post("/api/students/extract-ai")
+def api_extract_students_ai(req: StudentExtractRequest):
+    text = (req.text or "").strip()
+    if not text:
+        return {"success": True, "students": [], "engine": "none"}
+    
+    heuristic_results = extract_students_heuristically(text)
+    
+    if req.useAi:
+        try:
+            from agents.ai_logic import get_llm
+            llm = get_llm(temperature=0.0)
+            prompt = f"""You are an expert academic data extraction assistant.
+Extract all student records from the following academic text. The text could be from an Excel sheet, PDF table, university roster, or unformatted message.
+For each student, extract:
+- prn: The student's PRN, Roll Number, or Registration ID (string).
+- name: The student's full name (Clean Title Case, e.g., 'Rakshe Veer Tushar'). Exclude titles like 'Mr.', 'Ms.', or noise words like 'Student', 'Page 1', 'Total'.
+- preSurveyScore: Any score/marks mentioned out of 10 (integer 0-10, or null if not provided).
+- learnerType: 'slow' (score <= 4), 'average' (5-7), or 'advanced' (>= 8). Default to 'average'.
+
+Return ONLY a valid JSON array of objects with keys: "prn", "name", "preSurveyScore", "learnerType".
+Do not include markdown fences or other text.
+Input Text:
+{text[:8000]}
+"""
+            resp = llm.invoke(prompt)
+            raw_reply = resp.content if hasattr(resp, 'content') else str(resp)
+            clean_json = re.sub(r'```json\s*', '', raw_reply)
+            clean_json = re.sub(r'```\s*', '', clean_json).strip()
+            parsed = json.loads(clean_json)
+            if isinstance(parsed, list) and len(parsed) > 0:
+                return {"success": True, "students": parsed, "engine": "ai"}
+        except Exception as e:
+            print(f"[AI Student Extractor] LLM extraction error, using heuristic: {e}")
+            
+    return {"success": True, "students": heuristic_results, "engine": "heuristic"}
 
 # ─────────────────────────────────────────────
 # MARKS — IA

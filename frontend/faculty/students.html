@@ -10,6 +10,8 @@
   <link rel="stylesheet" href="../styles/main.css">
   <link rel="stylesheet" href="../styles/components.css">
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
   <style>
     .dist-bar-wrap {
       display: flex; align-items: center; gap: 4px; height: 16px;
@@ -85,6 +87,98 @@
       padding: 6px 10px;
       border-bottom: 1px solid var(--border);
     }
+    .extract-tabs {
+      display: flex;
+      gap: 6px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 14px;
+      padding-bottom: 2px;
+    }
+    .extract-tab-btn {
+      background: transparent;
+      border: none;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: var(--r-sm) var(--r-sm) 0 0;
+      transition: all 0.2s ease;
+    }
+    .extract-tab-btn:hover {
+      color: var(--text-primary);
+      background: var(--surface-2);
+    }
+    .extract-tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+      background: rgba(37, 99, 235, 0.05);
+    }
+    .format-pills {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 8px;
+    }
+    .format-pill {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 99px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      letter-spacing: 0.3px;
+    }
+    .preview-input {
+      width: 100%;
+      padding: 5px 8px;
+      font-size: 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      background: var(--surface);
+      color: var(--text-primary);
+      font-family: inherit;
+    }
+    .preview-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+    }
+    .preview-select {
+      width: 100%;
+      padding: 4px 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      background: var(--surface);
+      color: var(--text-primary);
+      cursor: pointer;
+    }
+    .preview-select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .extract-spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(37, 99, 235, 0.2);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
     .template-link {
       color: var(--primary);
       text-decoration: underline;
@@ -142,11 +236,11 @@
         <div class="topbar-breadcrumb">Students <span>›</span> Enrolled Roster & Pre-Survey Classification</div>
       </div>
       <div class="topbar-right" style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-primary btn-sm" onclick="openCsvExtractModal()" style="font-weight:600;">
-          <span data-icon="upload"></span><span>Extract from CSV</span>
+        <button class="btn btn-primary btn-sm" onclick="openCsvExtractModal('file')" style="font-weight:600;">
+          <span data-icon="upload"></span><span>Extract from File (PDF / Excel / CSV)</span>
         </button>
-        <button class="btn btn-secondary btn-sm" onclick="openImportModal()">
-          <span data-icon="edit"></span><span>Bulk Paste from Excel</span>
+        <button class="btn btn-secondary btn-sm" onclick="openCsvExtractModal('paste')">
+          <span data-icon="edit"></span><span>Bulk Paste / Any Format</span>
         </button>
         <button class="btn btn-secondary btn-sm" onclick="exportStudents()">
           <span data-icon="download"></span><span>Export CSV</span>
@@ -391,7 +485,7 @@
             <div style="font-weight:600;font-size:12.5px;color:var(--text-primary);">Adding the entire class?</div>
             <div style="font-size:11.5px;color:var(--text-secondary);">Extract multiple students automatically from a CSV file.</div>
           </div>
-          <button class="btn btn-primary btn-sm" style="font-size:11.5px;padding:4px 10px;" onclick="Modal.close(); openCsvExtractModal();">
+          <button class="btn btn-primary btn-sm" style="font-size:11.5px;padding:4px 10px;" onclick="Modal.close(); openCsvExtractModal('file');">
             <span data-icon="upload"></span> Extract from CSV
           </button>
         </div>
@@ -519,82 +613,192 @@
   }
 
   let extractedCsvStudents = [];
+  let currentExtractRawText = '';
+  let currentExtractSource = '';
+  let currentExtractEngine = 'Heuristic';
 
-  function openCsvExtractModal() {
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function openCsvExtractModal(initialTab = 'file') {
     if (!currentCourseId) { Toast.warning('Select a course first.'); return; }
     extractedCsvStudents = [];
+    currentExtractRawText = '';
+    currentExtractSource = '';
+    currentExtractEngine = 'Heuristic';
+
     const html = `
       <div class="modal-header">
-        <h3 class="modal-title">Extract & Import Students from Excel / CSV</h3>
+        <div>
+          <h3 class="modal-title" style="margin-bottom:2px;">Intelligent Student Roster Extraction</h3>
+          <div style="font-size:12px;color:var(--text-secondary);">Universal import for PDF, Excel, CSV, Word, and unstructured text lists</div>
+        </div>
         <button class="btn btn-secondary btn-sm btn-icon" onclick="Modal.close()"><span data-icon="close"></span></button>
       </div>
+
       <div class="modal-body">
-        <div class="alert alert-info" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-          <span>Upload any student roster spreadsheet (<strong>.xlsx, .xls, or .csv</strong>) with student PRNs and Names.</span>
-          <a class="template-link" onclick="downloadCsvTemplate()">
-            <span data-icon="download"></span> Download Sample Template
-          </a>
+        <!-- Dual Tabs: File Upload vs Direct Text Paste -->
+        <div class="extract-tabs">
+          <button class="extract-tab-btn ${initialTab === 'file' ? 'active' : ''}" id="tab-btn-file" onclick="switchExtractTab('file')">
+            <span data-icon="upload"></span> 📁 Upload File (PDF / Excel / CSV / Word)
+          </button>
+          <button class="extract-tab-btn ${initialTab === 'paste' ? 'active' : ''}" id="tab-btn-paste" onclick="switchExtractTab('paste')">
+            <span data-icon="edit"></span> 📝 Paste Any Text / Clipboard
+          </button>
         </div>
 
-        <div class="csv-dropzone" id="csv-dropzone" onclick="document.getElementById('csv-file-input').click()">
-          <input type="file" id="csv-file-input" accept=".xlsx,.xls,.csv,.tsv,.txt" style="display:none" onchange="handleCsvFileInput(event)">
-          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
-            <span data-icon="upload" style="font-size:24px;color:var(--primary);"></span>
-            <div style="font-weight:600;font-size:14px;color:var(--text-primary);">Click to Browse or Drag & Drop Excel (.xlsx, .xls) / CSV File</div>
-            <div style="font-size:12px;color:var(--text-secondary);">Universal support: automatically detects headers, PRNs, Names, and Scores in any layout</div>
+        <!-- TAB 1: File Upload Dropzone -->
+        <div id="tab-panel-file" style="${initialTab === 'file' ? 'display:block' : 'display:none'}">
+          <div class="alert alert-info" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;padding:8px 12px;margin-bottom:12px;">
+            <span style="font-size:12px;">Supports official university rosters, attendance sheets, and gradebooks in any format.</span>
+            <a class="template-link" onclick="downloadCsvTemplate()">
+              <span data-icon="download"></span> Download Sample CSV Template
+            </a>
+          </div>
+
+          <div class="csv-dropzone" id="csv-dropzone" onclick="document.getElementById('csv-file-input').click()">
+            <input type="file" id="csv-file-input" accept=".xlsx,.xls,.csv,.tsv,.txt,.pdf,.docx,.doc" style="display:none" onchange="handleStudentFileInput(event)">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+              <span data-icon="upload" style="font-size:26px;color:var(--primary);"></span>
+              <div style="font-weight:700;font-size:14px;color:var(--text-primary);">Click to Browse or Drag & Drop Roster File</div>
+              <div style="font-size:12px;color:var(--text-secondary);max-width:440px;">
+                Intelligent parser automatically extracts PRNs, Student Names, and Scores in any table layout or orientation.
+              </div>
+              <div class="format-pills">
+                <span class="format-pill">PDF Document</span>
+                <span class="format-pill">Excel (.xlsx, .xls)</span>
+                <span class="format-pill">CSV / TSV</span>
+                <span class="format-pill">Word (.docx)</span>
+                <span class="format-pill">Text (.txt)</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div id="csv-file-info" style="display:none;margin-top:12px;padding:8px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);justify-content:space-between;align-items:center;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span class="badge badge-primary" id="csv-file-name">file.xlsx</span>
-            <span style="font-size:12px;color:var(--text-secondary);" id="csv-file-rows">0 records extracted</span>
+        <!-- TAB 2: Unstructured Text / Clipboard Paste -->
+        <div id="tab-panel-paste" style="${initialTab === 'paste' ? 'display:block' : 'display:none'}">
+          <div class="alert alert-info" style="font-size:12px;padding:8px 12px;margin-bottom:10px;">
+            Paste any unformatted student list, WhatsApp group export, attendance roster, or copy-pasted spreadsheet lines.
           </div>
-          <button class="btn btn-secondary btn-sm" style="font-size:11px;padding:2px 8px;" onclick="document.getElementById('csv-file-input').click()">Change File</button>
+          <div class="form-group" style="margin-bottom:8px;">
+            <label class="form-label" style="font-size:12px;font-weight:600;">Raw / Unstructured Student Text</label>
+            <textarea class="import-area" id="extract-paste-text" style="min-height:130px;font-size:11.5px;" placeholder="Examples of supported formats:&#10;1. 202201040001 - Rakshe Veer Tushar (Pre-Survey: 8)&#10;2. Sanket Satish Narote	202201040002	9	Advanced&#10;TY-CS-A03 202201040003 Kulkarni Aditi Vijay 4/10&#10;202201040004, Rohan Deshmukh, 8&#10;...or any messy attendance list with roll numbers and names."></textarea>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;">
+            <button class="btn btn-secondary btn-sm" onclick="extractFromPastedText(false)">
+              <span data-icon="sparkles"></span> ⚡ Quick Extract
+            </button>
+            <button class="btn btn-primary btn-sm" onclick="extractFromPastedText(true)">
+              <span data-icon="bot"></span> ✨ AI Deep Extraction
+            </button>
+          </div>
         </div>
 
+        <!-- Loading Spinner -->
+        <div id="extract-loading-indicator" style="display:none;margin-top:14px;padding:14px;background:var(--surface-2);border:1px dashed var(--primary);border-radius:var(--r-md);text-align:center;">
+          <div class="extract-spinner"></div>
+          <span style="font-size:13px;font-weight:600;color:var(--primary);" id="extract-loading-msg">Extracting student records...</span>
+        </div>
+
+        <!-- Extraction Summary Banner -->
+        <div id="csv-file-info" style="display:none;margin-top:12px;padding:8px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span class="badge badge-primary" id="csv-file-name">Document</span>
+            <span style="font-size:12px;font-weight:600;color:var(--text-primary);" id="csv-file-rows">0 records</span>
+            <span class="badge" id="csv-engine-badge" style="font-size:10px;background:var(--surface);border:1px solid var(--border);">Parser</span>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button class="btn btn-secondary btn-sm" id="btn-reanalyze-ai" style="font-size:11px;padding:3px 8px;" onclick="reAnalyzeWithAi()">
+              <span data-icon="bot"></span> ✨ Re-analyze with AI
+            </button>
+            <button class="btn btn-secondary btn-sm" style="font-size:11px;padding:3px 8px;" onclick="document.getElementById('csv-file-input').click()">
+              Upload Different File
+            </button>
+          </div>
+        </div>
+
+        <!-- Interactive Editable Preview Section -->
         <div id="csv-preview-section" style="display:none;margin-top:14px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-            <label class="form-label" style="margin-bottom:0;font-weight:700;">Extraction Preview</label>
+            <div>
+              <label class="form-label" style="margin-bottom:0;font-weight:700;">Extraction Preview & Verification</label>
+              <div style="font-size:11.5px;color:var(--text-secondary);">Review, edit names/PRNs inline, or add missing students before importing.</div>
+            </div>
             <span id="csv-valid-badge" class="badge badge-success">0 Ready</span>
           </div>
-          <div class="csv-preview-container">
+
+          <div class="csv-preview-container" style="max-height:260px;">
             <table class="csv-preview-table">
               <thead>
                 <tr>
-                  <th style="width:40px">#</th>
-                  <th style="width:150px">PRN Identifier</th>
-                  <th>Student Full Name</th>
-                  <th style="width:100px">Survey Score</th>
-                  <th style="width:130px">Learner Classification</th>
+                  <th style="width:36px">#</th>
+                  <th style="width:145px">PRN Identifier *</th>
+                  <th>Student Full Name *</th>
+                  <th style="width:90px">Score (0-10)</th>
+                  <th style="width:130px">Classification</th>
+                  <th style="width:40px;text-align:center;">Action</th>
                 </tr>
               </thead>
               <tbody id="csv-preview-body"></tbody>
             </table>
           </div>
 
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+            <button class="btn btn-secondary btn-sm" style="font-size:11.5px;padding:3px 8px;" onclick="addBlankPreviewRow()">
+              <span data-icon="plus"></span> + Add Student Row
+            </button>
+            <span style="font-size:11px;color:var(--text-secondary);">Changes apply directly to the imported roster.</span>
+          </div>
+
           <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;padding:10px;background:var(--surface-2);border-radius:var(--r-md);">
-            <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer;">
+            <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;">
               <input type="checkbox" id="csv-opt-classify" checked>
               <span>Auto-classify learner types based on pre-survey score (&le;4: Slow, 5&ndash;7: Average, &ge;8: Advanced)</span>
             </label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer;">
+            <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;">
               <input type="checkbox" id="csv-opt-overwrite" checked>
               <span>Update existing student details if PRN already exists in this course</span>
             </label>
           </div>
         </div>
       </div>
+
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
         <button class="btn btn-primary" id="btn-save-csv" onclick="saveExtractedStudents()" disabled>
-          <span data-icon="plus"></span> Extract & Save Roster
+          <span data-icon="plus"></span> Save & Enroll Roster
         </button>
       </div>`;
 
     Modal.open(html, { wide: true });
     renderAllIcons();
     initCsvDropzone();
+  }
+
+  function switchExtractTab(tab) {
+    const fileTabBtn = document.getElementById('tab-btn-file');
+    const pasteTabBtn = document.getElementById('tab-btn-paste');
+    const filePanel = document.getElementById('tab-panel-file');
+    const pastePanel = document.getElementById('tab-panel-paste');
+
+    if (tab === 'file') {
+      fileTabBtn?.classList.add('active');
+      pasteTabBtn?.classList.remove('active');
+      if (filePanel) filePanel.style.display = 'block';
+      if (pastePanel) pastePanel.style.display = 'none';
+    } else {
+      pasteTabBtn?.classList.add('active');
+      fileTabBtn?.classList.remove('active');
+      if (pastePanel) pastePanel.style.display = 'block';
+      if (filePanel) filePanel.style.display = 'none';
+    }
   }
 
   function initCsvDropzone() {
@@ -616,110 +820,158 @@
       const dt = e.dataTransfer;
       const files = dt.files;
       if (files && files.length > 0) {
-        processCsvFile(files[0]);
+        processStudentFile(files[0]);
       }
     }, false);
   }
 
-  function handleCsvFileInput(e) {
+  function handleStudentFileInput(e) {
     if (e.target.files && e.target.files.length > 0) {
-      processCsvFile(e.target.files[0]);
+      processStudentFile(e.target.files[0]);
     }
   }
 
-  function processCsvFile(file) {
+  async function processStudentFile(file) {
     if (!file) return;
     const fileName = (file.name || '').toLowerCase();
-    
-    // If SheetJS is loaded, use it for all Excel and CSV formats
-    if (typeof XLSX !== 'undefined') {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array', cellDates: true });
-          const firstSheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[firstSheetName];
-          // raw: false ensures large numeric IDs/PRNs remain as formatted strings
-          const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '', raw: false });
-          processUniversalSpreadsheetData(jsonRows, file.name);
-        } catch (err) {
-          console.warn('XLSX parsing failed, falling back to text reader:', err);
-          readAsTextFallback(file);
-        }
-      };
-      reader.onerror = () => Toast.error('Failed to read file.');
-      reader.readAsArrayBuffer(file);
-    } else {
-      readAsTextFallback(file);
+    currentExtractSource = file.name;
+    showExtractLoading(true, `Reading and analyzing ${file.name}...`);
+
+    try {
+      if (fileName.endsWith('.pdf')) {
+        await processPdfFile(file);
+      } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+        await processExcelFile(file);
+      } else if (fileName.endsWith('.docx')) {
+        await processDocxFile(file);
+      } else {
+        await readAsTextFallback(file);
+      }
+    } catch (err) {
+      showExtractLoading(false);
+      console.error('[File Processing Error]', err);
+      Toast.error('Could not process file: ' + (err.message || 'Unknown error'));
     }
+  }
+
+  async function processPdfFile(file) {
+    try {
+      if (typeof pdfjsLib === 'undefined') {
+        throw new Error('PDF reader library not loaded. Please verify your connection.');
+      }
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let fullText = '';
+
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        let lastY = null;
+        for (const item of textContent.items) {
+          if (lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
+            fullText += '\n';
+          } else if (lastY !== null) {
+            fullText += ' ';
+          }
+          fullText += item.str;
+          lastY = item.transform[5];
+        }
+        fullText += '\n\n';
+      }
+
+      if (!fullText.trim()) {
+        throw new Error('PDF appears to be scanned or contains no extractable text layer.');
+      }
+
+      currentExtractRawText = fullText;
+      processExtractedText(fullText, file.name);
+    } catch (err) {
+      showExtractLoading(false);
+      console.warn('[PDF Parsing fallback]', err);
+      Toast.error('PDF parsing error: ' + err.message);
+    }
+  }
+
+  async function processExcelFile(file) {
+    if (typeof XLSX === 'undefined') {
+      await readAsTextFallback(file);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '', raw: false });
+
+        const textLines = jsonRows.map(r => (Array.isArray(r) ? r : Object.values(r)).join('\t')).join('\n');
+        currentExtractRawText = textLines;
+
+        // Try universal tabular processor first
+        const tabularResults = processUniversalSpreadsheetRows(jsonRows);
+        if (tabularResults && tabularResults.length > 0) {
+          showExtractLoading(false);
+          currentExtractEngine = 'Spreadsheet Formatter';
+          displayExtractedStudents(tabularResults, file.name, currentExtractEngine);
+          Toast.success(`Extracted ${tabularResults.length} students from spreadsheet!`);
+        } else {
+          processExtractedText(textLines, file.name);
+        }
+      } catch (err) {
+        console.warn('XLSX parsing failed, falling back to text reader:', err);
+        readAsTextFallback(file);
+      }
+    };
+    reader.onerror = () => {
+      showExtractLoading(false);
+      Toast.error('Failed to read Excel file.');
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  async function processDocxFile(file) {
+    if (typeof mammoth !== 'undefined') {
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+        const text = result.value || '';
+        if (text.trim()) {
+          currentExtractRawText = text;
+          processExtractedText(text, file.name);
+          return;
+        }
+      } catch (err) {
+        console.warn('Mammoth docx extraction error:', err);
+      }
+    }
+    await readAsTextFallback(file);
   }
 
   function readAsTextFallback(file) {
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target.result;
-      const rows = parseCSVRows(text);
-      processUniversalSpreadsheetData(rows, file.name);
+      currentExtractRawText = text;
+      processExtractedText(text, file.name);
     };
-    reader.onerror = () => Toast.error('Failed to read file.');
+    reader.onerror = () => {
+      showExtractLoading(false);
+      Toast.error('Failed to read file.');
+    };
     reader.readAsText(file);
   }
 
-  function parseCSVRows(text) {
-    const lines = [];
-    let currentLine = [];
-    let currentCell = '';
-    let inQuotes = false;
-    
-    for (let i = 0; i < text.length; i++) {
-      const char = text[i];
-      const nextChar = text[i + 1];
-      
-      if (char === '"') {
-        if (inQuotes && nextChar === '"') {
-          currentCell += '"';
-          i++;
-        } else {
-          inQuotes = !inQuotes;
-        }
-      } else if ((char === ',' || char === '\t' || char === ';') && !inQuotes) {
-        currentLine.push(currentCell.trim());
-        currentCell = '';
-      } else if ((char === '\r' || char === '\n') && !inQuotes) {
-        if (char === '\r' && nextChar === '\n') i++;
-        currentLine.push(currentCell.trim());
-        if (currentLine.some(c => c !== '')) lines.push(currentLine);
-        currentLine = [];
-        currentCell = '';
-      } else {
-        currentCell += char;
-      }
-    }
-    if (currentCell || currentLine.length > 0) {
-      currentLine.push(currentCell.trim());
-      if (currentLine.some(c => c !== '')) lines.push(currentLine);
-    }
-    return lines;
-  }
-
-  function processUniversalSpreadsheetData(rows2d, fileName) {
-    if (!rows2d || !rows2d.length) {
-      Toast.error('The selected file has no data.');
-      return;
-    }
-
-    // Clean up empty rows and cells
+  function processUniversalSpreadsheetRows(rows2d) {
+    if (!rows2d || !rows2d.length) return [];
     const cleanRows = rows2d
       .map(row => (Array.isArray(row) ? row : Object.values(row)).map(cell => (cell !== null && cell !== undefined) ? String(cell).trim() : ''))
       .filter(row => row.some(cell => cell !== ''));
 
-    if (!cleanRows.length) {
-      Toast.error('No readable rows found in sheet.');
-      return;
-    }
+    if (!cleanRows.length) return [];
 
-    // 1. Identify Header Row (within first 15 rows)
     let headerRowIdx = -1;
     let prnCol = -1, nameCol = -1, scoreCol = -1, learnerCol = -1;
 
@@ -744,68 +996,16 @@
       }
     }
 
-    // 2. Fallback Heuristics: If no header found, inspect column contents
-    if (headerRowIdx === -1) {
-      const sample = cleanRows.slice(0, Math.min(20, cleanRows.length));
-      const colCount = Math.max(...sample.map(r => r.length));
-      
-      let bestPrnCol = -1, bestNameCol = -1, bestScoreCol = -1;
-      let maxDigitRatio = -1, maxWordRatio = -1;
+    if (headerRowIdx === -1) return [];
 
-      for (let c = 0; c < colCount; c++) {
-        let digitCount = 0, wordCount = 0, total = 0;
-        sample.forEach(r => {
-          const val = r[c] || '';
-          if (val) {
-            total++;
-            // PRNs are usually 4-16 alphanumeric or numeric digits
-            if (/^\d{4,}$/.test(val) || /^[A-Z0-9]{5,}$/i.test(val)) digitCount++;
-            // Names have 2+ letters and spaces or multiple words
-            if (/[a-zA-Z]{3,}/.test(val) && !/^\d+$/.test(val) && !/^(slow|average|advanced)$/i.test(val)) wordCount++;
-          }
-        });
-        if (total > 0) {
-          const dRatio = digitCount / total;
-          const wRatio = wordCount / total;
-          if (dRatio > maxDigitRatio && dRatio >= 0.3) {
-            maxDigitRatio = dRatio;
-            bestPrnCol = c;
-          }
-          if (wRatio > maxWordRatio && wRatio >= 0.3) {
-            maxWordRatio = wRatio;
-            bestNameCol = c;
-          }
-        }
-      }
-
-      prnCol = bestPrnCol !== -1 ? bestPrnCol : 0;
-      nameCol = bestNameCol !== -1 && bestNameCol !== prnCol ? bestNameCol : (prnCol === 0 ? 1 : 0);
-
-      // Find score col among remaining columns
-      for (let c = 0; c < colCount; c++) {
-        if (c !== prnCol && c !== nameCol) {
-          const numericMatches = sample.filter(r => {
-            const num = parseFloat(r[c]);
-            return !isNaN(num) && num >= 0 && num <= 100;
-          }).length;
-          if (numericMatches >= sample.length * 0.4) {
-            bestScoreCol = c;
-            break;
-          }
-        }
-      }
-      scoreCol = bestScoreCol;
-    }
-
-    const startIdx = headerRowIdx >= 0 ? headerRowIdx + 1 : 0;
-    extractedCsvStudents = [];
+    const startIdx = headerRowIdx + 1;
+    const list = [];
 
     for (let r = startIdx; r < cleanRows.length; r++) {
       const row = cleanRows[r];
       let prn = (prnCol >= 0 && prnCol < row.length ? row[prnCol] : row[0]) || '';
       let name = (nameCol >= 0 && nameCol < row.length ? row[nameCol] : row[1]) || '';
 
-      // Clean Excel scientific notation if present (e.g. 2.02201E+11)
       if (/^\d+\.?\d*e\+\d+$/i.test(prn)) {
         try { prn = String(BigInt(Math.round(Number(prn)))); } catch(e) {}
       }
@@ -813,19 +1013,10 @@
       prn = prn.replace(/['"]/g, '').trim();
       name = name.replace(/['"]/g, '').trim();
 
-      // Skip invalid header duplicates or empty rows
       if (!prn && !name) continue;
       if (/^(prn|student\s*name|roll\s*no|sr\s*no|no\.|sr)$/i.test(prn)) continue;
       if (/^(student\s*name|full\s*name|name\s*of\s*student)$/i.test(name)) continue;
       if (prn.toLowerCase().includes('total') || name.toLowerCase().includes('total')) continue;
-
-      // If PRN was numeric and name was in PRN or swapped
-      if (!name && prn) {
-        name = prn;
-        prn = `STU_${extractedCsvStudents.length + 1}`;
-      } else if (!prn && name) {
-        prn = `STU_${extractedCsvStudents.length + 1}`;
-      }
 
       let scoreVal = null;
       if (scoreCol >= 0 && row[scoreCol] !== undefined && row[scoreCol] !== '') {
@@ -847,66 +1038,385 @@
         learnerVal = classifyLearner(scoreVal);
       }
 
-      extractedCsvStudents.push({
+      list.push({
         prn: prn,
         name: name,
-        preSurveyScore: scoreVal,
+        preSurveyScore: scoreVal !== null ? scoreVal : 6,
         learnerType: learnerVal
       });
     }
 
-    if (!extractedCsvStudents.length) {
-      Toast.error('Could not extract any student records. Please verify the spreadsheet format.');
+    return list;
+  }
+
+  function extractStudentsFromTextLocally(text) {
+    if (!text || !text.trim()) return [];
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+    const results = [];
+    const seenPrns = new Set();
+
+    const statusWords = new Set(['present', 'absent', 'pass', 'fail', 'eligible', 'detained', 'yes', 'no', 'active', 'inactive',
+                                 'slow', 'average', 'advanced', 'learner', 'fast', 'total']);
+    const noiseHeaders = new Set(['sr', 'sr.', 'no', 'no.', 'roll', 'rollno', 'prn', 'id', 'student', 'name', 
+                                  'fullname', 'studentname', 'score', 'marks', 'survey', 'pretest', 'presurvey',
+                                  'learner', 'type', 'classification', 'category', 'remarks', 'status',
+                                  'slow', 'average', 'advanced']);
+
+    for (const line of lines) {
+      const lower = line.toLowerCase();
+      if (/^(page\s*\d+|sr\s*no|academic\s*year|department\s*of|mit\s*academy|course:|subject:)/i.test(lower)) continue;
+      
+      const wordsInLine = (lower.match(/[a-z]+/g) || []);
+      if (wordsInLine.length > 0 && wordsInLine.every(w => noiseHeaders.has(w))) continue;
+
+      let prn = null;
+      let name = null;
+      let score = null;
+      let lt = 'average';
+
+      let delim = null;
+      if (line.includes('\t')) delim = '\t';
+      else if (line.includes(',') && line.split(',').length >= 2 && !/\b(?:jr|sr|dr)\b,\s/i.test(line)) delim = ',';
+      else if (line.includes('|')) delim = '|';
+      else if (/\s{2,}/.test(line)) delim = /\s{2,}/;
+
+      if (delim) {
+        const rawParts = line.split(delim).map(p => p.trim().replace(/^['"]|['"]$/g, '')).filter(p => p);
+        const parts = rawParts.map(p => p.replace(/^\d+[\.\)\-:]\s*/, '').trim()).filter(p => p && !/^\d{1,3}[\.\)]?$/.test(p));
+
+        let prnIdx = -1;
+        for (let idx = 0; idx < parts.length; idx++) {
+          const cleanP = parts[idx].replace(/[^A-Za-z0-9]/g, '');
+          if (/^(?:20\d{8,14}|\d{5,16}|[A-Z]{2,6}\d{4,10}|[A-Za-z0-9]+-[A-Za-z0-9]+-\d+)$/.test(cleanP) || /^\d{6,14}$/.test(cleanP)) {
+            if (prnIdx === -1 || cleanP.length > parts[prnIdx].replace(/[^A-Za-z0-9]/g, '').length) {
+              prnIdx = idx;
+            }
+          }
+        }
+
+        if (prnIdx !== -1) {
+          prn = parts[prnIdx];
+          for (let idx = 0; idx < parts.length; idx++) {
+            if (idx === prnIdx) continue;
+            const p = parts[idx];
+            if (/\d/.test(p)) continue;
+            const cleanText = p.replace(/[^A-Za-z\s'.]/g, '').trim();
+            const lowerP = cleanText.toLowerCase();
+            if (statusWords.has(lowerP) || noiseHeaders.has(lowerP)) continue;
+            const validWords = cleanText.split(/\s+/).filter(w => !statusWords.has(w.toLowerCase()) && !noiseHeaders.has(w.toLowerCase()));
+            if (validWords.length > 0 && validWords.join(' ').length >= 3) {
+              name = validWords.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+              break;
+            }
+          }
+
+          for (let idx = 0; idx < parts.length; idx++) {
+            if (idx === prnIdx) continue;
+            const p = parts[idx];
+            const mExp = p.match(/\b(?:score|marks|survey|test|pre-?test|pre-?survey)[:\s]*(\d+(?:\.\d+)?)\b/i) ||
+                         p.match(/\b(\d+(?:\.\d+)?)\s*\/\s*10\b/i);
+            if (mExp) {
+              const v = parseFloat(mExp[1]);
+              if (v >= 0 && v <= 100) {
+                score = v > 10 ? Math.round(v / 10) : Math.round(v);
+                break;
+              }
+            } else if (!/^\d{1,2}$/.test(p)) {
+              const mNum = p.match(/\b(\d+(?:\.\d+)?)\b/);
+              if (mNum) {
+                const v = parseFloat(mNum[1]);
+                if (v >= 0 && v <= 100 && p !== name) {
+                  score = v > 10 ? Math.round(v / 10) : Math.round(v);
+                  break;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (!prn || !name) {
+        const prnMatch = line.match(/\b(20\d{8,14}|\d{6,16}|[A-Z]{2,6}\d{4,10})\b/);
+        if (prnMatch) {
+          prn = prnMatch[0].trim();
+          let rem = line.replace(prn, ' ');
+          rem = rem.replace(/\b[A-Za-z0-9]+-[A-Za-z0-9]+-[A-Za-z0-9]+\b/g, ' ');
+          rem = rem.replace(/\b[A-Za-z0-9]+-[A-Za-z0-9]+\b/g, ' ');
+          rem = rem.replace(/\(.*?\)/g, ' ');
+          rem = rem.replace(/\[.*?\]/g, ' ');
+          rem = rem.replace(/\b\d+(?:\.\d+)?\s*\/\s*10\b/g, ' ');
+          rem = rem.replace(/\b(?:score|marks|survey|test|pre-?test|pre-?survey)[:\s]*\d+(?:\.\d+)?\b/gi, ' ');
+          rem = rem.replace(/^\s*\d+[\.\)\-:]\s*/, '');
+          rem = rem.replace(/\b\d+(?:\.\d+)?\b/g, ' ');
+          rem = rem.replace(/[|,\-_:;]/g, ' ');
+
+          const tokens = rem.split(/\s+/).filter(w => {
+            const lw = w.toLowerCase();
+            return !statusWords.has(lw) && !noiseHeaders.has(lw) && w.length > 1 && /^[A-Za-z'.]+$/.test(w);
+          });
+          if (tokens.length > 0) {
+            name = tokens.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+          }
+        }
+      }
+
+      if (prn && name && !seenPrns.has(prn)) {
+        seenPrns.add(prn);
+
+        if (score === null) {
+          let cleanSc = line.replace(/^\s*\d+[\.\)\-:]\s*/, '');
+          cleanSc = cleanSc.replace(prn, ' ');
+          if (name) cleanSc = cleanSc.replace(name, ' ');
+
+          const mExp = cleanSc.match(/\b(?:score|marks|survey|test|pre-?test|pre-?survey)[:\s]*(\d+(?:\.\d+)?)\b/i) ||
+                       cleanSc.match(/\b(\d+(?:\.\d+)?)\s*\/\s*10\b/i);
+          if (mExp) {
+            const num = parseFloat(mExp[1]);
+            if (num >= 0 && num <= 100) {
+              score = num > 10 ? Math.round(num / 10) : Math.round(num);
+            }
+          } else {
+            const mTrail = cleanSc.match(/\b(\d+(?:\.\d+)?)\s*(?:\/\s*10)?(?:\s+(?:slow|average|advanced|learner|present|absent))?\s*$/i);
+            if (mTrail) {
+              const num = parseFloat(mTrail[1]);
+              if (num >= 0 && num <= 100) {
+                score = num > 10 ? Math.round(num / 10) : Math.round(num);
+              }
+            }
+          }
+        }
+
+        if (/\bslow\b/i.test(line)) lt = 'slow';
+        else if (/\badv(?:anced)?\b/i.test(line)) lt = 'advanced';
+        else if (score !== null) {
+          if (score <= 4) lt = 'slow';
+          else if (score >= 8) lt = 'advanced';
+          else lt = 'average';
+        } else {
+          score = 6;
+          lt = 'average';
+        }
+
+        results.push({
+          prn: prn,
+          name: name,
+          preSurveyScore: score,
+          learnerType: lt
+        });
+      }
+    }
+
+    return results;
+  }
+
+  function processExtractedText(rawText, sourceName, forceAi = false) {
+    currentExtractRawText = rawText;
+    currentExtractSource = sourceName;
+
+    if (forceAi) {
+      callBackendAiExtraction(rawText, true);
       return;
     }
 
+    const heuristicList = extractStudentsFromTextLocally(rawText);
+    if (heuristicList.length > 0) {
+      showExtractLoading(false);
+      currentExtractEngine = 'Intelligent Heuristic';
+      displayExtractedStudents(heuristicList, sourceName, currentExtractEngine);
+      Toast.success(`Extracted ${heuristicList.length} students (${currentExtractEngine})!`);
+    } else {
+      callBackendAiExtraction(rawText, false);
+    }
+  }
+
+  async function callBackendAiExtraction(rawText, forceAi = false) {
+    showExtractLoading(true, forceAi ? 'Consulting Gemini AI to extract and structure roster...' : 'Analyzing roster text with deep extractor...');
+    try {
+      const res = await (window.apiFetch ? window.apiFetch('/api/students/extract-ai', {
+        method: 'POST',
+        body: { text: rawText, useAi: forceAi }
+      }) : fetch((window.API_BASE || 'http://127.0.0.1:8000') + '/api/students/extract-ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: rawText, useAi: forceAi })
+      }).then(r => r.json()));
+
+      showExtractLoading(false);
+
+      if (res && res.success && Array.isArray(res.students) && res.students.length > 0) {
+        extractedCsvStudents = res.students.map(s => ({
+          prn: String(s.prn || '').trim(),
+          name: String(s.name || '').trim(),
+          preSurveyScore: s.preSurveyScore !== undefined && s.preSurveyScore !== null ? parseInt(s.preSurveyScore) : 6,
+          learnerType: s.learnerType || (s.preSurveyScore !== null ? classifyLearner(s.preSurveyScore) : 'average')
+        })).filter(s => s.prn || s.name);
+
+        currentExtractEngine = res.engine === 'ai' ? 'Gemini AI Engine' : 'Intelligent Heuristic';
+        displayExtractedStudents(extractedCsvStudents, currentExtractSource || 'Extracted Text', currentExtractEngine);
+        Toast.success(`Successfully extracted ${extractedCsvStudents.length} students (${currentExtractEngine})!`);
+      } else {
+        Toast.warning('Could not identify any student records. Try pasting clearer text or using AI Deep Extraction.');
+      }
+    } catch (err) {
+      showExtractLoading(false);
+      console.error('[AI Extract Error]', err);
+      Toast.error('Extraction failed: ' + (err.message || 'Server error'));
+    }
+  }
+
+  function extractFromPastedText(forceAi = false) {
+    const textarea = document.getElementById('extract-paste-text');
+    const text = (textarea?.value || '').trim();
+    if (!text) {
+      Toast.warning('Please paste student roster or attendance text first.');
+      return;
+    }
+    currentExtractSource = 'Clipboard Text';
+    processExtractedText(text, currentExtractSource, forceAi);
+  }
+
+  function reAnalyzeWithAi() {
+    if (!currentExtractRawText) {
+      Toast.warning('No source text available to re-analyze.');
+      return;
+    }
+    callBackendAiExtraction(currentExtractRawText, true);
+  }
+
+  function showExtractLoading(show, message = 'Processing...') {
+    const indicator = document.getElementById('extract-loading-indicator');
+    const msgEl = document.getElementById('extract-loading-msg');
+    if (indicator) indicator.style.display = show ? 'block' : 'none';
+    if (msgEl) msgEl.textContent = message;
+  }
+
+  function displayExtractedStudents(students, sourceName, engineName = 'Heuristic') {
+    extractedCsvStudents = students;
     const fileInfo = document.getElementById('csv-file-info');
     const previewSection = document.getElementById('csv-preview-section');
     const fileNameEl = document.getElementById('csv-file-name');
     const fileRowsEl = document.getElementById('csv-file-rows');
-    const validBadge = document.getElementById('csv-valid-badge');
-    const previewBody = document.getElementById('csv-preview-body');
-    const saveBtn = document.getElementById('btn-save-csv');
+    const engineBadgeEl = document.getElementById('csv-engine-badge');
 
     if (fileInfo) fileInfo.style.display = 'flex';
     if (previewSection) previewSection.style.display = 'block';
-    if (fileNameEl) fileNameEl.textContent = fileName || 'Spreadsheet';
-    if (fileRowsEl) fileRowsEl.textContent = `${extractedCsvStudents.length} students extracted`;
-    if (validBadge) validBadge.textContent = `${extractedCsvStudents.length} Students Ready`;
-
-    if (previewBody) {
-      previewBody.innerHTML = extractedCsvStudents.map((s, idx) => {
-        let badgeClass = s.learnerType === 'slow' ? 'badge-danger' : (s.learnerType === 'advanced' ? 'badge-success' : 'badge-warning');
-        return `
-          <tr>
-            <td>${idx + 1}</td>
-            <td><strong class="font-mono" style="color:var(--primary);">${s.prn}</strong></td>
-            <td style="font-weight:600;">${s.name}</td>
-            <td>${s.preSurveyScore !== null ? s.preSurveyScore + '/10' : '—'}</td>
-            <td><span class="badge ${badgeClass}" style="font-size:10px;padding:2px 6px;">${s.learnerType}</span></td>
-          </tr>
-        `;
-      }).join('');
+    if (fileNameEl) fileNameEl.textContent = sourceName || 'Document';
+    if (fileRowsEl) fileRowsEl.textContent = `${extractedCsvStudents.length} students detected`;
+    if (engineBadgeEl) {
+      engineBadgeEl.textContent = engineName;
+      engineBadgeEl.className = engineName.includes('AI') ? 'badge badge-primary' : 'badge badge-info';
     }
 
+    renderExtractedPreviewRows();
+  }
+
+  function renderExtractedPreviewRows() {
+    const previewBody = document.getElementById('csv-preview-body');
+    const validBadge = document.getElementById('csv-valid-badge');
+    const saveBtn = document.getElementById('btn-save-csv');
+
+    if (!previewBody) return;
+    if (validBadge) validBadge.textContent = `${extractedCsvStudents.length} Students Ready`;
     if (saveBtn) {
-      saveBtn.disabled = false;
-      saveBtn.innerHTML = `<span data-icon="check"></span> Extract & Save All (${extractedCsvStudents.length} Students)`;
+      saveBtn.disabled = extractedCsvStudents.length === 0;
+      saveBtn.innerHTML = `<span data-icon="check"></span> Save & Enroll Roster (${extractedCsvStudents.length} Students)`;
       renderAllIcons(saveBtn);
     }
-    renderAllIcons(previewSection);
-    Toast.success(`Successfully extracted ${extractedCsvStudents.length} students!`);
+
+    if (!extractedCsvStudents.length) {
+      previewBody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:16px;color:var(--text-secondary);">No student rows remaining. Click "+ Add Student Row" below to add one.</td></tr>`;
+      return;
+    }
+
+    previewBody.innerHTML = extractedCsvStudents.map((s, idx) => `
+      <tr data-row-idx="${idx}">
+        <td style="color:var(--text-secondary);font-size:11px;font-weight:600;">${idx + 1}</td>
+        <td>
+          <input type="text" class="preview-input font-mono" style="font-weight:700;color:var(--primary);" value="${escapeHtml(s.prn || '')}" placeholder="PRN ID" oninput="updateExtractedField(${idx}, 'prn', this.value)">
+        </td>
+        <td>
+          <input type="text" class="preview-input" style="font-weight:600;" value="${escapeHtml(s.name || '')}" placeholder="Student Full Name" oninput="updateExtractedField(${idx}, 'name', this.value)">
+        </td>
+        <td>
+          <input type="number" min="0" max="10" class="preview-input" style="width:65px;text-align:center;" value="${s.preSurveyScore !== null && s.preSurveyScore !== undefined ? s.preSurveyScore : ''}" placeholder="—" oninput="updateExtractedScore(${idx}, this.value)">
+        </td>
+        <td>
+          <select class="preview-select" onchange="updateExtractedField(${idx}, 'learnerType', this.value)">
+            <option value="slow" ${s.learnerType === 'slow' ? 'selected' : ''}>Slow Learner</option>
+            <option value="average" ${s.learnerType === 'average' ? 'selected' : ''}>Average Learner</option>
+            <option value="advanced" ${s.learnerType === 'advanced' ? 'selected' : ''}>Advanced Learner</option>
+          </select>
+        </td>
+        <td style="text-align:center;">
+          <button class="btn btn-secondary btn-sm btn-icon" style="padding:2px 4px;color:var(--danger);" onclick="deleteExtractedRow(${idx})" title="Remove Student">
+            <span data-icon="trash" style="font-size:13px;"></span>
+          </button>
+        </td>
+      </tr>
+    `).join('');
+
+    renderAllIcons(previewBody);
+  }
+
+  function updateExtractedField(idx, field, value) {
+    if (extractedCsvStudents[idx]) {
+      extractedCsvStudents[idx][field] = value.trim();
+    }
+  }
+
+  function updateExtractedScore(idx, value) {
+    if (!extractedCsvStudents[idx]) return;
+    const num = parseInt(value);
+    if (!isNaN(num)) {
+      const clamped = Math.max(0, Math.min(10, num));
+      extractedCsvStudents[idx].preSurveyScore = clamped;
+      const autoClassify = document.getElementById('csv-opt-classify')?.checked ?? true;
+      if (autoClassify) {
+        const newLt = classifyLearner(clamped);
+        extractedCsvStudents[idx].learnerType = newLt;
+        const row = document.querySelector(`tr[data-row-idx="${idx}"] select`);
+        if (row) row.value = newLt;
+      }
+    } else {
+      extractedCsvStudents[idx].preSurveyScore = null;
+    }
+  }
+
+  function deleteExtractedRow(idx) {
+    extractedCsvStudents.splice(idx, 1);
+    renderExtractedPreviewRows();
+  }
+
+  function addBlankPreviewRow() {
+    extractedCsvStudents.push({
+      prn: '',
+      name: '',
+      preSurveyScore: 6,
+      learnerType: 'average'
+    });
+    renderExtractedPreviewRows();
+    const rows = document.querySelectorAll('#csv-preview-body tr');
+    if (rows.length) {
+      const lastInput = rows[rows.length - 1].querySelector('input');
+      if (lastInput) lastInput.focus();
+    }
   }
 
   function saveExtractedStudents() {
     if (!currentCourseId) { Toast.warning('Select a course first.'); return; }
     if (!extractedCsvStudents || !extractedCsvStudents.length) {
-      Toast.warning('No students extracted to save.');
+      Toast.warning('No students to save.');
       return;
     }
 
     const autoClassify = document.getElementById('csv-opt-classify')?.checked ?? true;
     const overwrite = document.getElementById('csv-opt-overwrite')?.checked ?? true;
+
+    const validRows = extractedCsvStudents.filter(s => (s.prn && s.prn.trim()) || (s.name && s.name.trim()));
+    if (!validRows.length) {
+      Toast.warning('Please provide at least a PRN or Name for each student.');
+      return;
+    }
 
     const currentList = DB.students.byCourse(currentCourseId);
     const existingMap = new Map();
@@ -915,15 +1425,23 @@
     let addedCount = 0;
     let updatedCount = 0;
 
-    extractedCsvStudents.forEach(item => {
-      const prnKey = String(item.prn).trim();
-      const score = item.preSurveyScore !== null ? item.preSurveyScore : 0;
+    validRows.forEach((item, idx) => {
+      let prnKey = String(item.prn || '').trim();
+      let nameVal = String(item.name || '').trim();
+      if (!prnKey) {
+        prnKey = `STU_${existingMap.size + idx + 1}`;
+      }
+      if (!nameVal) {
+        nameVal = `Student ${prnKey}`;
+      }
+
+      const score = item.preSurveyScore !== null && item.preSurveyScore !== undefined ? parseInt(item.preSurveyScore) : 0;
       const lt = autoClassify ? classifyLearner(score) : (item.learnerType || 'average');
 
       if (existingMap.has(prnKey)) {
         if (overwrite) {
           const existing = existingMap.get(prnKey);
-          existing.name = item.name;
+          existing.name = nameVal;
           if (item.preSurveyScore !== null) existing.preSurveyScore = score;
           existing.learnerType = lt;
           updatedCount++;
@@ -932,8 +1450,8 @@
         const newStud = {
           id: DB.uid(),
           courseId: currentCourseId,
-          prn: item.prn,
-          name: item.name,
+          prn: prnKey,
+          name: nameVal,
           preSurveyScore: score,
           learnerType: lt
         };
@@ -950,7 +1468,7 @@
     renderStats();
     renderDistribution();
     renderTable();
-    Toast.success(`Roster updated! ${addedCount} students added, ${updatedCount} updated.`);
+    Toast.success(`Roster updated! ${addedCount} students enrolled, ${updatedCount} updated.`);
   }
 
   function downloadCsvTemplate() {
@@ -966,55 +1484,7 @@
   }
 
   function openImportModal() {
-    if (!currentCourseId) { Toast.warning('Select a course first.'); return; }
-    const html = `
-      <div class="modal-header">
-        <h3 class="modal-title">Bulk Import Students from Excel</h3>
-        <button class="btn btn-secondary btn-sm btn-icon" onclick="Modal.close()"><span data-icon="close"></span></button>
-      </div>
-      <div class="modal-body">
-        <div class="alert alert-info">
-          Copy tab-separated columns from Excel: <strong>PRN &nbsp;|&nbsp; Name &nbsp;|&nbsp; Pre-Survey Score (optional)</strong>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Paste Excel Data</label>
-          <textarea class="import-area" id="import-data" placeholder="202201040001	Rakshe Veer Tushar	7&#10;202201040002	Narote Sanket Satish	9"></textarea>
-        </div>
-        <div id="import-preview" style="font-size:12px;color:var(--text-secondary);margin-top:6px;"></div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
-        <button class="btn btn-primary" onclick="doImport()">Import Students</button>
-      </div>`;
-    Modal.open(html, { wide: true });
-    renderAllIcons();
-  }
-
-  function doImport() {
-    const raw = document.getElementById('import-data').value;
-    const lines = raw.split('\n').map(l => l.trim()).filter(l => l);
-    if (!lines.length) { Toast.warning('No data to import.'); return; }
-
-    let added = 0, skipped = 0;
-    lines.forEach(line => {
-      const parts = line.split('\t').map(p => p.trim());
-      if (parts.length < 2) { skipped++; return; }
-      const prn = parts[0];
-      const name = parts[1];
-      const score = parseInt(parts[2]) || 0;
-      const lt = classifyLearner(score);
-
-      if (DB.students.byPRN(currentCourseId, prn)) { skipped++; return; }
-      DB.students.add({ courseId: currentCourseId, prn, name, preSurveyScore: score, learnerType: lt });
-      added++;
-    });
-
-    Modal.close();
-    studentsCache = DB.students.byCourse(currentCourseId);
-    renderStats();
-    renderDistribution();
-    renderTable();
-    Toast.success(`Imported ${added} students. (${skipped} skipped)`);
+    openCsvExtractModal('paste');
   }
 
   function exportStudents() {
@@ -1040,10 +1510,17 @@
   window.updateLearnerPreview = updateLearnerPreview;
   window.openImportModal = openImportModal;
   window.openCsvExtractModal = openCsvExtractModal;
-  window.handleCsvFileInput = handleCsvFileInput;
+  window.switchExtractTab = switchExtractTab;
+  window.handleStudentFileInput = handleStudentFileInput;
+  window.processStudentFile = processStudentFile;
+  window.extractFromPastedText = extractFromPastedText;
+  window.reAnalyzeWithAi = reAnalyzeWithAi;
+  window.updateExtractedField = updateExtractedField;
+  window.updateExtractedScore = updateExtractedScore;
+  window.deleteExtractedRow = deleteExtractedRow;
+  window.addBlankPreviewRow = addBlankPreviewRow;
   window.saveExtractedStudents = saveExtractedStudents;
   window.downloadCsvTemplate = downloadCsvTemplate;
-  window.doImport = doImport;
   window.exportStudents = exportStudents;
   window.renderTable = renderTable;
 })();
