@@ -150,8 +150,18 @@
             </div>
           </div>
           <div class="form-group">
+            <label class="form-label">Course Faculty / Instructor *</label>
+            <select class="form-select" id="s-faculty">
+              <option value="">-- Select Course Faculty --</option>
+            </select>
+            <span id="s-faculty-note" style="font-size:11px;color:var(--text-secondary);margin-top:3px;display:block;">Available department faculty</span>
+          </div>
+          <div class="form-group">
             <label class="form-label">Course Champion</label>
-            <input class="form-input" id="s-champ" placeholder="Prof. Champion">
+            <select class="form-select" id="s-champ">
+              <option value="">-- Select Course Champion --</option>
+            </select>
+            <span id="s-champ-note" style="font-size:11px;color:var(--text-secondary);margin-top:3px;display:block;">Lead faculty subject expert</span>
           </div>
           <div class="form-group">
             <label class="form-label">Champion Date</label>
@@ -167,6 +177,10 @@
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Department</label>
+            <input class="form-input" id="s-dept-display" readonly style="background:var(--surface-2);color:var(--text-secondary);cursor:not-allowed;" placeholder="Department">
           </div>
         </div>
       </div>
@@ -332,7 +346,14 @@
   renderAllIcons();
 
   function loadCourseSelector() {
-    courseList = DB.courses.byFaculty(user.id);
+    if (user.role === 'hod') {
+      courseList = DB.courses.all().filter(c => c.deptId === user.deptId || c.facultyId === user.id || c.createdBy === user.id);
+    } else if (user.role === 'admin') {
+      courseList = DB.courses.all();
+    } else {
+      courseList = DB.courses.byFaculty(user.id);
+    }
+    if (!courseList || !courseList.length) courseList = DB.courses.all();
     const sel  = document.getElementById('course-select');
     sel.innerHTML = courseList.map(c => `<option value="${c.id}">${c.name} (${c.code})</option>`).join('');
 
@@ -349,6 +370,91 @@
     loadCourseData(id);
   }
 
+  function populateDepartmentFaculty(course) {
+    const targetDeptId = course.deptId || user.deptId || 'dept-cs';
+    const dept = DB.departments.byId(targetDeptId);
+    const deptName = dept ? dept.name : targetDeptId;
+    
+    const deptDisplay = document.getElementById('s-dept-display');
+    if (deptDisplay) {
+      deptDisplay.value = deptName;
+    }
+
+    const allUsers = DB.users.all();
+    
+    // Strictly filter to faculties and HODs under this course's department
+    let deptFaculty = allUsers.filter(u => {
+      const isTeacher = u.role === 'faculty' || u.role === 'hod';
+      if (!isTeacher) return false;
+      return u.deptId === targetDeptId;
+    });
+
+    // Ensure currently assigned faculty or champion are included if in legacy state
+    if (course.facultyId && !deptFaculty.some(u => u.id === course.facultyId)) {
+      const assigned = allUsers.find(u => u.id === course.facultyId);
+      if (assigned) deptFaculty.push(assigned);
+    }
+    if (course.champion && !deptFaculty.some(u => u.name === course.champion || u.id === course.champion)) {
+      const champUser = allUsers.find(u => u.name === course.champion || u.id === course.champion);
+      if (champUser) deptFaculty.push(champUser);
+    }
+
+    if (!deptFaculty.length) {
+      deptFaculty = allUsers.filter(u => u.role === 'faculty' || u.role === 'hod');
+    }
+
+    // 1. Populate Course Faculty dropdown (#s-faculty)
+    const facSelect = document.getElementById('s-faculty');
+    if (facSelect) {
+      facSelect.innerHTML = '<option value="">-- Select Course Faculty --</option>' +
+        deptFaculty.map(f => {
+          const roleLabel = f.role === 'hod' ? 'HOD' : 'Faculty';
+          return `<option value="${f.id}">${f.name} (${roleLabel} • ${f.email || ''})</option>`;
+        }).join('');
+
+      let matchedFacultyId = course.facultyId || '';
+      if (!matchedFacultyId && course.facultyEmail) {
+        const found = deptFaculty.find(f => (f.email || '').toLowerCase() === (course.facultyEmail || '').toLowerCase());
+        if (found) matchedFacultyId = found.id;
+      }
+      if (!matchedFacultyId && course.createdBy) {
+        matchedFacultyId = course.createdBy;
+      }
+      facSelect.value = matchedFacultyId;
+
+      const facNote = document.getElementById('s-faculty-note');
+      if (facNote) {
+        facNote.textContent = `${deptFaculty.length} faculty available in ${dept ? dept.code || dept.name : 'Department'}`;
+      }
+    }
+
+    // 2. Populate Course Champion dropdown (#s-champ)
+    const champSelect = document.getElementById('s-champ');
+    if (champSelect) {
+      champSelect.innerHTML = '<option value="">-- Select Course Champion --</option>' +
+        deptFaculty.map(f => {
+          const roleLabel = f.role === 'hod' ? 'HOD' : 'Faculty';
+          return `<option value="${f.name}" data-id="${f.id}">${f.name} (${roleLabel})</option>`;
+        }).join('');
+
+      const matchedChamp = deptFaculty.find(f => f.name === course.champion || f.id === course.champion || f.id === course.championId);
+      if (matchedChamp) {
+        champSelect.value = matchedChamp.name;
+      } else if (course.champion) {
+        const opt = document.createElement('option');
+        opt.value = course.champion;
+        opt.textContent = `${course.champion} (Assigned Champion)`;
+        champSelect.appendChild(opt);
+        champSelect.value = course.champion;
+      }
+
+      const champNote = document.getElementById('s-champ-note');
+      if (champNote) {
+        champNote.textContent = `Assigned from ${dept ? dept.code || dept.name : 'Department'}`;
+      }
+    }
+  }
+
   function loadCourseData(cid) {
     currentCourse = DB.courses.byId(cid);
     if (!currentCourse) return;
@@ -359,6 +465,9 @@
     document.getElementById('course-status-badge').className = `badge ${(currentCourse.status||'active')==='active' ? 'badge-success' : 'badge-neutral'}`;
     document.getElementById('course-dept-label').textContent = dept ? dept.name : '';
 
+    // Populate Department Faculty & Champion Dropdowns
+    populateDepartmentFaculty(currentCourse);
+
     // Basic Info
     document.getElementById('s-code').value      = currentCourse.code  || '';
     document.getElementById('s-short').value     = currentCourse.shortName || '';
@@ -367,7 +476,6 @@
     document.getElementById('s-class').value     = currentCourse.class || '';
     document.getElementById('s-div').value       = currentCourse.division || '';
     document.getElementById('s-batch').value     = currentCourse.batch || '';
-    document.getElementById('s-champ').value     = currentCourse.champion || '';
     document.getElementById('s-champ-date').value = currentCourse.champDate || '';
     document.getElementById('s-lpw').value       = currentCourse.lecturesPerWeek || 3;
     document.getElementById('s-status').value    = currentCourse.status || 'active';
@@ -528,17 +636,27 @@
     const mse = parseInt(document.getElementById('s-mse').value) || 20;
     const ese = parseInt(document.getElementById('s-ese').value) || 50;
 
+    const facultyId = document.getElementById('s-faculty')?.value || currentCourse.facultyId;
+    const selectedFacUser = DB.users.byId(facultyId);
+    const champSelect = document.getElementById('s-champ');
+    const championVal = champSelect?.value || '';
+    const selectedChampOpt = champSelect?.selectedOptions?.[0];
+    const championId = selectedChampOpt?.dataset?.id || '';
+
     const updated = {
       ...currentCourse,
       code             : document.getElementById('s-code').value.trim(),
       shortName        : document.getElementById('s-short').value.trim(),
       name             : document.getElementById('s-name').value.trim(),
+      facultyId        : facultyId || currentCourse.facultyId,
+      facultyEmail     : selectedFacUser?.email || currentCourse.facultyEmail,
+      champion         : championVal,
+      championId       : championId || currentCourse.championId,
       semester         : document.getElementById('s-sem').value,
       year             : document.getElementById('s-year').value.trim(),
       class            : document.getElementById('s-class').value.trim(),
       division         : document.getElementById('s-div').value.trim(),
       batch            : document.getElementById('s-batch').value.trim(),
-      champion         : document.getElementById('s-champ').value.trim(),
       champDate        : document.getElementById('s-champ-date').value,
       lecturesPerWeek  : parseInt(document.getElementById('s-lpw').value) || 3,
       status           : document.getElementById('s-status').value,

@@ -298,6 +298,10 @@
   }
 
   function openAddModal() {
+    if (user.role !== 'hod' && user.role !== 'admin') {
+      Toast.error('Course creation restricted: Only the Head of Department (HOD) can create new courses.');
+      return;
+    }
     editingId = null;
     showCourseModal(null);
   }
@@ -335,11 +339,25 @@
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Department</label>
-            <select class="form-select" id="f-dept">
+            <label class="form-label">Department *</label>
+            <select class="form-select" id="f-dept" onchange="updateModalFacultyDropdown(this.value)">
               ${depts.map(d => `<option value="${d.id}" ${(v.deptId||user.deptId)===d.id?'selected':''}>${d.name}</option>`).join('')}
             </select>
           </div>
+          <div class="form-group">
+            <label class="form-label">Course Faculty / Instructor *</label>
+            <select class="form-select" id="f-faculty">
+              <option value="">-- Select Faculty --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Course Champion</label>
+            <select class="form-select" id="f-champ">
+              <option value="">-- Select Champion --</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
           <div class="form-group">
             <label class="form-label">Semester</label>
             <select class="form-select" id="f-sem">
@@ -386,10 +404,49 @@
       </div>`;
 
     Modal.open(html, { wide: true });
+    updateModalFacultyDropdown(document.getElementById('f-dept').value, v.facultyId, v.champion);
     renderAllIcons();
   }
 
+  function updateModalFacultyDropdown(targetDeptId, currentFacultyId, currentChampion) {
+    const allUsers = DB.users.all();
+    let deptFaculty = allUsers.filter(u => (u.role === 'faculty' || u.role === 'hod') && u.deptId === targetDeptId);
+    if (!deptFaculty.length) deptFaculty = allUsers.filter(u => u.role === 'faculty' || u.role === 'hod');
+
+    const fSelect = document.getElementById('f-faculty');
+    if (fSelect) {
+      fSelect.innerHTML = '<option value="">-- Select Faculty --</option>' +
+        deptFaculty.map(f => `<option value="${f.id}">${f.name} (${f.role === 'hod' ? 'HOD' : 'Faculty'})</option>`).join('');
+      if (currentFacultyId) fSelect.value = currentFacultyId;
+      else if (deptFaculty.length) fSelect.value = deptFaculty[0].id;
+    }
+
+    const cSelect = document.getElementById('f-champ');
+    if (cSelect) {
+      cSelect.innerHTML = '<option value="">-- Select Champion --</option>' +
+        deptFaculty.map(f => `<option value="${f.name}" data-id="${f.id}">${f.name} (${f.role === 'hod' ? 'HOD' : 'Faculty'})</option>`).join('');
+      if (currentChampion) {
+        const found = deptFaculty.find(f => f.name === currentChampion || f.id === currentChampion);
+        if (found) cSelect.value = found.name;
+        else {
+          const opt = document.createElement('option');
+          opt.value = currentChampion;
+          opt.textContent = `${currentChampion} (Assigned Champion)`;
+          cSelect.appendChild(opt);
+          cSelect.value = currentChampion;
+        }
+      } else if (deptFaculty.length) {
+        cSelect.value = deptFaculty[0].name;
+      }
+    }
+  }
+
   function saveCourse() {
+    if (!editingId && user.role !== 'hod' && user.role !== 'admin') {
+      Toast.error('Course creation restricted: Only the Head of Department (HOD) can create new courses.');
+      return;
+    }
+
     const code  = document.getElementById('f-code').value.trim();
     const name  = document.getElementById('f-name').value.trim();
     if (!code || !name) { Toast.error('Course Code and Name are required.'); return; }
@@ -398,6 +455,13 @@
     const mse = parseInt(document.getElementById('f-mse').value) || 20;
     const ese = parseInt(document.getElementById('f-ese').value) || 50;
     if (ia + mse + ese !== 100) { Toast.warning(`IA(${ia}) + MSE(${mse}) + ESE(${ese}) should total 100%.`); }
+
+    const facultyId = document.getElementById('f-faculty')?.value || user.id;
+    const selectedFac = DB.users.byId(facultyId);
+    const champSel = document.getElementById('f-champ');
+    const championVal = champSel?.value || '';
+    const selectedChampOpt = champSel?.selectedOptions?.[0];
+    const championId = selectedChampOpt?.dataset?.id || '';
 
     const obj = {
       id         : editingId || undefined,
@@ -410,9 +474,11 @@
       division   : document.getElementById('f-div').value.trim(),
       batch      : document.getElementById('f-batch').value.trim(),
       status     : 'active',
-      facultyId  : user.id,
+      facultyId  : facultyId,
       createdBy  : user.id,
-      facultyEmail: (user.email || ''),
+      facultyEmail: selectedFac ? selectedFac.email : (user.email || ''),
+      champion   : championVal,
+      championId : championId,
       examScheme : { ia, mse, ese },
       attainmentLevels: { 1:65, 2:75, 3:85 },
       directWeight: 80, indirectWeight: 20,
