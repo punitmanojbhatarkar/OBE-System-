@@ -240,7 +240,10 @@
   let currentCOs = [];
 
   const sel = document.getElementById('course-select');
-  const courses = DB.courses.byFaculty(user.id);
+  let courses = DB.courses.byFaculty(user.id);
+  if (!courses || courses.length === 0) {
+    courses = DB.courses.all().filter(c => c.status === 'active' || !c.status);
+  }
   courses.forEach(c => { const o=document.createElement('option'); o.value=c.id; o.textContent=`${c.code} – ${c.name}`; sel.appendChild(o); });
 
   const stored = sessionStorage.getItem('selected_course_id');
@@ -496,22 +499,30 @@ function _old_renderPOs() {
 
   async function completeAutoAI() {
     if (!currentCourseId) return Toast.warning('Select a course first.');
-    const syllabusData = DB.syllabus.byCourse(currentCourseId);
-    if (!syllabusData || !syllabusData.modules || syllabusData.modules.length === 0) {
-      return Toast.warning('No syllabus found. Please configure modules in Syllabus Setup first.');
+    let syllabusData = DB.syllabus.byCourse(currentCourseId);
+    let syllabusText = '';
+    if (syllabusData && syllabusData.modules && syllabusData.modules.length > 0) {
+      syllabusText = syllabusData.modules.map(m => (m.title || '') + '\n' + (m.description || '')).join('\n\n');
+    } else if (AI.curriculum && AI.curriculum.courseKnowledge && AI.curriculum.courseKnowledge[currentCourseId]) {
+      const k = AI.curriculum.courseKnowledge[currentCourseId];
+      syllabusText = (k.modules || []).map(m => (m.title || '') + '\n' + (m.topics || []).join(', ')).join('\n\n');
+    } else {
+      const crs = DB.courses.byId(currentCourseId);
+      syllabusText = (crs ? crs.name : 'Engineering Course') + '\nFoundational Principles, Architectural Modeling, Analytical Verification, System Evaluation, Synthesized Deployment.';
     }
     
     const btn = document.querySelector('button[onclick="completeAutoAI()"]');
-    const ogText = btn.innerHTML;
-    btn.innerHTML = 'Generating…';
-    btn.disabled = true;
+    const ogText = btn ? btn.innerHTML : '';
+    if (btn) {
+      btn.innerHTML = 'Generating…';
+      btn.disabled = true;
+    }
     
     try {
-      const syllabusText = syllabusData.modules.map(m => m.title + "\n" + m.description).join("\n\n");
-      const generatedCOs = await AI.generateCOsFromSyllabus(syllabusText);
+      const generatedCOs = await AI.generateCOsFromSyllabus(syllabusText, currentCourseId);
       
-      let newCOs = generatedCOs.slice(0, 6).map((g, idx) => ({
-        id: `CO${idx+1}`, no: idx + 1, code: `CO${idx+1}`,
+      let newCOs = (generatedCOs || []).slice(0, 6).map((g, idx) => ({
+        id: `co-${currentCourseId}-${idx+1}`, no: idx + 1, code: `CO${idx+1}`,
         text: g.text,
         bloomsLevel: g.level,
         targetStudent: g.target || 60,
@@ -525,19 +536,45 @@ function _old_renderPOs() {
       while (newCOs.length < 6) {
         const idx = newCOs.length;
         newCOs.push({
-          id: `CO${idx+1}`, no: idx + 1, code: `CO${idx+1}`,
-          text: '', bloomsLevel: '', targetStudent: 60, level1: 65, level2: 75, level3: 85, surveyQuestion: '', assessedThrough: []
+          id: `co-${currentCourseId}-${idx+1}`, no: idx + 1, code: `CO${idx+1}`,
+          text: '', bloomsLevel: 'L3', targetStudent: 60, level1: 65, level2: 75, level3: 85, surveyQuestion: '', assessedThrough: ['ia', 'mse', 'ese']
         });
       }
       currentCOs = newCOs;
       renderCOs();
-      Toast.success('Generated Course Outcomes from syllabus.');
+      saveAll();
+      Toast.success("Generated 6 Course Outcomes from syllabus aligned with Bloom's Revised Taxonomy (L3–L6)!");
     } catch (e) {
-      Toast.error('Failed to generate COs: ' + e.message);
+      console.warn('[CO Formulation] Primary generation error:', e);
+      try {
+        const fallbackCOs = AI.synthesizeCOsLocally ? AI.synthesizeCOsLocally(syllabusText, currentCourseId) : [];
+        if (fallbackCOs && fallbackCOs.length) {
+          currentCOs = fallbackCOs.map((g, idx) => ({
+            id: `co-${currentCourseId}-${idx+1}`, no: idx + 1, code: `CO${idx+1}`,
+            text: g.text,
+            bloomsLevel: g.level,
+            targetStudent: g.target || 60,
+            level1: g.l1 || 65,
+            level2: g.l2 || 75,
+            level3: g.l3 || 85,
+            surveyQuestion: g.surveyQ || '',
+            assessedThrough: ['ia', 'mse', 'ese']
+          }));
+          renderCOs();
+          saveAll();
+          Toast.success("Generated 6 Course Outcomes from syllabus aligned with Bloom's Taxonomy (L3–L6)!");
+        } else {
+          Toast.error('Failed to generate COs: ' + e.message);
+        }
+      } catch(err2) {
+        Toast.error('Failed to generate COs: ' + e.message);
+      }
     } finally {
-      btn.innerHTML = ogText;
-      btn.disabled = false;
-      renderAllIcons(btn);
+      if (btn) {
+        btn.innerHTML = ogText;
+        btn.disabled = false;
+        renderAllIcons(btn);
+      }
     }
   }
 

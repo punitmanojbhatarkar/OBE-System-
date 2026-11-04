@@ -15,7 +15,7 @@ from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from typing import Optional, List
+from typing import Optional, Any, Union, List
 import os
 import uuid
 from dotenv import load_dotenv
@@ -576,7 +576,9 @@ def get_course(course_id: str, db: Session = Depends(get_db)):
     return course_to_dict(c)
 
 class ExamScheme(BaseModel):
-    ia: int = 30; mse: int = 20; ese: int = 50
+    ia: Optional[Any] = 30
+    mse: Optional[Any] = 20
+    ese: Optional[Any] = 50
 
 class CourseBody(BaseModel):
     id: Optional[str] = None
@@ -1148,7 +1150,7 @@ class CoGenerationRequest(BaseModel):
 def api_generate_cos(req: CoGenerationRequest):
     return {"success": True, "data": generate_cos_from_syllabus(req.syllabus)}
 
-from typing import Optional
+from typing import Optional, Any, Union
 class CoPoRequest(BaseModel):
     cos: list
     pos: list

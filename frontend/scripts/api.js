@@ -8,7 +8,10 @@
 // Auto-detect: if served from the backend (same origin), use relative URLs.
 // If opened as file:// or locally, use hardcoded local URL. Otherwise use Render backend.
 const isLocal = window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const API_BASE = (window.location.protocol.startsWith('http') && window.location.host) ? window.location.origin : (isLocal ? 'http://127.0.0.1:8000' : 'https://obe-system-backend-t0ri.onrender.com');
+const isFrontendOnlyHost = window.location.hostname.includes('vercel.app') || window.location.hostname.includes('github.io');
+const API_BASE = isFrontendOnlyHost 
+  ? 'https://obe-system-backend-t0ri.onrender.com' 
+  : ((window.location.protocol.startsWith('http') && window.location.host) ? window.location.origin : (isLocal ? 'http://127.0.0.1:8000' : 'https://obe-system-backend-t0ri.onrender.com'));
 window.API_BASE = API_BASE;
 
 let apiQueue = Promise.resolve();

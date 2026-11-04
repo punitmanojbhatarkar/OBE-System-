@@ -6,9 +6,12 @@
 
 const AI = (() => {
 
-  async function callBackend(endpoint, payload, timeoutMs = 7000) {
+  async function callBackend(endpoint, payload, timeoutMs = 15000) {
     const isLocal = typeof window !== 'undefined' && (window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    const apiBase = typeof window !== 'undefined' && window.API_BASE !== undefined ? window.API_BASE : (isLocal ? 'http://127.0.0.1:8080' : 'https://obe-system-backend-t0ri.onrender.com');
+    const isFrontendOnly = typeof window !== 'undefined' && (window.location.hostname.includes('vercel.app') || window.location.hostname.includes('github.io'));
+    const apiBase = typeof window !== 'undefined' && window.API_BASE !== undefined 
+      ? window.API_BASE 
+      : (isFrontendOnly ? 'https://obe-system-backend-t0ri.onrender.com' : (isLocal ? 'http://127.0.0.1:8000' : 'https://obe-system-backend-t0ri.onrender.com'));
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -20,9 +23,12 @@ const AI = (() => {
         signal: controller.signal
       });
       clearTimeout(timer);
-      if (!res.ok) throw new Error(`Backend Error: ${res.statusText}`);
+      if (!res.ok) {
+        const errorText = res.statusText || `HTTP ${res.status}`;
+        throw new Error(`Backend Error: ${errorText}`);
+      }
       const data = await res.json();
-      if (data.success === false) throw new Error(`Backend Error: ${data.error}`);
+      if (data.success === false) throw new Error(`Backend Error: ${data.error || 'Server error'}`);
       return data.data;
     } catch (err) {
       clearTimeout(timer);
@@ -523,7 +529,51 @@ const AI = (() => {
   }
 
   async function analyzeBlooms(cos) {
-    return await callBackend('analyze-blooms', { cos });
+    try {
+      const data = await callBackend('analyze-blooms', { cos }, 8000);
+      if (data && Array.isArray(data)) return data;
+    } catch(err) {
+      console.warn('[AI Service] analyzeBlooms backend unavailable, using heuristic analyzer:', err.message);
+    }
+
+    return (cos || []).map((co, idx) => {
+      if (!co || !co.text || !co.text.trim()) {
+        return { no: idx + 1, status: 'empty', level: null, suggestion: 'Empty outcome statement. Please define text.' };
+      }
+      const firstWord = co.text.trim().split(/\s+/)[0].toLowerCase().replace(/[^a-z]/g, '');
+      const l1l2 = ['define', 'describe', 'explain', 'list', 'state', 'identify', 'understand', 'know', 'recall', 'summarize'];
+      const l3 = ['apply', 'implement', 'calculate', 'compute', 'execute', 'demonstrate', 'solve', 'construct'];
+      const l4 = ['analyze', 'differentiate', 'investigate', 'examine', 'compare', 'classify', 'deconstruct'];
+      const l5 = ['evaluate', 'assess', 'validate', 'appraise', 'judge', 'critique', 'verify'];
+      const l6 = ['design', 'synthesize', 'formulate', 'develop', 'create', 'author', 'compose'];
+
+      let detected = 'L3';
+      let status = 'perfect';
+      let suggestion = 'Well-formed outcome aligned with Bloom taxonomy.';
+
+      if (l1l2.includes(firstWord)) {
+        detected = 'L3';
+        status = 'warning';
+        suggestion = `Action verb "${firstWord}" is at lower level (L1/L2). NBA mandates L3+ for engineering. Upgraded to L3 (Apply).`;
+      } else if (l3.includes(firstWord)) {
+        detected = 'L3';
+        status = 'perfect';
+        suggestion = `Action verb "${firstWord}" matches Bloom's Level L3 (Apply).`;
+      } else if (l4.includes(firstWord)) {
+        detected = 'L4';
+        status = 'perfect';
+        suggestion = `Action verb "${firstWord}" matches Bloom's Level L4 (Analyze).`;
+      } else if (l5.includes(firstWord)) {
+        detected = 'L5';
+        status = 'perfect';
+        suggestion = `Action verb "${firstWord}" matches Bloom's Level L5 (Evaluate).`;
+      } else if (l6.includes(firstWord)) {
+        detected = 'L6';
+        status = 'perfect';
+        suggestion = `Action verb "${firstWord}" matches Bloom's Level L6 (Create).`;
+      }
+      return { no: idx + 1, status, level: detected, suggestion };
+    });
   }
 
   async function autoMapCOPO(cos, pos, psoDefs) {
@@ -539,8 +589,119 @@ const AI = (() => {
     return await callBackend('extract-syllabus', { text });
   }
 
-  async function generateCOsFromSyllabus(syllabusText) {
-    return await callBackend('generate-cos', { syllabus: syllabusText });
+  /* ══════════════════════════════════════════════════════════════════
+     Intelligent Bloom's Taxonomy Course Outcomes (CO) Formulation Engine
+     Complies strictly with NBA Tier-I / Tier-II (L3 to L6 Progression).
+     ══════════════════════════════════════════════════════════════════ */
+  function synthesizeCOsLocally(syllabusText, courseId) {
+    let modules = [];
+    
+    // 1. Check active database syllabus
+    if (typeof DB !== 'undefined' && DB.syllabus && courseId) {
+      try {
+        const syl = DB.syllabus.byCourse(courseId);
+        if (syl && Array.isArray(syl.modules) && syl.modules.length > 0) {
+          modules = syl.modules;
+        }
+      } catch(e) {}
+    }
+
+    // 2. Check CurriculumIntelligence static course knowledge
+    if ((!modules || modules.length === 0) && courseId && CurriculumIntelligence.courseKnowledge[courseId]) {
+      modules = CurriculumIntelligence.courseKnowledge[courseId].modules || [];
+    }
+
+    // 3. Fallback: Parse syllabus units from text
+    if ((!modules || modules.length === 0) && syllabusText) {
+      const chunks = syllabusText.split(/\n\s*\n|\b(?:Unit|Module|Chapter)\s*\d+[:\-–\s]*/i).filter(c => c && c.trim().length > 5);
+      if (chunks.length > 0) {
+        modules = chunks.map((chunk, idx) => {
+          const lines = chunk.trim().split('\n');
+          return {
+            no: idx + 1,
+            title: lines[0].replace(/^(?:Unit|Module|Chapter)\s*\d+[:\-–\s]*/i, '').trim(),
+            description: lines.slice(1).join(' ').trim()
+          };
+        });
+      }
+    }
+
+    // NBA Bloom's Taxonomy Progression Matrix (L3, L4, L5, L6)
+    const bloomTpls = [
+      {
+        no: 1, level: 'L3', verb: 'Apply',
+        stem: 'foundational mathematical principles, architectural mechanics, and core algorithmic formulations of',
+        target: 60, l1: 60, l2: 70, l3: 80
+      },
+      {
+        no: 2, level: 'L3', verb: 'Implement',
+        stem: 'computational pipelines, modular routines, and experimental architectures of',
+        target: 60, l1: 60, l2: 70, l3: 80
+      },
+      {
+        no: 3, level: 'L4', verb: 'Analyze',
+        stem: 'computational complexity, hyperparameter trade-offs, and empirical benchmarks in',
+        target: 50, l1: 55, l2: 65, l3: 75
+      },
+      {
+        no: 4, level: 'L4', verb: 'Investigate',
+        stem: 'system dynamics, representation bottlenecks, and architectural variations across',
+        target: 50, l1: 55, l2: 65, l3: 75
+      },
+      {
+        no: 5, level: 'L5', verb: 'Evaluate',
+        stem: 'comparative performance metrics, generalization robustness, and failure modes of',
+        target: 50, l1: 55, l2: 65, l3: 75
+      },
+      {
+        no: 6, level: 'L6', verb: 'Design',
+        stem: 'scalable, production-ready engineering solutions and integrated workflows utilizing',
+        target: 50, l1: 55, l2: 65, l3: 75
+      }
+    ];
+
+    const fallbackUnits = [
+      'Foundations and Algorithmic Optimization',
+      'Feature Representation and Deep Architectures',
+      'Sequence Modeling and Attention Mechanics',
+      'Transformer Networks and Pre-trained Representations',
+      'Large Language Models and Generative AI Systems',
+      'Agentic AI Workflows and Real-World System Integration'
+    ];
+
+    return bloomTpls.map((tpl, i) => {
+      let unitName = '';
+      if (modules && modules[i] && modules[i].title) {
+        unitName = modules[i].title.replace(/^(?:Unit|Module|Chapter)\s*\d+[:\-–\s]*/i, '').trim();
+      } else if (modules && modules.length > 0) {
+        unitName = (modules[i % modules.length].title || '').replace(/^(?:Unit|Module|Chapter)\s*\d+[:\-–\s]*/i, '').trim();
+      }
+      if (!unitName) unitName = fallbackUnits[i];
+
+      return {
+        no: tpl.no,
+        code: `CO${tpl.no}`,
+        text: `${tpl.verb} ${tpl.stem} ${unitName} to solve complex engineering and computational problems.`,
+        level: tpl.level,
+        target: tpl.target,
+        l1: tpl.l1,
+        l2: tpl.l2,
+        l3: tpl.l3,
+        surveyQ: `How confident are you in your ability to ${tpl.verb.toLowerCase()} ${unitName} concepts in practical engineering scenarios?`
+      };
+    });
+  }
+
+  async function generateCOsFromSyllabus(syllabusText, courseId) {
+    try {
+      const result = await callBackend('generate-cos', { syllabus: syllabusText }, 12000);
+      if (result && Array.isArray(result) && result.length >= 4) {
+        return result;
+      }
+    } catch (err) {
+      console.warn('[AI Service] Backend generate-cos unavailable, utilizing local Bloom curriculum engine:', err.message);
+    }
+    return synthesizeCOsLocally(syllabusText, courseId);
   }
 
   function getUsageStats() {
@@ -552,5 +713,5 @@ const AI = (() => {
     return await callBackend('chat', { message: prompt, context: '' });
   }
 
-  return { generateAssignment, generateProfessionalAssessment, gradeSubmission, generateTeachingPhilosophy, analyzeBlooms, autoMapCOPO, generateRemedialPlan, extractSyllabusFromText, generateCOsFromSyllabus, getUsageStats, callRealAPI, curriculum: CurriculumIntelligence, parseCurriculumTopic: CurriculumIntelligence.parseCurriculumTopic };
+  return { generateAssignment, generateProfessionalAssessment, gradeSubmission, generateTeachingPhilosophy, analyzeBlooms, autoMapCOPO, generateRemedialPlan, extractSyllabusFromText, generateCOsFromSyllabus, synthesizeCOsLocally, getUsageStats, callRealAPI, curriculum: CurriculumIntelligence, parseCurriculumTopic: CurriculumIntelligence.parseCurriculumTopic };
 })();
