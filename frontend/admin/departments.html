@@ -99,7 +99,7 @@
     grid.innerHTML = depts.map(d => {
       const hod = users.find(u => u.id === d.hodId) ||
                   users.find(u => (u.deptId === d.id || (d.code && u.deptId === d.code)) && u.role === 'hod') ||
-                  (d.hod ? (users.find(u => u.name === d.hod) || { name: d.hod }) : null);
+                  (d.hod ? users.find(u => u.name && u.name.trim().toLowerCase() === d.hod.trim().toLowerCase()) : null);
       const fCount = users.filter(u => (u.deptId === d.id || (d.code && u.deptId === d.code)) && (u.role === 'faculty' || u.role === 'hod')).length;
       const cCount = courses.filter(c => c.deptId === d.id || (d.code && c.deptId === d.code)).length;
 
@@ -184,7 +184,7 @@
     const d = DB.departments.byId(id);
     if (!d) return;
     const users = DB.users.all().filter(u => u.role === 'hod' || u.role === 'faculty');
-    const currentHodId = d.hodId || (users.find(u => (u.deptId === d.id || (d.code && u.deptId === d.code)) && u.role === 'hod')?.id) || (users.find(u => u.name === d.hod)?.id);
+    const currentHodId = d.hodId || (users.find(u => (u.deptId === d.id || (d.code && u.deptId === d.code)) && u.role === 'hod')?.id) || (users.find(u => u.name && u.name.trim().toLowerCase() === (d.hod || '').trim().toLowerCase())?.id);
     const hodOptions = users.map(u => `<option value="${u.id}" ${u.id===currentHodId?'selected':''}>${u.name} (${u.role === 'hod' ? 'HOD' : 'Faculty'} - ${u.email})</option>`).join('');
 
     const html = `

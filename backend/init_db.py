@@ -19,7 +19,7 @@ def seed_db():
         models.Department(id="dept-ds",  name="Data Science",           code="DS",  hod="Dr. A. Mehta",       hodId="usr-hod2",       vision="To be a center of excellence in Data Science.",              mission="To foster innovation and problem-solving through data-centric approaches."),
         models.Department(id="dept-cs",  name="Computer Engineering",   code="CS",  hod="Dr. V. C. Wangikar", hodId="usr-hod1", vision="To create globally competent computer professionals.",        mission="To empower students with robust computational skills and ethical practices."),
         models.Department(id="dept-ai",  name="AI & Machine Learning",  code="AI",  hod="Dr. R. Sharma",      hodId="usr-rs",      vision="To lead the future of artificial intelligence research.",     mission="Pioneering intelligent solutions for future challenges."),
-        models.Department(id="dept-it",  name="Information Technology", code="IT",  hod="Dr. P. Kulkarni",    vision="To innovate in IT solutions and services.",                   mission="Bridging the gap between technology and business needs."),
+        models.Department(id="dept-it",  name="Information Technology", code="IT",  hod="Dr. P. Kulkarni",    hodId="usr-hod-it",    vision="To innovate in IT solutions and services.",                   mission="Bridging the gap between technology and business needs."),
     ]
     db.add_all(departments)
 
