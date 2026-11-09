@@ -154,7 +154,7 @@
     const depts = DB.departments.all();
 
     grid.innerHTML = users.map(u => {
-      const dept = depts.find(d => d.id === u.deptId);
+      const dept = depts.find(d => d.id === u.deptId || (u.deptId && d.code === u.deptId));
       const isSelf = u.id === currentUser.id;
 
       let roleBadge = 'badge-neutral';
@@ -367,14 +367,37 @@
     const defaultPw = role + '123';
     const password = rawPw || defaultPw;
 
+    let targetUserId = id;
     if (id) {
       const existing = DB.users.byId(id);
       DB.users.update({ ...existing, name, email, role, deptId, password });
       Toast.success('User updated.');
     } else {
-      DB.users.add({ name, email, role, deptId, password });
+      const created = DB.users.add({ name, email, role, deptId, password });
+      targetUserId = created ? created.id : null;
       Toast.success(`User created. Login password: ${password}`);
     }
+
+    // Bidirectional sync: if role === 'hod' and deptId, link this user as HOD of that department
+    if (role === 'hod' && deptId) {
+      const depts = DB.departments.all();
+      const targetDept = depts.find(d => d.id === deptId || d.code === deptId);
+      if (targetDept) {
+        if (targetDept.hodId && targetDept.hodId !== targetUserId) {
+          const oldHod = DB.users.byId(targetDept.hodId);
+          if (oldHod) DB.users.update({ ...oldHod, role: 'faculty' });
+        }
+        DB.departments.update({ ...targetDept, hodId: targetUserId, hod: name });
+      }
+    } else if (id) {
+      const depts = DB.departments.all();
+      depts.forEach(d => {
+        if (d.hodId === id || d.hod === name) {
+          DB.departments.update({ ...d, hodId: null, hod: null });
+        }
+      });
+    }
+
     Modal.close();
     renderUsers();
   }
@@ -383,6 +406,23 @@
     const u = DB.users.byId(id);
     if (!u) return;
     Modal.confirm('Delete User', `Remove account for ${u.name} (${u.email})?`, () => {
+      // 1. If this user was HOD of any department, unassign them
+      const depts = DB.departments.all();
+      depts.forEach(d => {
+        if (d.hodId === id || d.hod === u.name) {
+          DB.departments.update({ ...d, hodId: null, hod: null });
+        }
+      });
+      // 2. If this user was faculty of any course, unassign them
+      const courses = DB.courses.all();
+      courses.forEach(c => {
+        let changed = false;
+        let upd = { ...c };
+        if (c.facultyId === id) { upd.facultyId = null; changed = true; }
+        if (c.champion === u.name || c.championId === id) { upd.champion = null; upd.championId = null; changed = true; }
+        if (changed) DB.courses.update(upd);
+      });
+      // 3. Delete user
       DB.users.delete(id);
       renderUsers();
       Toast.success('User account removed.');

@@ -57,19 +57,71 @@ try:
 except Exception:
     pass
 
+try:
+    with engine.begin() as conn:
+        conn.execute(text('ALTER TABLE departments ADD COLUMN "hodId" VARCHAR'))
+except Exception:
+    pass
+
 app = FastAPI(title="AI OBE System", version="2.0.0")
 
-# Auto-seed initial database if no courses exist
+def consolidate_departments_and_sync(db: Session):
+    try:
+        from sqlalchemy import func
+        depts = db.query(models.Department).all()
+        by_code = {}
+        for d in depts:
+            code_key = (d.code or "").strip().upper()
+            if not code_key: continue
+            by_code.setdefault(code_key, []).append(d)
+
+        for code, dept_list in by_code.items():
+            if len(dept_list) > 1:
+                canonical = next((d for d in dept_list if d.id.startswith("dept-")), dept_list[0])
+                for dup in dept_list:
+                    if dup.id == canonical.id: continue
+                    db.query(models.User).filter(models.User.deptId == dup.id).update({"deptId": canonical.id}, synchronize_session=False)
+                    db.query(models.Course).filter(models.Course.deptId == dup.id).update({"deptId": canonical.id}, synchronize_session=False)
+                    if not canonical.vision and dup.vision: canonical.vision = dup.vision
+                    if not canonical.mission and dup.mission: canonical.mission = dup.mission
+                    if not canonical.hod and dup.hod: canonical.hod = dup.hod
+                    if not getattr(canonical, "hodId", None) and getattr(dup, "hodId", None): canonical.hodId = dup.hodId
+                    db.delete(dup)
+                db.commit()
+
+        for d in db.query(models.Department).all():
+            if getattr(d, "hodId", None):
+                u = db.query(models.User).filter(models.User.id == d.hodId).first()
+                if u:
+                    d.hod = u.name
+                    if u.role != "hod": u.role = "hod"
+                    if u.deptId != d.id: u.deptId = d.id
+            else:
+                u = db.query(models.User).filter(
+                    (models.User.deptId == d.id) | (models.User.deptId == d.code),
+                    models.User.role == "hod"
+                ).first()
+                if u:
+                    d.hodId = u.id
+                    d.hod = u.name
+                    u.deptId = d.id
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"[CONSOLIDATION ERROR] {e}")
+
+# Auto-seed initial database ONLY if no departments exist (prevents overwriting user deletions)
 try:
     from database import SessionLocal
     import init_db
     with SessionLocal() as db_check:
-        if db_check.query(models.Course).count() == 0:
-            print("[DB] No courses found in database. Seeding initial institutional data...")
+        if db_check.query(models.Department).count() == 0:
+            print("[DB] Initial database empty. Seeding initial institutional data...")
             init_db.seed_db()
             print("[DB] Initial database seeding completed.")
+        consolidate_departments_and_sync(db_check)
 except Exception as e:
-    print(f"[DB] Auto-seed check failed or skipped: {e}")
+    print(f"[DB] Auto-seed or consolidation check failed: {e}")
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -143,9 +195,19 @@ def user_to_dict(u: models.User) -> dict:
     return {"id": u.id, "name": u.name, "email": u.email, "role": u.role,
             "deptId": u.deptId, "avatar": u.avatar}
 
-def dept_to_dict(d: models.Department) -> dict:
-    return {"id": d.id, "name": d.name, "code": d.code, "hod": d.hod,
-            "vision": d.vision, "mission": d.mission}
+def dept_to_dict(d: models.Department, db: Optional[Session] = None) -> dict:
+    hod_id = getattr(d, "hodId", None)
+    hod_name = d.hod
+    if db and not hod_id:
+        u = db.query(models.User).filter(
+            (models.User.deptId == d.id) | (models.User.deptId == d.code),
+            models.User.role == "hod"
+        ).first()
+        if u:
+            hod_id = u.id
+            hod_name = u.name
+    return {"id": d.id, "name": d.name, "code": d.code, "hod": hod_name,
+            "hodId": hod_id, "vision": d.vision, "mission": d.mission}
 
 def student_to_dict(s: models.Student) -> dict:
     return {"id": s.id, "courseId": s.courseId, "prn": s.prn, "name": s.name,
@@ -343,7 +405,7 @@ def get_bootstrap_data(db: Session = Depends(get_db)):
     return {
         "success": True,
         "config": cfg_data,
-        "departments": [dept_to_dict(d) for d in depts],
+        "departments": [dept_to_dict(d, db) for d in depts],
         "users": [user_to_dict(u) for u in users],
         "patterns": [{"id": p.id, "name": p.name, "year": p.year} for p in patterns],
         "outcomes": [{"id": o.id, "code": o.code, "description": o.description, "type": o.type} for o in outcomes],
@@ -468,43 +530,92 @@ def academic_rollover(body: RolloverBody, db: Session = Depends(get_db)):
 
 @app.get("/api/departments")
 def get_departments(db: Session = Depends(get_db)):
-    return [dept_to_dict(d) for d in db.query(models.Department).all()]
+    return [dept_to_dict(d, db) for d in db.query(models.Department).all()]
 
 @app.get("/api/departments/{dept_id}")
 def get_department(dept_id: str, db: Session = Depends(get_db)):
-    d = db.query(models.Department).filter(models.Department.id == dept_id).first()
+    d = db.query(models.Department).filter((models.Department.id == dept_id) | (models.Department.code == dept_id)).first()
     if not d: raise HTTPException(404, "Department not found")
-    return dept_to_dict(d)
+    return dept_to_dict(d, db)
 
 class DepartmentBody(BaseModel):
     id: Optional[str] = None
     name: str
     code: str
     hod: Optional[str] = None
+    hodId: Optional[str] = None
     vision: Optional[str] = None
     mission: Optional[str] = None
 
 @app.post("/api/departments")
 def add_department(body: DepartmentBody, db: Session = Depends(get_db)):
-    d = models.Department(id=body.id or uid(), name=body.name, code=body.code,
-                          hod=body.hod, vision=body.vision, mission=body.mission)
-    db.add(d); db.commit(); db.refresh(d)
-    return dept_to_dict(d)
+    from sqlalchemy import func
+    code_clean = (body.code or "").strip().upper()
+    existing = db.query(models.Department).filter(func.upper(models.Department.code) == code_clean).first()
+    if existing:
+        d = existing
+        d.name = body.name or d.name
+        if body.vision: d.vision = body.vision
+        if body.mission: d.mission = body.mission
+    else:
+        d = models.Department(
+            id=body.id or uid(), name=body.name, code=code_clean or body.code,
+            hod=body.hod, hodId=body.hodId, vision=body.vision, mission=body.mission
+        )
+        db.add(d)
+
+    if body.hodId:
+        d.hodId = body.hodId
+        u = db.query(models.User).filter(models.User.id == body.hodId).first()
+        if u:
+            d.hod = u.name
+            u.role = "hod"
+            u.deptId = d.id
+    elif body.hod:
+        u = db.query(models.User).filter(models.User.name == body.hod).first()
+        if u:
+            d.hodId = u.id
+            u.role = "hod"
+            u.deptId = d.id
+
+    db.commit()
+    db.refresh(d)
+    return dept_to_dict(d, db)
 
 @app.put("/api/departments/{dept_id}")
 def update_department(dept_id: str, body: DepartmentBody, db: Session = Depends(get_db)):
-    d = db.query(models.Department).filter(models.Department.id == dept_id).first()
-    if not d: raise HTTPException(404)
-    for field in ["name","code","hod","vision","mission"]:
+    from sqlalchemy import func
+    d = db.query(models.Department).filter((models.Department.id == dept_id) | (func.upper(models.Department.code) == dept_id.upper())).first()
+    if not d: raise HTTPException(404, "Department not found")
+    for field in ["name", "code", "hod", "hodId", "vision", "mission"]:
         val = getattr(body, field, None)
         if val is not None: setattr(d, field, val)
+
+    if body.hodId:
+        d.hodId = body.hodId
+        u = db.query(models.User).filter(models.User.id == body.hodId).first()
+        if u:
+            d.hod = u.name
+            u.role = "hod"
+            u.deptId = d.id
+    elif body.hod:
+        u = db.query(models.User).filter(models.User.name == body.hod).first()
+        if u:
+            d.hodId = u.id
+            u.role = "hod"
+            u.deptId = d.id
+
     db.commit()
-    return dept_to_dict(d)
+    return dept_to_dict(d, db)
 
 @app.delete("/api/departments/{dept_id}")
 def delete_department(dept_id: str, db: Session = Depends(get_db)):
-    d = db.query(models.Department).filter(models.Department.id == dept_id).first()
-    if d: db.delete(d); db.commit()
+    d = db.query(models.Department).filter((models.Department.id == dept_id) | (models.Department.code == dept_id)).first()
+    if d:
+        db.query(models.User).filter((models.User.deptId == d.id) | (models.User.deptId == d.code)).update({"deptId": None}, synchronize_session=False)
+        db.query(models.Course).filter((models.Course.deptId == d.id) | (models.Course.deptId == d.code)).update({"deptId": None}, synchronize_session=False)
+        db.delete(d)
+        db.commit()
     return {"success": True}
 
 # ─────────────────────────────────────────────
@@ -535,27 +646,68 @@ class UserBody(BaseModel):
 
 @app.post("/api/users")
 def add_user(body: UserBody, db: Session = Depends(get_db)):
-    u = models.User(id=body.id or uid(), name=body.name, email=body.email,
-                    password=body.password, role=body.role, deptId=body.deptId,
-                    avatar=body.avatar or body.name[0].upper())
-    db.add(u); db.commit(); db.refresh(u)
+    existing = db.query(models.User).filter(models.User.email == body.email).first()
+    if existing:
+        u = existing
+        u.name = body.name or u.name
+        u.role = body.role or u.role
+        u.deptId = body.deptId or u.deptId
+        if body.password: u.password = body.password
+        if body.avatar: u.avatar = body.avatar
+    else:
+        u = models.User(id=body.id or uid(), name=body.name, email=body.email,
+                        password=body.password or (body.role + "123"), role=body.role, deptId=body.deptId,
+                        avatar=body.avatar or (body.name[0].upper() if body.name else "U"))
+        db.add(u)
+
+    if u.role == "hod" and u.deptId:
+        dept = db.query(models.Department).filter((models.Department.id == u.deptId) | (models.Department.code == u.deptId)).first()
+        if dept:
+            dept.hodId = u.id
+            dept.hod = u.name
+            u.deptId = dept.id
+
+    db.commit()
+    db.refresh(u)
     return user_to_dict(u)
 
 @app.put("/api/users/{user_id}")
 def update_user(user_id: str, body: UserBody, db: Session = Depends(get_db)):
     u = db.query(models.User).filter(models.User.id == user_id).first()
-    if not u: raise HTTPException(404)
-    for f in ["name","email","role","deptId","avatar"]:
+    if not u: raise HTTPException(404, "User not found")
+    old_role = u.role
+    old_dept_id = u.deptId
+
+    for f in ["name", "email", "role", "deptId", "avatar"]:
         val = getattr(body, f, None)
         if val is not None: setattr(u, f, val)
     if body.password: u.password = body.password
+
+    if u.role == "hod" and u.deptId:
+        dept = db.query(models.Department).filter((models.Department.id == u.deptId) | (models.Department.code == u.deptId)).first()
+        if dept:
+            dept.hodId = u.id
+            dept.hod = u.name
+            u.deptId = dept.id
+    elif old_role == "hod" and (u.role != "hod" or u.deptId != old_dept_id):
+        old_depts = db.query(models.Department).filter((models.Department.hodId == u.id) | (models.Department.id == old_dept_id)).all()
+        for od in old_depts:
+            if od.hodId == u.id:
+                od.hodId = None
+                od.hod = None
+
     db.commit()
     return user_to_dict(u)
 
 @app.delete("/api/users/{user_id}")
 def delete_user(user_id: str, db: Session = Depends(get_db)):
     u = db.query(models.User).filter(models.User.id == user_id).first()
-    if u: db.delete(u); db.commit()
+    if u:
+        db.query(models.Course).filter(models.Course.facultyId == user_id).update({"facultyId": None}, synchronize_session=False)
+        db.query(models.Course).filter(models.Course.champion == u.name).update({"champion": None}, synchronize_session=False)
+        db.query(models.Department).filter((models.Department.hodId == user_id) | (models.Department.hod == u.name)).update({"hodId": None, "hod": None}, synchronize_session=False)
+        db.delete(u)
+        db.commit()
     return {"success": True}
 
 # ─────────────────────────────────────────────
@@ -653,7 +805,20 @@ def update_course(course_id: str, body: CourseBody, db: Session = Depends(get_db
 @app.delete("/api/courses/{course_id}")
 def delete_course(course_id: str, db: Session = Depends(get_db)):
     c = db.query(models.Course).filter(models.Course.id == course_id).first()
-    if c: db.delete(c); db.commit()
+    if c:
+        db.query(models.CourseOutcome).filter(models.CourseOutcome.courseId == course_id).delete(synchronize_session=False)
+        db.query(models.PoMapping).filter(models.PoMapping.courseId == course_id).delete(synchronize_session=False)
+        db.query(models.Student).filter(models.Student.courseId == course_id).delete(synchronize_session=False)
+        db.query(models.IAQuestion).filter(models.IAQuestion.courseId == course_id).delete(synchronize_session=False)
+        db.query(models.Assignment).filter(models.Assignment.courseId == course_id).delete(synchronize_session=False)
+        db.query(models.Syllabus).filter(models.Syllabus.courseId == course_id).delete(synchronize_session=False)
+        db.query(models.IndicatorMapping).filter(models.IndicatorMapping.courseId == course_id).delete(synchronize_session=False)
+        db.query(models.MarksIA).filter(models.MarksIA.courseId == course_id).delete(synchronize_session=False)
+        db.query(models.MarksMSE).filter(models.MarksMSE.courseId == course_id).delete(synchronize_session=False)
+        db.query(models.MarksESE).filter(models.MarksESE.courseId == course_id).delete(synchronize_session=False)
+        db.query(models.Survey).filter(models.Survey.courseId == course_id).delete(synchronize_session=False)
+        db.delete(c)
+        db.commit()
     return {"success": True}
 
 # ─────────────────────────────────────────────

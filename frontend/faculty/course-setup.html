@@ -372,8 +372,10 @@
 
   function populateDepartmentFaculty(course) {
     const targetDeptId = course.deptId || user.deptId || 'dept-cs';
-    const dept = DB.departments.byId(targetDeptId);
+    const dept = DB.departments.byId(targetDeptId) || DB.departments.all().find(d => d.code === targetDeptId || d.id === targetDeptId);
     const deptName = dept ? dept.name : targetDeptId;
+    const validDeptIds = [targetDeptId];
+    if (dept) validDeptIds.push(dept.id, dept.code);
     
     const deptDisplay = document.getElementById('s-dept-display');
     if (deptDisplay) {
@@ -386,8 +388,11 @@
     let deptFaculty = allUsers.filter(u => {
       const isTeacher = u.role === 'faculty' || u.role === 'hod';
       if (!isTeacher) return false;
-      return u.deptId === targetDeptId;
+      return validDeptIds.includes(u.deptId);
     });
+    if (!deptFaculty.length) {
+      deptFaculty = allUsers.filter(u => u.role === 'faculty' || u.role === 'hod');
+    }
 
     // Ensure currently assigned faculty or champion are included if in legacy state
     if (course.facultyId && !deptFaculty.some(u => u.id === course.facultyId)) {

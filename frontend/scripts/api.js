@@ -9,9 +9,11 @@
 // If opened as file:// or locally, use hardcoded local URL. Otherwise use Render backend.
 const isLocal = window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const isFrontendOnlyHost = window.location.hostname.includes('vercel.app') || window.location.hostname.includes('github.io');
-const API_BASE = isFrontendOnlyHost 
-  ? 'https://obe-system-backend-t0ri.onrender.com' 
-  : ((window.location.protocol.startsWith('http') && window.location.host) ? window.location.origin : (isLocal ? 'http://127.0.0.1:8000' : 'https://obe-system-backend-t0ri.onrender.com'));
+const API_BASE = (isLocal && window.location.port !== '8000')
+  ? 'http://127.0.0.1:8000'
+  : (isFrontendOnlyHost 
+      ? 'https://obe-system-backend-t0ri.onrender.com' 
+      : ((window.location.protocol.startsWith('http') && window.location.host) ? window.location.origin : 'https://obe-system-backend-t0ri.onrender.com'));
 window.API_BASE = API_BASE;
 
 let apiQueue = Promise.resolve();
@@ -243,7 +245,7 @@ async function syncFromBackend(force = false) {
         localStorage.setItem('obe_outcomes', JSON.stringify(bootstrap.outcomes || []));
 
         const courses = (bootstrap.courses || []).map(normalizeCourse);
-        mergeLocalStore('obe_courses', courses, (a, b) => a.id === b.id);
+        localStorage.setItem('obe_courses', JSON.stringify(courses));
         mergeLocalStore('obe_cos', bootstrap.cos || [], (a, b) => a.id === b.id || (a.courseId === b.courseId && String(a.no) === String(b.no)));
         mergeLocalStore('obe_po_mapping', bootstrap.po_mappings || [], (a, b) => a.courseId === b.courseId && String(a.coNo) === String(b.coNo) && a.po === b.po);
         localStorage.setItem('obe_indicator_mapping', JSON.stringify(bootstrap.indicator_mappings || {}));
@@ -370,7 +372,7 @@ async function syncFromBackend(force = false) {
       localStorage.setItem('obe_outcomes', JSON.stringify(outcomesRes.value));
     }
     if (coursesRes.status === 'fulfilled' && Array.isArray(coursesRes.value)) {
-      mergeLocalStore('obe_courses', coursesRes.value.map(normalizeCourse), (a, b) => a.id === b.id);
+      localStorage.setItem('obe_courses', JSON.stringify(coursesRes.value.map(normalizeCourse)));
     }
 
     sessionStorage.setItem('obe_last_synced_at', now.toString());

@@ -18,6 +18,7 @@ class Department(Base):
     name = Column(String)
     code = Column(String)
     hod = Column(String, nullable=True)
+    hodId = Column(String, nullable=True)
     vision = Column(Text, nullable=True)
     mission = Column(Text, nullable=True)
 

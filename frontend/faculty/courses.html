@@ -410,7 +410,12 @@
 
   function updateModalFacultyDropdown(targetDeptId, currentFacultyId, currentChampion) {
     const allUsers = DB.users.all();
-    let deptFaculty = allUsers.filter(u => (u.role === 'faculty' || u.role === 'hod') && u.deptId === targetDeptId);
+    const depts = DB.departments.all();
+    const currentDept = depts.find(d => d.id === targetDeptId || d.code === targetDeptId);
+    const validDeptIds = [targetDeptId];
+    if (currentDept) validDeptIds.push(currentDept.id, currentDept.code);
+
+    let deptFaculty = allUsers.filter(u => (u.role === 'faculty' || u.role === 'hod') && validDeptIds.includes(u.deptId));
     if (!deptFaculty.length) deptFaculty = allUsers.filter(u => u.role === 'faculty' || u.role === 'hod');
 
     const fSelect = document.getElementById('f-faculty');

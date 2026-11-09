@@ -10,3 +10,6 @@ node_modules/
 .pytest_cache/
 .vscode/
 .idea/
+scratch/
+.playwright-mcp/
+verified_*.png

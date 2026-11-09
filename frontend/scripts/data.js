@@ -120,7 +120,13 @@ const DB = (() => {
       return courses.all().filter(c => {
         if (!c) return false;
         // HOD supervises all courses within their department
-        if (u && (u.role === 'hod') && u.deptId && c.deptId === u.deptId) return true;
+        if (u && (u.role === 'hod') && u.deptId) {
+          const depts = (typeof departments !== 'undefined' && departments.all) ? departments.all() : [];
+          const uDept = depts.find(d => d.id === u.deptId || d.code === u.deptId);
+          const targetIds = [u.deptId];
+          if (uDept) { targetIds.push(uDept.id, uDept.code); }
+          if (targetIds.includes(c.deptId)) return true;
+        }
         // Strictly only courses created by or assigned to this exact login ID
         if (c.facultyId && String(c.facultyId).trim() === cleanFid) return true;
         if (c.createdBy && String(c.createdBy).trim() === cleanFid) return true;
@@ -130,7 +136,12 @@ const DB = (() => {
       });
     },
     byDept(did) {
-      return courses.all().filter(c => c.deptId === did);
+      if (!did) return [];
+      const depts = (typeof departments !== 'undefined' && departments.all) ? departments.all() : [];
+      const dept = depts.find(d => d.id === did || d.code === did);
+      const targetIds = [did];
+      if (dept) { targetIds.push(dept.id, dept.code); }
+      return courses.all().filter(c => targetIds.includes(c.deptId));
     },
     add(c) { const all = courses.all(); c.id = uid(); all.push(c); set(KEYS.courses, all); return c; },
     update(c) { const all = courses.all().map(x => x.id === c.id ? c : x); set(KEYS.courses, all); return c; },

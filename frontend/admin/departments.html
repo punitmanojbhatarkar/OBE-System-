@@ -97,9 +97,11 @@
     const courses = DB.courses.all();
 
     grid.innerHTML = depts.map(d => {
-      const hod = users.find(u => u.id === d.hodId);
-      const fCount = users.filter(u => u.deptId === d.id && (u.role === 'faculty' || u.role === 'hod')).length;
-      const cCount = courses.filter(c => c.deptId === d.id).length;
+      const hod = users.find(u => u.id === d.hodId) ||
+                  users.find(u => (u.deptId === d.id || (d.code && u.deptId === d.code)) && u.role === 'hod') ||
+                  (d.hod ? (users.find(u => u.name === d.hod) || { name: d.hod }) : null);
+      const fCount = users.filter(u => (u.deptId === d.id || (d.code && u.deptId === d.code)) && (u.role === 'faculty' || u.role === 'hod')).length;
+      const cCount = courses.filter(c => c.deptId === d.id || (d.code && c.deptId === d.code)).length;
 
       return `
         <div class="dept-card">
@@ -182,7 +184,8 @@
     const d = DB.departments.byId(id);
     if (!d) return;
     const users = DB.users.all().filter(u => u.role === 'hod' || u.role === 'faculty');
-    const hodOptions = users.map(u => `<option value="${u.id}" ${u.id===d.hodId?'selected':''}>${u.name} (${u.email})</option>`).join('');
+    const currentHodId = d.hodId || (users.find(u => (u.deptId === d.id || (d.code && u.deptId === d.code)) && u.role === 'hod')?.id) || (users.find(u => u.name === d.hod)?.id);
+    const hodOptions = users.map(u => `<option value="${u.id}" ${u.id===currentHodId?'selected':''}>${u.name} (${u.role === 'hod' ? 'HOD' : 'Faculty'} - ${u.email})</option>`).join('');
 
     const html = `
       <div class="modal-header">
@@ -224,7 +227,7 @@
   }
 
   function saveDept(id) {
-    const code = document.getElementById('d-code').value.trim();
+    const code = document.getElementById('d-code').value.trim().toUpperCase();
     const name = document.getElementById('d-name').value.trim();
     const hodId = document.getElementById('d-hod').value || null;
     const vision = (document.getElementById('d-vision') ? document.getElementById('d-vision').value.trim() : '');
@@ -232,14 +235,33 @@
 
     if (!code || !name) { Toast.error('Code and Name are required.'); return; }
 
+    // Check for duplicate code
+    const allDepts = DB.departments.all();
+    const duplicate = allDepts.find(d => d.code && d.code.toUpperCase() === code && d.id !== id);
+    if (duplicate) {
+      Toast.error(`Department code "${code}" is already in use by "${duplicate.name}".`);
+      return;
+    }
+
+    const hodUser = hodId ? DB.users.byId(hodId) : null;
+    const hodName = hodUser ? hodUser.name : '';
+
+    let targetId = id;
     if (id) {
       const existing = DB.departments.byId(id) || {};
-      DB.departments.update({ ...existing, id, code, name, hodId, vision, mission });
+      DB.departments.update({ ...existing, id, code, name, hodId, hod: hodName, vision, mission });
       Toast.success('Department updated.');
     } else {
-      DB.departments.add({ code, name, hodId, vision, mission });
+      const created = DB.departments.add({ code, name, hodId, hod: hodName, vision, mission });
+      targetId = created ? created.id : null;
       Toast.success('Department added.');
     }
+
+    // Bidirectionally update the selected HOD user
+    if (hodUser && targetId) {
+      DB.users.update({ ...hodUser, role: 'hod', deptId: targetId });
+    }
+
     Modal.close();
     renderDepts();
   }
@@ -247,7 +269,19 @@
   function deleteDept(id) {
     const d = DB.departments.byId(id);
     if (!d) return;
-    Modal.confirm('Delete Department', `Remove department ${d.name} (${d.code})?`, () => {
+    Modal.confirm('Delete Department', `Remove department ${d.name} (${d.code})? Associated faculty and courses will be unassigned.`, () => {
+      const allUsers = DB.users.all();
+      allUsers.forEach(u => {
+        if (u.deptId === d.id || u.deptId === d.code) {
+          DB.users.update({ ...u, deptId: null, role: u.role === 'hod' ? 'faculty' : u.role });
+        }
+      });
+      const allCourses = DB.courses.all();
+      allCourses.forEach(c => {
+        if (c.deptId === d.id || c.deptId === d.code) {
+          DB.courses.update({ ...c, deptId: null });
+        }
+      });
       DB.departments.delete(id);
       renderDepts();
       Toast.success('Department removed.');
