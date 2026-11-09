@@ -289,12 +289,28 @@
     });
   }
 
-  function deleteCourse(id, name) {
-    Modal.confirm('Delete Course', `Are you sure you want to permanently delete "${name}"? All associated outcomes and marks will be removed.`, () => {
+  async function deleteCourse(id, name) {
+    const c = DB.courses.byId(id);
+    const impact = await ImpactAnalyzer.getCourseImpact(id);
+
+    const proceedDelete = () => {
       DB.courses.delete(id);
       Toast.success(`"${name}" deleted.`);
       loadCourses();
-    }, 'Delete Course', true);
+    };
+
+    if (impact.hasDependencies) {
+      Modal.impactConfirm({
+        title: 'Delete Course & Permanent Data Purge',
+        subtitle: 'The system detected active academic records linked to this course.',
+        entityName: `${name} (${c ? c.code : id})`,
+        impact: impact,
+        confirmBtnText: 'Permanently Purge & Delete',
+        onConfirm: proceedDelete
+      });
+    } else {
+      Modal.confirm('Delete Course', `Are you sure you want to permanently delete "${name}"?`, proceedDelete, 'Delete Course', true);
+    }
   }
 
   function openAddModal() {

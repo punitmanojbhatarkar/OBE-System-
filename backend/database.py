@@ -8,6 +8,7 @@ load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_SQLITE_PATH = os.path.join(BASE_DIR, "obe_system.db")
+SQLITE_URI = f"sqlite:///{DEFAULT_SQLITE_PATH.replace(os.sep, '/')}"
 
 # Read DATABASE_URL from .env (defaults to PostgreSQL on port 5433, fallback to SQLite)
 raw_db_url = os.getenv("DATABASE_URL", "").strip()
@@ -15,10 +16,12 @@ raw_db_url = os.getenv("DATABASE_URL", "").strip()
 if raw_db_url.startswith("postgres://"):
     raw_db_url = raw_db_url.replace("postgres://", "postgresql://", 1)
 
-if raw_db_url:
+if raw_db_url.startswith("sqlite"):
+    SQLALCHEMY_DATABASE_URL = SQLITE_URI
+elif raw_db_url:
     SQLALCHEMY_DATABASE_URL = raw_db_url
 else:
-    SQLALCHEMY_DATABASE_URL = f"sqlite:///{DEFAULT_SQLITE_PATH}"
+    SQLALCHEMY_DATABASE_URL = SQLITE_URI
 
 # Configure Engine based on dialect
 if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):

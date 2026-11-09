@@ -249,6 +249,11 @@
     let targetId = id;
     if (id) {
       const existing = DB.departments.byId(id) || {};
+      const oldHodId = existing.hodId;
+      if (oldHodId && oldHodId !== hodId) {
+        const oldHod = DB.users.byId(oldHodId);
+        if (oldHod) DB.users.update({ ...oldHod, role: 'faculty' });
+      }
       DB.departments.update({ ...existing, id, code, name, hodId, hod: hodName, vision, mission });
       Toast.success('Department updated.');
     } else {
@@ -266,10 +271,13 @@
     renderDepts();
   }
 
-  function deleteDept(id) {
+  async function deleteDept(id) {
     const d = DB.departments.byId(id);
     if (!d) return;
-    Modal.confirm('Delete Department', `Remove department ${d.name} (${d.code})? Associated faculty and courses will be unassigned.`, () => {
+
+    const impact = await ImpactAnalyzer.getDeptImpact(id);
+
+    const proceedDelete = () => {
       const allUsers = DB.users.all();
       allUsers.forEach(u => {
         if (u.deptId === d.id || u.deptId === d.code) {
@@ -285,7 +293,20 @@
       DB.departments.delete(id);
       renderDepts();
       Toast.success('Department removed.');
-    }, 'Delete', true);
+    };
+
+    if (impact.hasDependencies) {
+      Modal.impactConfirm({
+        title: 'Delete Department & Impact Warning',
+        subtitle: 'Cascading effects on assigned courses & faculty',
+        entityName: `${d.name} (${d.code})`,
+        impact: impact,
+        confirmBtnText: 'Unlink Courses & Delete Department',
+        onConfirm: proceedDelete
+      });
+    } else {
+      Modal.confirm('Delete Department', `Remove department ${d.name} (${d.code})? Associated faculty and courses will be unassigned.`, proceedDelete, 'Delete', true);
+    }
   }
 
   window.openAddDeptModal = openAddDeptModal;

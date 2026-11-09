@@ -711,6 +711,191 @@ def delete_user(user_id: str, db: Session = Depends(get_db)):
     return {"success": True}
 
 # ─────────────────────────────────────────────
+# INTELLIGENT IMPACT ASSESSMENT (DEPENDENCY ANALYSIS)
+# ─────────────────────────────────────────────
+@app.get("/api/impact/user/{user_id}")
+def get_user_impact(user_id: str, db: Session = Depends(get_db)):
+    u = db.query(models.User).filter(models.User.id == user_id).first()
+    if not u:
+        raise HTTPException(404, "User not found")
+
+    # 1. Check if user is HOD of any department
+    hod_depts = db.query(models.Department).filter(
+        (models.Department.hodId == user_id) | (models.Department.hod == u.name)
+    ).all()
+
+    # 2. Check courses where user is instructor (facultyId)
+    taught_courses = db.query(models.Course).filter(models.Course.facultyId == user_id).all()
+
+    # 3. Check courses where user is course champion
+    champ_courses = db.query(models.Course).filter(
+        (models.Course.champion == u.name) | (getattr(models.Course, "championId", None) == user_id)
+    ).all()
+
+    warnings = []
+    sections_affected = []
+
+    for d in hod_depts:
+        other_faculty_count = db.query(models.User).filter(
+            (models.User.deptId == d.id) | (models.User.deptId == d.code),
+            models.User.id != user_id,
+            models.User.role.in_(["faculty", "hod"])
+        ).count()
+        sections_affected.append({
+            "type": "department_hod",
+            "title": f"Head of Department ({d.name})",
+            "detail": f"Department '{d.name}' ({d.code}) will be left with NO Head of Department assigned.",
+            "severity": "critical" if other_faculty_count == 0 else "warning",
+            "meta": {"deptId": d.id, "deptName": d.name, "deptCode": d.code, "otherFacultyCount": other_faculty_count}
+        })
+        warnings.append(f"Department '{d.name}' ({d.code}) will be left without an HOD.")
+
+    for c in taught_courses:
+        sections_affected.append({
+            "type": "course_faculty",
+            "title": f"Course Instructor ({c.code})",
+            "detail": f"Course '{c.name}' ({c.code}) will lose its assigned Course Faculty / Instructor.",
+            "severity": "warning",
+            "meta": {"courseId": c.id, "code": c.code, "name": c.name}
+        })
+        warnings.append(f"Course '{c.name}' ({c.code}) will have no assigned instructor.")
+
+    for c in champ_courses:
+        sections_affected.append({
+            "type": "course_champion",
+            "title": f"Course Champion ({c.code})",
+            "detail": f"Course '{c.name}' ({c.code}) will have its Course Champion cleared.",
+            "severity": "info",
+            "meta": {"courseId": c.id, "code": c.code, "name": c.name}
+        })
+        warnings.append(f"Course '{c.name}' ({c.code}) champion will be cleared.")
+
+    has_dependencies = len(sections_affected) > 0
+    return {
+        "userId": u.id,
+        "userName": u.name,
+        "userRole": u.role,
+        "userEmail": u.email,
+        "hasDependencies": has_dependencies,
+        "sectionsAffected": sections_affected,
+        "warnings": warnings,
+        "summary": f"Removing {u.name} affects {len(sections_affected)} linked sections (Departments & Courses)." if has_dependencies else f"{u.name} has no active HOD or course teaching assignments."
+    }
+
+@app.get("/api/impact/department/{dept_id}")
+def get_department_impact(dept_id: str, db: Session = Depends(get_db)):
+    d = db.query(models.Department).filter((models.Department.id == dept_id) | (models.Department.code == dept_id)).first()
+    if not d:
+        raise HTTPException(404, "Department not found")
+
+    dept_courses = db.query(models.Course).filter((models.Course.deptId == d.id) | (models.Course.deptId == d.code)).all()
+    dept_users = db.query(models.User).filter((models.User.deptId == d.id) | (models.User.deptId == d.code)).all()
+
+    sections_affected = []
+    warnings = []
+
+    if d.hod or getattr(d, "hodId", None):
+        sections_affected.append({
+            "type": "hod_unlinked",
+            "title": "Assigned HOD",
+            "detail": f"HOD '{d.hod}' will be unlinked from this department.",
+            "severity": "warning"
+        })
+        warnings.append(f"HOD '{d.hod}' will become unlinked from {d.name}.")
+
+    if dept_courses:
+        sections_affected.append({
+            "type": "courses_unlinked",
+            "title": f"{len(dept_courses)} Courses Assigned",
+            "detail": f"{len(dept_courses)} courses under {d.name} will lose their department association.",
+            "severity": "critical",
+            "meta": [{"id": c.id, "code": c.code, "name": c.name} for c in dept_courses]
+        })
+        warnings.append(f"{len(dept_courses)} courses will lose their department association.")
+
+    if dept_users:
+        sections_affected.append({
+            "type": "faculty_unlinked",
+            "title": f"{len(dept_users)} Faculty / Users",
+            "detail": f"{len(dept_users)} user accounts will have their department cleared.",
+            "severity": "warning",
+            "meta": [{"id": u.id, "name": u.name, "role": u.role} for u in dept_users]
+        })
+        warnings.append(f"{len(dept_users)} user accounts will become unassigned.")
+
+    has_dependencies = len(sections_affected) > 0
+    return {
+        "deptId": d.id,
+        "deptCode": d.code,
+        "deptName": d.name,
+        "hasDependencies": has_dependencies,
+        "sectionsAffected": sections_affected,
+        "warnings": warnings,
+        "summary": f"Removing {d.name} affects {len(dept_courses)} courses and {len(dept_users)} user accounts." if has_dependencies else f"Department {d.name} has no courses or faculty assigned."
+    }
+
+@app.get("/api/impact/course/{course_id}")
+def get_course_impact(course_id: str, db: Session = Depends(get_db)):
+    c = db.query(models.Course).filter(models.Course.id == course_id).first()
+    if not c:
+        raise HTTPException(404, "Course not found")
+
+    co_count = db.query(models.CourseOutcome).filter(models.CourseOutcome.courseId == course_id).count()
+    student_count = db.query(models.Student).filter(models.Student.courseId == course_id).count()
+    marks_ia_count = db.query(models.MarksIA).filter(models.MarksIA.courseId == course_id).count()
+    asgn_count = db.query(models.Assignment).filter(models.Assignment.courseId == course_id).count()
+
+    sections_affected = []
+    warnings = []
+
+    if student_count > 0:
+        sections_affected.append({
+            "type": "enrolled_students",
+            "title": f"{student_count} Enrolled Students",
+            "detail": f"{student_count} student enrollments and pre-survey scores will be purged.",
+            "severity": "critical"
+        })
+        warnings.append(f"{student_count} enrolled students and their scores will be permanently deleted.")
+
+    if marks_ia_count > 0:
+        sections_affected.append({
+            "type": "assessment_marks",
+            "title": "Assessment Marks Data",
+            "detail": f"{marks_ia_count} assessment mark entries will be erased.",
+            "severity": "critical"
+        })
+        warnings.append("Recorded IA/MSE/ESE marks will be permanently erased.")
+
+    if co_count > 0:
+        sections_affected.append({
+            "type": "course_outcomes",
+            "title": f"{co_count} Course Outcomes (COs)",
+            "detail": f"{co_count} CO statements and their Bloom's taxonomy mappings will be removed.",
+            "severity": "warning"
+        })
+        warnings.append(f"{co_count} Course Outcomes and PO mapping matrix will be deleted.")
+
+    if asgn_count > 0:
+        sections_affected.append({
+            "type": "assignments",
+            "title": f"{asgn_count} Assignments / Question Papers",
+            "detail": f"{asgn_count} AI-generated assignments and rubrics will be deleted.",
+            "severity": "warning"
+        })
+        warnings.append(f"{asgn_count} assignments and rubrics will be deleted.")
+
+    has_dependencies = len(sections_affected) > 0
+    return {
+        "courseId": c.id,
+        "code": c.code,
+        "name": c.name,
+        "hasDependencies": has_dependencies,
+        "sectionsAffected": sections_affected,
+        "warnings": warnings,
+        "summary": f"Deleting {c.name} ({c.code}) will permanently purge {student_count} students, {co_count} COs, and assessment marks." if has_dependencies else f"Course {c.name} has no enrolled students or marks records."
+    }
+
+# ─────────────────────────────────────────────
 # COURSES
 # ─────────────────────────────────────────────
 @app.get("/api/courses")
@@ -2324,7 +2509,7 @@ def get_admin_analytics(db: Session = Depends(get_db)):
     faculty = db.query(models.User).filter(models.User.role.in_(["faculty", "hod"])).all()
     courses = db.query(models.Course).all()
     students = db.query(models.Student).all()
-    assessments = db.query(models.Assessment).all()
+    assessments = db.query(models.Assignment).all()
     
     # Calculate learner distribution
     learner_dist = {"advanced": 0, "average": 0, "slow": 0}
